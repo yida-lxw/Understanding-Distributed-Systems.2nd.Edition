@@ -2,12 +2,12 @@
 <package version="3.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="epub-id-1" prefix="ibooks: http://vocabulary.itunes.apple.com/rdf/ibooks/vocabulary-extensions-1.0/">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
     <dc:identifier id="epub-id-1">urn:uuid:d5070ed1-fad9-48cc-a871-36c1e4e3c976</dc:identifier>
-    <dc:title id="epub-title-1">Understanding Distributed Systems</dc:title>
+    <dc:title id="epub-title-1">深入理解分布式系统</dc:title>
     <dc:date id="epub-date"></dc:date>
-    <dc:language>en-GB</dc:language>
-    <dc:creator id="epub-creator-1">Roberto Vitillo</dc:creator>
+    <dc:language>zh</dc:language>
+    <dc:creator id="epub-creator-1">[英国]罗伯特·维蒂略</dc:creator>
     <meta refines="#epub-creator-1" property="role" scheme="marc:relators">aut</meta>
-    <dc:description>What every developer should know about large distributed applications</dc:description>
+    <dc:description>关于大型分布式应用,每个开发者都应该了解的知识</dc:description>
     <meta name="cover" content="cover_jpg" />
     <meta property="dcterms:modified">2022-03-11T13:02:15Z</meta>
   </metadata>
