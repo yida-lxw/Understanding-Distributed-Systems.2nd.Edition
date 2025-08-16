@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <title>ch035.xhtml</title>
+  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+</head>
+<body epub:type="bodymatter">
+<section id="controlplane" class="level1" data-number="22">
+<h1 data-number="22"><span class="header-section-number">22</span> Control planes and data planes</h1>
+<p>The API gateway is a single point of failure. If it goes down, then so does <em>Cruder</em>, which is why it needs to be highly available. And because every external request needs to go through it, it must also be scalable. This creates some interesting challenges with regard to external dependencies.</p>
+<p>For example, suppose the gateway has a specific “configuration” or management endpoint to add, remove and configure API keys used to rate-limit requests. Unsurprisingly, the request volume for the configuration endpoint is a lot lower than the one for the main endpoint(s), and a lower scale would suffice to handle it. And while the gateway needs to prefer availability and performance over consistency for routing external requests to internal services, it should prefer consistency over availability for requests sent to the management endpoint.</p>
+<!-- TODO: show an example of the relational database not coping with load on the hot path -->
+<p>Because of these different and competing requirements, we could split the API gateway into a <em>data plane</em> service that serves external requests directed towards our internal services and a <em>control plane</em> service that manages the gateway’s metadata and configuration. As it turns out, this split is a common pattern<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>. For example, in chain replication in section <a href="#chain-replication">10.4</a>, the control plane holds the configuration of the chains. And in Azure Storage, which we discussed in chapter <a href="#filestorage">17</a>, the stream and partition managers are control planes that manage the allocation of streams and partitions to storage and partition servers, respectively.</p>
+<p>More generally, a data plane includes any functionality on the critical path that needs to run for each client request. Therefore, it must be highly available, fast, and scale with the number of requests. In contrast, a control plane is not on the critical path and has less strict scaling requirements. Its main job is to help the data plane do its work by managing metadata or configuration and coordinating complex and infrequent operations. And since it generally needs to offer a consistent view of its state to the data plane, it favors consistency over availability.</p>
+<p>An application can have multiple independent control and data planes. For example, a control plane might be in charge of scaling a service up or down based on load, while another manages its configuration.</p>
+<p>But separating the control plane from the data plane introduces complexity. The data plane needs to be designed to withstand control plane failures for the separation to be robust. If the data plane stops serving requests when the control plane becomes unavailable, we say the former has a <em>hard dependency</em> on the latter. Intuitively, the entire system becomes unavailable if either the control plane or the data plane fails. More formally, when we have a chain of components that depend on each other, the theoretical availability of the system is the product of the availabilities of its components.</p>
+<p>For example, if the data plane has a theoretical availability of 99.99%, but the control plane has an availability of 99%, then the overall system can only achieve a combined availability of 98.99%:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0.9999</mn><mo>⋅</mo><mn>0.99</mn><mo>=</mo><mn>0.9899</mn></mrow><annotation encoding="application/x-tex">
+0.9999 \cdot 0.99 = 0.9899
+</annotation></semantics></math></p>
+<p>In other words, a system can at best be only as available as its least available hard dependency. We can try to make the control plane more reliable, but more importantly, we should ensure that the data plane can withstand control plane failures. If the control plane is temporarily unavailable, the data plane should continue to run with a stale configuration rather than stop. This concept is also referred to as <em>static stability</em>.</p>
+<section id="scale-imbalance" class="level2" data-number="22.1">
+<h2 data-number="22.1"><span class="header-section-number">22.1</span> Scale imbalance</h2>
+<p>Generally, data planes and control planes tend to have very different scale requirements. This creates a risk as the data plane can overload<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> the control plane.</p>
+<p>Suppose the control plane exposes an API that the data plane periodically queries to retrieve the latest configuration. Under normal circumstances, you would expect the requests to the control plane to be spread out in time more or less uniformly. But, in some cases, they can cluster within a short time interval. For example, if, for whatever reason, the processes that make up the data plane are restarted at the same time and must retrieve the configuration from the control plane, they could overload it.</p>
+<p>Although the control plane can defend itself to some degree with the resiliency mechanisms described in chapter <a href="#upstream-resiliency">28</a>, eventually, it will start to degrade. If the control plane becomes unavailable because of overload or any other reason (like a network partition), it can take down the data plane with it.</p>
+<p>Going back to the previous example, if part of the data plane is trying to start but can’t reach the control plane because it’s overloaded, it won’t be able to come online. So how can we design around that?</p>
+<p>One way is to use a scalable file store, like Azure Storage or S3, as a buffer between the control plane and the data plane. The control plane periodically dumps its entire state to the file store regardless of whether it changed, while the data plane reads the state periodically from it (see Figure <a href="#fig:cpstore">22.1</a>). Although this approach sounds naive and expensive, it tends to be reliable and robust in practice. And, depending on the size of the state, it might be cheap too.<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a></p>
+<div class="figure" style="text-align: center">
+<img alt="The intermediate data store protects the control plane by absorbing the load generated by the data plane." width="80%" src="../media/file55.png" />
+<p class="caption">
+Figure 22.1: The intermediate data store protects the control plane by absorbing the load generated by the data plane.
+</p>
+</div>
+<p>Introducing an intermediate store as a buffer decouples the control plane from the data plane and protects the former from overload. It also enables the data plane to continue to operate (or start) if the control plane becomes unavailable. But this comes at the cost of higher latencies and weaker consistency guarantees, since the time it takes to propagate changes from the control plane to the data plane will necessarily increase.</p>
+<p>To decrease the propagation latency, a different architecture is needed in which there is no intermediary. The idea is to have the data plane connect to the control plane, like in our original approach, but have the control plane push the configuration whenever it changes, rather than being at the mercy of periodic queries from the data plane. Because the control plane controls the pace, it will slow down rather than fall over when it can’t keep up.<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a></p>
+<p>To further reduce latencies and load, the control plane can version changes and push only updates/deltas to the data plane. Although this approach is more complex to implement, it significantly reduces the propagation time when the state is very large.</p>
+<p>However, the control plane could still get hammered if many data plane instances start up around the same time (due to a massive scale-out or restart) and try to read the entire configuration from the control plane for the first time. To defend against this, we can reintroduce an intermediate data store that contains a recent snapshot of the control plane’s state. This allows the data plane to read a snapshot from the store at startup and then request only a small delta from the control plane (see Figure <a href="#fig:cpdelta">22.2</a>).</p>
+<div class="figure" style="text-align: center">
+<img alt="The intermediate data store absorbs the load of bulk reads, while the control plane pushes small deltas to the data plane whenever the state changes." width="80%" src="../media/file56.png" />
+<p class="caption">
+Figure 22.2: The intermediate data store absorbs the load of bulk reads, while the control plane pushes small deltas to the data plane whenever the state changes.
+</p>
+</div>
+</section>
+<section id="controltheory" class="level2" data-number="22.2">
+<h2 data-number="22.2"><span class="header-section-number">22.2</span> Control theory</h2>
+<p>Control theory gives us another<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> way to think about control planes and data planes. In control theory, the goal is to create a controller that monitors a dynamic system, compares its state to the desired one, and applies a corrective action to drive the system closer to it while minimizing any instabilities on the way.</p>
+<p>In our case, the data plane is the dynamic system we would like to drive to the desired state, while the controller is the control plane responsible for <em>monitoring</em> the data plane, <em>comparing</em> it to the desired state, and executing a corrective <em>action</em> if needed.</p>
+<p>The control plane and the data plane are part of a feedback loop. And without all three ingredients (<em>monitor</em>, <em>compare</em>, and <em>action</em>), you don’t have a closed loop, and the data plane can’t reach the desired state<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a>. The monitoring part is the most commonly missing ingredient to achieve a closed loop.</p>
+<p>Take chain replication, for example. The control plane’s job shouldn’t be just to push the configuration of the chains to the data plane. It should also monitor whether the data plane has actually applied the configuration within a reasonable time. If it hasn’t, it should perform some corrective action, which could be as naive as rebooting nodes with stale configurations or excluding them from being part of any chain.</p>
+<p>A more mundane example of a control plane is a CI/CD pipeline for releasing a new version of a service without causing any disruption. One way to implement the pipeline is to deploy and release a new build blindly without monitoring the running service — the build might throw an exception at startup that prevents the service from starting, resulting in a catastrophic failure. Instead, the pipeline should release the new build incrementally while monitoring the service and stop the roll-out if there is clear evidence that something is off, and potentially also roll it back automatically.</p>
+<p>To sum up, when dealing with a control plane, ask yourself what’s missing to close the loop. We have barely scratched the surface of the topic, and if you want to learn more about it, “Designing Distributed Control Systems”<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a> is a great read.</p>
+</section>
+</section>
+<section class="footnotes" epub:type="footnotes">
+<hr />
+<ol>
+<li id="fn1" epub:type="footnote"><p>“Control Planes vs Data Planes,” <a href="https://brooker.co.za/blog/2019/03/17/control.html" class="uri">https://brooker.co.za/blog/2019/03/17/control.html</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" epub:type="footnote"><p>“Avoiding overload in distributed systems by putting the smaller service in control,” <a href="https://aws.amazon.com/builders-library/avoiding-overload-in-distributed-systems-by-putting-the-smaller-service-in-control/" class="uri">https://aws.amazon.com/builders-library/avoiding-overload-in-distributed-systems-by-putting-the-smaller-service-in-control/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" epub:type="footnote"><p>This is another example of the CQRS pattern applied in practice.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" epub:type="footnote"><p>That said, there is still the potential to overload the control plane if it needs to juggle too many connections.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" epub:type="footnote"><p>“AWS re:Invent 2018: Close Loops &amp; Opening Minds: How to Take Control of Systems, Big &amp; Small ARC337,” <a href="https://www.youtube.com/watch?v=O8xLxNje30M" class="uri">https://www.youtube.com/watch?v=O8xLxNje30M</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" epub:type="footnote"><p>That said, having a closed loop doesn’t guarantee that either, it’s merely a prerequisite.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7" epub:type="footnote"><p>“Designing Distributed Control Systems,” <a href="https://www.amazon.com/gp/product/1118694155" class="uri">https://www.amazon.com/gp/product/1118694155</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>

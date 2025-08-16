@@ -1,0 +1,1053 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ncx version="2005-1" xmlns="http://www.daisy.org/z3986/2005/ncx/">
+  <head>
+    <meta name="dtb:uid" content="urn:uuid:d5070ed1-fad9-48cc-a871-36c1e4e3c976" />
+    <meta name="dtb:depth" content="1" />
+    <meta name="dtb:totalPageCount" content="0" />
+    <meta name="dtb:maxPageNumber" content="0" />
+    <meta name="cover" content="cover_jpg" />
+  </head>
+  <docTitle>
+    <text>Understanding Distributed Systems</text>
+  </docTitle>
+  <navMap>
+    <navPoint id="navPoint-0">
+      <navLabel>
+        <text>Understanding Distributed Systems</text>
+      </navLabel>
+      <content src="text/title_page.xhtml" />
+    </navPoint>
+    <navPoint id="navPoint-1">
+      <navLabel>
+        <text>Understanding Distributed Systems</text>
+      </navLabel>
+      <content src="text/ch001.xhtml#understanding-distributed-systems" />
+    </navPoint>
+    <navPoint id="navPoint-2">
+      <navLabel>
+        <text>Copyright</text>
+      </navLabel>
+      <content src="text/ch002.xhtml#copyright" />
+    </navPoint>
+    <navPoint id="navPoint-3">
+      <navLabel>
+        <text>About the author</text>
+      </navLabel>
+      <content src="text/ch003.xhtml#about-the-author" />
+    </navPoint>
+    <navPoint id="navPoint-4">
+      <navLabel>
+        <text>Acknowledgements</text>
+      </navLabel>
+      <content src="text/ch004.xhtml#acknowledgements" />
+    </navPoint>
+    <navPoint id="navPoint-5">
+      <navLabel>
+        <text>Preface</text>
+      </navLabel>
+      <content src="text/ch005.xhtml#preface" />
+    </navPoint>
+    <navPoint id="navPoint-6">
+      <navLabel>
+        <text>1 Introduction</text>
+      </navLabel>
+      <content src="text/ch006.xhtml#introduction" />
+      <navPoint id="navPoint-7">
+        <navLabel>
+          <text>1.1 Communication</text>
+        </navLabel>
+        <content src="text/ch006.xhtml#communication" />
+      </navPoint>
+      <navPoint id="navPoint-8">
+        <navLabel>
+          <text>1.2 Coordination</text>
+        </navLabel>
+        <content src="text/ch006.xhtml#coordination" />
+      </navPoint>
+      <navPoint id="navPoint-9">
+        <navLabel>
+          <text>1.3 Scalability</text>
+        </navLabel>
+        <content src="text/ch006.xhtml#scalability" />
+      </navPoint>
+      <navPoint id="navPoint-10">
+        <navLabel>
+          <text>1.4 Resiliency</text>
+        </navLabel>
+        <content src="text/ch006.xhtml#resiliency" />
+      </navPoint>
+      <navPoint id="navPoint-11">
+        <navLabel>
+          <text>1.5 Maintainability</text>
+        </navLabel>
+        <content src="text/ch006.xhtml#maintainability" />
+      </navPoint>
+      <navPoint id="navPoint-12">
+        <navLabel>
+          <text>1.6 Anatomy of a distributed system</text>
+        </navLabel>
+        <content src="text/ch006.xhtml#anatomy-of-a-distributed-system" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-13">
+      <navLabel>
+        <text>(PART) Communication</text>
+      </navLabel>
+      <content src="text/ch007.xhtml#part-communication" />
+    </navPoint>
+    <navPoint id="navPoint-14">
+      <navLabel>
+        <text>Introduction</text>
+      </navLabel>
+      <content src="text/ch008.xhtml#communication-intro" />
+    </navPoint>
+    <navPoint id="navPoint-15">
+      <navLabel>
+        <text>2 Reliable links</text>
+      </navLabel>
+      <content src="text/ch009.xhtml#tcp" />
+      <navPoint id="navPoint-16">
+        <navLabel>
+          <text>2.1 Reliability</text>
+        </navLabel>
+        <content src="text/ch009.xhtml#reliability" />
+      </navPoint>
+      <navPoint id="navPoint-17">
+        <navLabel>
+          <text>2.2 Connection lifecycle</text>
+        </navLabel>
+        <content src="text/ch009.xhtml#connection-lifecycle" />
+      </navPoint>
+      <navPoint id="navPoint-18">
+        <navLabel>
+          <text>2.3 Flow control</text>
+        </navLabel>
+        <content src="text/ch009.xhtml#flow-control" />
+      </navPoint>
+      <navPoint id="navPoint-19">
+        <navLabel>
+          <text>2.4 Congestion control</text>
+        </navLabel>
+        <content src="text/ch009.xhtml#congestion-control" />
+      </navPoint>
+      <navPoint id="navPoint-20">
+        <navLabel>
+          <text>2.5 Custom protocols</text>
+        </navLabel>
+        <content src="text/ch009.xhtml#custom-protocols" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-21">
+      <navLabel>
+        <text>3 Secure links</text>
+      </navLabel>
+      <content src="text/ch010.xhtml#tls" />
+      <navPoint id="navPoint-22">
+        <navLabel>
+          <text>3.1 Encryption</text>
+        </navLabel>
+        <content src="text/ch010.xhtml#encryption" />
+      </navPoint>
+      <navPoint id="navPoint-23">
+        <navLabel>
+          <text>3.2 Authentication</text>
+        </navLabel>
+        <content src="text/ch010.xhtml#authentication" />
+      </navPoint>
+      <navPoint id="navPoint-24">
+        <navLabel>
+          <text>3.3 Integrity</text>
+        </navLabel>
+        <content src="text/ch010.xhtml#integrity" />
+      </navPoint>
+      <navPoint id="navPoint-25">
+        <navLabel>
+          <text>3.4 Handshake</text>
+        </navLabel>
+        <content src="text/ch010.xhtml#handshake" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-26">
+      <navLabel>
+        <text>4 Discovery</text>
+      </navLabel>
+      <content src="text/ch011.xhtml#dns" />
+    </navPoint>
+    <navPoint id="navPoint-27">
+      <navLabel>
+        <text>5 APIs</text>
+      </navLabel>
+      <content src="text/ch012.xhtml#api" />
+      <navPoint id="navPoint-28">
+        <navLabel>
+          <text>5.1 HTTP</text>
+        </navLabel>
+        <content src="text/ch012.xhtml#http" />
+      </navPoint>
+      <navPoint id="navPoint-29">
+        <navLabel>
+          <text>5.2 Resources</text>
+        </navLabel>
+        <content src="text/ch012.xhtml#resources" />
+      </navPoint>
+      <navPoint id="navPoint-30">
+        <navLabel>
+          <text>5.3 Request methods</text>
+        </navLabel>
+        <content src="text/ch012.xhtml#request-methods" />
+      </navPoint>
+      <navPoint id="navPoint-31">
+        <navLabel>
+          <text>5.4 Response status codes</text>
+        </navLabel>
+        <content src="text/ch012.xhtml#response-status-codes" />
+      </navPoint>
+      <navPoint id="navPoint-32">
+        <navLabel>
+          <text>5.5 OpenAPI</text>
+        </navLabel>
+        <content src="text/ch012.xhtml#openapi" />
+      </navPoint>
+      <navPoint id="navPoint-33">
+        <navLabel>
+          <text>5.6 Evolution</text>
+        </navLabel>
+        <content src="text/ch012.xhtml#evolution" />
+      </navPoint>
+      <navPoint id="navPoint-34">
+        <navLabel>
+          <text>5.7 Idempotency</text>
+        </navLabel>
+        <content src="text/ch012.xhtml#idempotency" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-35">
+      <navLabel>
+        <text>Summary</text>
+      </navLabel>
+      <content src="text/ch013.xhtml#communication-outro" />
+    </navPoint>
+    <navPoint id="navPoint-36">
+      <navLabel>
+        <text>(PART) Coordination</text>
+      </navLabel>
+      <content src="text/ch014.xhtml#part-coordination" />
+    </navPoint>
+    <navPoint id="navPoint-37">
+      <navLabel>
+        <text>Introduction</text>
+      </navLabel>
+      <content src="text/ch015.xhtml#coordination-intro" />
+    </navPoint>
+    <navPoint id="navPoint-38">
+      <navLabel>
+        <text>6 System models</text>
+      </navLabel>
+      <content src="text/ch016.xhtml#models" />
+    </navPoint>
+    <navPoint id="navPoint-39">
+      <navLabel>
+        <text>7 Failure detection</text>
+      </navLabel>
+      <content src="text/ch017.xhtml#failure" />
+    </navPoint>
+    <navPoint id="navPoint-40">
+      <navLabel>
+        <text>8 Time</text>
+      </navLabel>
+      <content src="text/ch018.xhtml#time" />
+      <navPoint id="navPoint-41">
+        <navLabel>
+          <text>8.1 Physical clocks</text>
+        </navLabel>
+        <content src="text/ch018.xhtml#physical-clocks" />
+      </navPoint>
+      <navPoint id="navPoint-42">
+        <navLabel>
+          <text>8.2 Logical clocks</text>
+        </navLabel>
+        <content src="text/ch018.xhtml#logical-clocks" />
+      </navPoint>
+      <navPoint id="navPoint-43">
+        <navLabel>
+          <text>8.3 Vector clocks</text>
+        </navLabel>
+        <content src="text/ch018.xhtml#vector-clocks" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-44">
+      <navLabel>
+        <text>9 Leader election</text>
+      </navLabel>
+      <content src="text/ch019.xhtml#leader" />
+      <navPoint id="navPoint-45">
+        <navLabel>
+          <text>9.1 Raft leader election</text>
+        </navLabel>
+        <content src="text/ch019.xhtml#raft-leader-election" />
+      </navPoint>
+      <navPoint id="navPoint-46">
+        <navLabel>
+          <text>9.2 Practical considerations</text>
+        </navLabel>
+        <content src="text/ch019.xhtml#lease" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-47">
+      <navLabel>
+        <text>10 Replication</text>
+      </navLabel>
+      <content src="text/ch020.xhtml#replication" />
+      <navPoint id="navPoint-48">
+        <navLabel>
+          <text>10.1 State machine replication</text>
+        </navLabel>
+        <content src="text/ch020.xhtml#stm" />
+      </navPoint>
+      <navPoint id="navPoint-49">
+        <navLabel>
+          <text>10.2 Consensus</text>
+        </navLabel>
+        <content src="text/ch020.xhtml#consensus" />
+      </navPoint>
+      <navPoint id="navPoint-50">
+        <navLabel>
+          <text>10.3 Consistency models</text>
+        </navLabel>
+        <content src="text/ch020.xhtml#consistency-models" />
+        <navPoint id="navPoint-51">
+          <navLabel>
+            <text>10.3.1 Strong consistency</text>
+          </navLabel>
+          <content src="text/ch020.xhtml#linearizability" />
+        </navPoint>
+        <navPoint id="navPoint-52">
+          <navLabel>
+            <text>10.3.2 Sequential consistency</text>
+          </navLabel>
+          <content src="text/ch020.xhtml#sequential-consistency" />
+        </navPoint>
+        <navPoint id="navPoint-53">
+          <navLabel>
+            <text>10.3.3 Eventual consistency</text>
+          </navLabel>
+          <content src="text/ch020.xhtml#eventual-consistency" />
+        </navPoint>
+        <navPoint id="navPoint-54">
+          <navLabel>
+            <text>10.3.4 The CAP theorem</text>
+          </navLabel>
+          <content src="text/ch020.xhtml#the-cap-theorem" />
+        </navPoint>
+      </navPoint>
+      <navPoint id="navPoint-55">
+        <navLabel>
+          <text>10.4 Chain replication</text>
+        </navLabel>
+        <content src="text/ch020.xhtml#chain-replication" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-56">
+      <navLabel>
+        <text>11 Coordination avoidance</text>
+      </navLabel>
+      <content src="text/ch021.xhtml#solvingcap" />
+      <navPoint id="navPoint-57">
+        <navLabel>
+          <text>11.1 Broadcast protocols</text>
+        </navLabel>
+        <content src="text/ch021.xhtml#broadcast-protocols" />
+      </navPoint>
+      <navPoint id="navPoint-58">
+        <navLabel>
+          <text>11.2 Conflict-free replicated data types</text>
+        </navLabel>
+        <content src="text/ch021.xhtml#crdt" />
+      </navPoint>
+      <navPoint id="navPoint-59">
+        <navLabel>
+          <text>11.3 Dynamo-style data stores</text>
+        </navLabel>
+        <content src="text/ch021.xhtml#dynamo" />
+      </navPoint>
+      <navPoint id="navPoint-60">
+        <navLabel>
+          <text>11.4 The CALM theorem</text>
+        </navLabel>
+        <content src="text/ch021.xhtml#the-calm-theorem" />
+      </navPoint>
+      <navPoint id="navPoint-61">
+        <navLabel>
+          <text>11.5 Causal consistency</text>
+        </navLabel>
+        <content src="text/ch021.xhtml#causal-consistency" />
+      </navPoint>
+      <navPoint id="navPoint-62">
+        <navLabel>
+          <text>11.6 Practical considerations</text>
+        </navLabel>
+        <content src="text/ch021.xhtml#practical-considerations" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-63">
+      <navLabel>
+        <text>12 Transactions</text>
+      </navLabel>
+      <content src="text/ch022.xhtml#transactions" />
+      <navPoint id="navPoint-64">
+        <navLabel>
+          <text>12.1 ACID</text>
+        </navLabel>
+        <content src="text/ch022.xhtml#acid" />
+      </navPoint>
+      <navPoint id="navPoint-65">
+        <navLabel>
+          <text>12.2 Isolation</text>
+        </navLabel>
+        <content src="text/ch022.xhtml#isolation" />
+        <navPoint id="navPoint-66">
+          <navLabel>
+            <text>12.2.1 Concurrency control</text>
+          </navLabel>
+          <content src="text/ch022.xhtml#concurrency-control" />
+        </navPoint>
+      </navPoint>
+      <navPoint id="navPoint-67">
+        <navLabel>
+          <text>12.3 Atomicity</text>
+        </navLabel>
+        <content src="text/ch022.xhtml#atomicity" />
+        <navPoint id="navPoint-68">
+          <navLabel>
+            <text>12.3.1 Two-phase commit</text>
+          </navLabel>
+          <content src="text/ch022.xhtml#two-phase-commit" />
+        </navPoint>
+      </navPoint>
+      <navPoint id="navPoint-69">
+        <navLabel>
+          <text>12.4 NewSQL</text>
+        </navLabel>
+        <content src="text/ch022.xhtml#spanner" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-70">
+      <navLabel>
+        <text>13 Asynchronous transactions</text>
+      </navLabel>
+      <content src="text/ch023.xhtml#asynctransactions" />
+      <navPoint id="navPoint-71">
+        <navLabel>
+          <text>13.1 Outbox pattern</text>
+        </navLabel>
+        <content src="text/ch023.xhtml#log-based-transactions" />
+      </navPoint>
+      <navPoint id="navPoint-72">
+        <navLabel>
+          <text>13.2 Sagas</text>
+        </navLabel>
+        <content src="text/ch023.xhtml#sagas" />
+      </navPoint>
+      <navPoint id="navPoint-73">
+        <navLabel>
+          <text>13.3 Isolation</text>
+        </navLabel>
+        <content src="text/ch023.xhtml#isolation-1" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-74">
+      <navLabel>
+        <text>Summary</text>
+      </navLabel>
+      <content src="text/ch024.xhtml#coordination-outro" />
+    </navPoint>
+    <navPoint id="navPoint-75">
+      <navLabel>
+        <text>(PART) Scalability</text>
+      </navLabel>
+      <content src="text/ch025.xhtml#part-scalability" />
+    </navPoint>
+    <navPoint id="navPoint-76">
+      <navLabel>
+        <text>Introduction</text>
+      </navLabel>
+      <content src="text/ch026.xhtml#scalability-intro" />
+    </navPoint>
+    <navPoint id="navPoint-77">
+      <navLabel>
+        <text>14 HTTP caching</text>
+      </navLabel>
+      <content src="text/ch027.xhtml#httpcaching" />
+      <navPoint id="navPoint-78">
+        <navLabel>
+          <text>14.1 Reverse proxies</text>
+        </navLabel>
+        <content src="text/ch027.xhtml#reverse-proxies" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-79">
+      <navLabel>
+        <text>15 Content delivery networks</text>
+      </navLabel>
+      <content src="text/ch028.xhtml#cdn" />
+      <navPoint id="navPoint-80">
+        <navLabel>
+          <text>15.1 Overlay network</text>
+        </navLabel>
+        <content src="text/ch028.xhtml#overlay-network" />
+      </navPoint>
+      <navPoint id="navPoint-81">
+        <navLabel>
+          <text>15.2 Caching</text>
+        </navLabel>
+        <content src="text/ch028.xhtml#caching" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-82">
+      <navLabel>
+        <text>16 Partitioning</text>
+      </navLabel>
+      <content src="text/ch029.xhtml#partitioning" />
+      <navPoint id="navPoint-83">
+        <navLabel>
+          <text>16.1 Range partitioning</text>
+        </navLabel>
+        <content src="text/ch029.xhtml#range-partitioning" />
+      </navPoint>
+      <navPoint id="navPoint-84">
+        <navLabel>
+          <text>16.2 Hash partitioning</text>
+        </navLabel>
+        <content src="text/ch029.xhtml#hash-partitioning" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-85">
+      <navLabel>
+        <text>17 File storage</text>
+      </navLabel>
+      <content src="text/ch030.xhtml#filestorage" />
+      <navPoint id="navPoint-86">
+        <navLabel>
+          <text>17.1 Blob storage architecture</text>
+        </navLabel>
+        <content src="text/ch030.xhtml#blob-storage-architecture" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-87">
+      <navLabel>
+        <text>18 Network load balancing</text>
+      </navLabel>
+      <content src="text/ch031.xhtml#load-balancing" />
+      <navPoint id="navPoint-88">
+        <navLabel>
+          <text>18.1 DNS load balancing</text>
+        </navLabel>
+        <content src="text/ch031.xhtml#dns-load-balancing" />
+      </navPoint>
+      <navPoint id="navPoint-89">
+        <navLabel>
+          <text>18.2 Transport layer load balancing</text>
+        </navLabel>
+        <content src="text/ch031.xhtml#transport-layer-load-balancing" />
+      </navPoint>
+      <navPoint id="navPoint-90">
+        <navLabel>
+          <text>18.3 Application layer load balancing</text>
+        </navLabel>
+        <content src="text/ch031.xhtml#l7lb" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-91">
+      <navLabel>
+        <text>19 Data storage</text>
+      </navLabel>
+      <content src="text/ch032.xhtml#datastorage" />
+      <navPoint id="navPoint-92">
+        <navLabel>
+          <text>19.1 Replication</text>
+        </navLabel>
+        <content src="text/ch032.xhtml#replication-1" />
+      </navPoint>
+      <navPoint id="navPoint-93">
+        <navLabel>
+          <text>19.2 Partitioning</text>
+        </navLabel>
+        <content src="text/ch032.xhtml#partitioning-1" />
+      </navPoint>
+      <navPoint id="navPoint-94">
+        <navLabel>
+          <text>19.3 NoSQL</text>
+        </navLabel>
+        <content src="text/ch032.xhtml#nosql" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-95">
+      <navLabel>
+        <text>20 Caching</text>
+      </navLabel>
+      <content src="text/ch033.xhtml#dbcaching" />
+      <navPoint id="navPoint-96">
+        <navLabel>
+          <text>20.1 Policies</text>
+        </navLabel>
+        <content src="text/ch033.xhtml#policies" />
+      </navPoint>
+      <navPoint id="navPoint-97">
+        <navLabel>
+          <text>20.2 Local cache</text>
+        </navLabel>
+        <content src="text/ch033.xhtml#local-cache" />
+      </navPoint>
+      <navPoint id="navPoint-98">
+        <navLabel>
+          <text>20.3 External cache</text>
+        </navLabel>
+        <content src="text/ch033.xhtml#external-cache" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-99">
+      <navLabel>
+        <text>21 Microservices</text>
+      </navLabel>
+      <content src="text/ch034.xhtml#microservices" />
+      <navPoint id="navPoint-100">
+        <navLabel>
+          <text>21.1 Caveats</text>
+        </navLabel>
+        <content src="text/ch034.xhtml#caveats" />
+      </navPoint>
+      <navPoint id="navPoint-101">
+        <navLabel>
+          <text>21.2 API gateway</text>
+        </navLabel>
+        <content src="text/ch034.xhtml#apigw" />
+        <navPoint id="navPoint-102">
+          <navLabel>
+            <text>21.2.1 Core responsibilities</text>
+          </navLabel>
+          <content src="text/ch034.xhtml#core-responsibilities" />
+        </navPoint>
+        <navPoint id="navPoint-103">
+          <navLabel>
+            <text>21.2.2 Cross-cutting concerns</text>
+          </navLabel>
+          <content src="text/ch034.xhtml#cross-cutting-concerns" />
+        </navPoint>
+        <navPoint id="navPoint-104">
+          <navLabel>
+            <text>21.2.3 Caveats</text>
+          </navLabel>
+          <content src="text/ch034.xhtml#caveats-1" />
+        </navPoint>
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-105">
+      <navLabel>
+        <text>22 Control planes and data planes</text>
+      </navLabel>
+      <content src="text/ch035.xhtml#controlplane" />
+      <navPoint id="navPoint-106">
+        <navLabel>
+          <text>22.1 Scale imbalance</text>
+        </navLabel>
+        <content src="text/ch035.xhtml#scale-imbalance" />
+      </navPoint>
+      <navPoint id="navPoint-107">
+        <navLabel>
+          <text>22.2 Control theory</text>
+        </navLabel>
+        <content src="text/ch035.xhtml#controltheory" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-108">
+      <navLabel>
+        <text>23 Messaging</text>
+      </navLabel>
+      <content src="text/ch036.xhtml#messaging" />
+      <navPoint id="navPoint-109">
+        <navLabel>
+          <text>23.1 Guarantees</text>
+        </navLabel>
+        <content src="text/ch036.xhtml#guarantees" />
+      </navPoint>
+      <navPoint id="navPoint-110">
+        <navLabel>
+          <text>23.2 Exactly-once processing</text>
+        </navLabel>
+        <content src="text/ch036.xhtml#exactly-once-processing" />
+      </navPoint>
+      <navPoint id="navPoint-111">
+        <navLabel>
+          <text>23.3 Failures</text>
+        </navLabel>
+        <content src="text/ch036.xhtml#failures" />
+      </navPoint>
+      <navPoint id="navPoint-112">
+        <navLabel>
+          <text>23.4 Backlogs</text>
+        </navLabel>
+        <content src="text/ch036.xhtml#backlogs" />
+      </navPoint>
+      <navPoint id="navPoint-113">
+        <navLabel>
+          <text>23.5 Fault isolation</text>
+        </navLabel>
+        <content src="text/ch036.xhtml#fault-isolation" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-114">
+      <navLabel>
+        <text>Summary</text>
+      </navLabel>
+      <content src="text/ch037.xhtml#scalability-outro" />
+    </navPoint>
+    <navPoint id="navPoint-115">
+      <navLabel>
+        <text>(PART) Resiliency</text>
+      </navLabel>
+      <content src="text/ch038.xhtml#part-resiliency" />
+    </navPoint>
+    <navPoint id="navPoint-116">
+      <navLabel>
+        <text>Introduction</text>
+      </navLabel>
+      <content src="text/ch039.xhtml#resiliency-intro" />
+    </navPoint>
+    <navPoint id="navPoint-117">
+      <navLabel>
+        <text>24 Common failure causes</text>
+      </navLabel>
+      <content src="text/ch040.xhtml#failure-causes" />
+      <navPoint id="navPoint-118">
+        <navLabel>
+          <text>24.1 Hardware faults</text>
+        </navLabel>
+        <content src="text/ch040.xhtml#hardware-faults" />
+      </navPoint>
+      <navPoint id="navPoint-119">
+        <navLabel>
+          <text>24.2 Incorrect error handling</text>
+        </navLabel>
+        <content src="text/ch040.xhtml#incorrect-error-handling" />
+      </navPoint>
+      <navPoint id="navPoint-120">
+        <navLabel>
+          <text>24.3 Configuration changes</text>
+        </navLabel>
+        <content src="text/ch040.xhtml#configuration-changes" />
+      </navPoint>
+      <navPoint id="navPoint-121">
+        <navLabel>
+          <text>24.4 Single points of failure</text>
+        </navLabel>
+        <content src="text/ch040.xhtml#single-points-of-failure" />
+      </navPoint>
+      <navPoint id="navPoint-122">
+        <navLabel>
+          <text>24.5 Network faults</text>
+        </navLabel>
+        <content src="text/ch040.xhtml#network-faults" />
+      </navPoint>
+      <navPoint id="navPoint-123">
+        <navLabel>
+          <text>24.6 Resource leaks</text>
+        </navLabel>
+        <content src="text/ch040.xhtml#resource-leaks" />
+      </navPoint>
+      <navPoint id="navPoint-124">
+        <navLabel>
+          <text>24.7 Load pressure</text>
+        </navLabel>
+        <content src="text/ch040.xhtml#load-pressure" />
+      </navPoint>
+      <navPoint id="navPoint-125">
+        <navLabel>
+          <text>24.8 Cascading failures</text>
+        </navLabel>
+        <content src="text/ch040.xhtml#cascading-failures" />
+      </navPoint>
+      <navPoint id="navPoint-126">
+        <navLabel>
+          <text>24.9 Managing risk</text>
+        </navLabel>
+        <content src="text/ch040.xhtml#managing-risk" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-127">
+      <navLabel>
+        <text>25 Redundancy</text>
+      </navLabel>
+      <content src="text/ch041.xhtml#redundancy" />
+      <navPoint id="navPoint-128">
+        <navLabel>
+          <text>25.1 Correlation</text>
+        </navLabel>
+        <content src="text/ch041.xhtml#correlation" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-129">
+      <navLabel>
+        <text>26 Fault isolation</text>
+      </navLabel>
+      <content src="text/ch042.xhtml#faultisolation" />
+      <navPoint id="navPoint-130">
+        <navLabel>
+          <text>26.1 Shuffle sharding</text>
+        </navLabel>
+        <content src="text/ch042.xhtml#shuffle-sharding" />
+      </navPoint>
+      <navPoint id="navPoint-131">
+        <navLabel>
+          <text>26.2 Cellular architecture</text>
+        </navLabel>
+        <content src="text/ch042.xhtml#cellarch" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-132">
+      <navLabel>
+        <text>27 Downstream resiliency</text>
+      </navLabel>
+      <content src="text/ch043.xhtml#downstream-resiliency" />
+      <navPoint id="navPoint-133">
+        <navLabel>
+          <text>27.1 Timeout</text>
+        </navLabel>
+        <content src="text/ch043.xhtml#timeout" />
+      </navPoint>
+      <navPoint id="navPoint-134">
+        <navLabel>
+          <text>27.2 Retry</text>
+        </navLabel>
+        <content src="text/ch043.xhtml#retry" />
+        <navPoint id="navPoint-135">
+          <navLabel>
+            <text>27.2.1 Exponential backoff</text>
+          </navLabel>
+          <content src="text/ch043.xhtml#exponential-backoff" />
+        </navPoint>
+        <navPoint id="navPoint-136">
+          <navLabel>
+            <text>27.2.2 Retry amplification</text>
+          </navLabel>
+          <content src="text/ch043.xhtml#retry-amplification" />
+        </navPoint>
+      </navPoint>
+      <navPoint id="navPoint-137">
+        <navLabel>
+          <text>27.3 Circuit breaker</text>
+        </navLabel>
+        <content src="text/ch043.xhtml#circuit-breaker" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-138">
+      <navLabel>
+        <text>28 Upstream resiliency</text>
+      </navLabel>
+      <content src="text/ch044.xhtml#upstream-resiliency" />
+      <navPoint id="navPoint-139">
+        <navLabel>
+          <text>28.1 Load shedding</text>
+        </navLabel>
+        <content src="text/ch044.xhtml#load-shedding" />
+      </navPoint>
+      <navPoint id="navPoint-140">
+        <navLabel>
+          <text>28.2 Load leveling</text>
+        </navLabel>
+        <content src="text/ch044.xhtml#load-leveling" />
+      </navPoint>
+      <navPoint id="navPoint-141">
+        <navLabel>
+          <text>28.3 Rate-limiting</text>
+        </navLabel>
+        <content src="text/ch044.xhtml#ratelimiting" />
+        <navPoint id="navPoint-142">
+          <navLabel>
+            <text>28.3.1 Single-process implementation</text>
+          </navLabel>
+          <content src="text/ch044.xhtml#single-process-implementation" />
+        </navPoint>
+        <navPoint id="navPoint-143">
+          <navLabel>
+            <text>28.3.2 Distributed implementation</text>
+          </navLabel>
+          <content src="text/ch044.xhtml#distributed-implementation" />
+        </navPoint>
+      </navPoint>
+      <navPoint id="navPoint-144">
+        <navLabel>
+          <text>28.4 Constant work</text>
+        </navLabel>
+        <content src="text/ch044.xhtml#constantwork" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-145">
+      <navLabel>
+        <text>Summary</text>
+      </navLabel>
+      <content src="text/ch045.xhtml#resiliency-outro" />
+    </navPoint>
+    <navPoint id="navPoint-146">
+      <navLabel>
+        <text>(PART) Maintainability</text>
+      </navLabel>
+      <content src="text/ch046.xhtml#part-maintainability" />
+    </navPoint>
+    <navPoint id="navPoint-147">
+      <navLabel>
+        <text>Introduction</text>
+      </navLabel>
+      <content src="text/ch047.xhtml#operations-intro" />
+    </navPoint>
+    <navPoint id="navPoint-148">
+      <navLabel>
+        <text>29 Testing</text>
+      </navLabel>
+      <content src="text/ch048.xhtml#testing" />
+      <navPoint id="navPoint-149">
+        <navLabel>
+          <text>29.1 Scope</text>
+        </navLabel>
+        <content src="text/ch048.xhtml#scope" />
+      </navPoint>
+      <navPoint id="navPoint-150">
+        <navLabel>
+          <text>29.2 Size</text>
+        </navLabel>
+        <content src="text/ch048.xhtml#size" />
+      </navPoint>
+      <navPoint id="navPoint-151">
+        <navLabel>
+          <text>29.3 Practical considerations</text>
+        </navLabel>
+        <content src="text/ch048.xhtml#practical-considerations-1" />
+      </navPoint>
+      <navPoint id="navPoint-152">
+        <navLabel>
+          <text>29.4 Formal verification</text>
+        </navLabel>
+        <content src="text/ch048.xhtml#verification" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-153">
+      <navLabel>
+        <text>30 Continuous delivery and deployment</text>
+      </navLabel>
+      <content src="text/ch049.xhtml#cd" />
+      <navPoint id="navPoint-154">
+        <navLabel>
+          <text>30.1 Review and build</text>
+        </navLabel>
+        <content src="text/ch049.xhtml#review-and-build" />
+      </navPoint>
+      <navPoint id="navPoint-155">
+        <navLabel>
+          <text>30.2 Pre-production</text>
+        </navLabel>
+        <content src="text/ch049.xhtml#pre-production" />
+      </navPoint>
+      <navPoint id="navPoint-156">
+        <navLabel>
+          <text>30.3 Production</text>
+        </navLabel>
+        <content src="text/ch049.xhtml#production" />
+      </navPoint>
+      <navPoint id="navPoint-157">
+        <navLabel>
+          <text>30.4 Rollbacks</text>
+        </navLabel>
+        <content src="text/ch049.xhtml#rollbacks" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-158">
+      <navLabel>
+        <text>31 Monitoring</text>
+      </navLabel>
+      <content src="text/ch050.xhtml#monitoring" />
+      <navPoint id="navPoint-159">
+        <navLabel>
+          <text>31.1 Metrics</text>
+        </navLabel>
+        <content src="text/ch050.xhtml#metrics" />
+      </navPoint>
+      <navPoint id="navPoint-160">
+        <navLabel>
+          <text>31.2 Service-level indicators</text>
+        </navLabel>
+        <content src="text/ch050.xhtml#service-level-indicators" />
+      </navPoint>
+      <navPoint id="navPoint-161">
+        <navLabel>
+          <text>31.3 Service-level objectives</text>
+        </navLabel>
+        <content src="text/ch050.xhtml#service-level-objectives" />
+      </navPoint>
+      <navPoint id="navPoint-162">
+        <navLabel>
+          <text>31.4 Alerts</text>
+        </navLabel>
+        <content src="text/ch050.xhtml#alerts" />
+      </navPoint>
+      <navPoint id="navPoint-163">
+        <navLabel>
+          <text>31.5 Dashboards</text>
+        </navLabel>
+        <content src="text/ch050.xhtml#dashboards" />
+        <navPoint id="navPoint-164">
+          <navLabel>
+            <text>31.5.1 Best practices</text>
+          </navLabel>
+          <content src="text/ch050.xhtml#best-practices" />
+        </navPoint>
+      </navPoint>
+      <navPoint id="navPoint-165">
+        <navLabel>
+          <text>31.6 Being on call</text>
+        </navLabel>
+        <content src="text/ch050.xhtml#being-on-call" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-166">
+      <navLabel>
+        <text>32 Observability</text>
+      </navLabel>
+      <content src="text/ch051.xhtml#observability" />
+      <navPoint id="navPoint-167">
+        <navLabel>
+          <text>32.1 Logs</text>
+        </navLabel>
+        <content src="text/ch051.xhtml#logs" />
+      </navPoint>
+      <navPoint id="navPoint-168">
+        <navLabel>
+          <text>32.2 Traces</text>
+        </navLabel>
+        <content src="text/ch051.xhtml#traces" />
+      </navPoint>
+      <navPoint id="navPoint-169">
+        <navLabel>
+          <text>32.3 Putting it all together</text>
+        </navLabel>
+        <content src="text/ch051.xhtml#putting-it-all-together" />
+      </navPoint>
+    </navPoint>
+    <navPoint id="navPoint-170">
+      <navLabel>
+        <text>33 Manageability</text>
+      </navLabel>
+      <content src="text/ch052.xhtml#manageability" />
+    </navPoint>
+    <navPoint id="navPoint-171">
+      <navLabel>
+        <text>Summary</text>
+      </navLabel>
+      <content src="text/ch053.xhtml#maintainability-outro" />
+    </navPoint>
+    <navPoint id="navPoint-172">
+      <navLabel>
+        <text>34 Final words</text>
+      </navLabel>
+      <content src="text/ch054.xhtml#final-words" />
+    </navPoint>
+  </navMap>
+</ncx>

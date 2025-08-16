@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <title>ch032.xhtml</title>
+  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+</head>
+<body epub:type="bodymatter">
+<section id="datastorage" class="level1" data-number="19">
+<h1 data-number="19"><span class="header-section-number">19</span> Data storage</h1>
+<p>Because <em>Cruder</em> is stateless, we were able to scale it out by running multiple application servers behind a load balancer. But as the application handles more load, the number of requests to the relational database increases as well. And since the database is hosted on a single machine, it’s only a matter of time until it reaches its capacity and it starts to degrade.</p>
+<section id="replication-1" class="level2" data-number="19.1">
+<h2 data-number="19.1"><span class="header-section-number">19.1</span> Replication</h2>
+<p>We can increase the read capacity of the database by creating replicas. The most common way of doing that is with a leader-follower topology (see Figure <a href="#fig:singleleader">19.1</a>). In this model, clients send writes (updates, inserts, and deletes) exclusively to the leader, which persists the changes to its write-ahead log. Then, the followers, or replicas, connect to the leader and stream log entries from it, committing them locally. Since log entries have a sequence number, followers can disconnect and reconnect at any time and start from where they left off by communicating to the leader the last sequence number they processed.</p>
+<div class="figure" style="text-align: center">
+<img alt="Single leader replication" width="40%" src="../media/file49.png" />
+<p class="caption">
+Figure 19.1: Single leader replication
+</p>
+</div>
+<p>By creating read-only followers and putting them behind a load balancer, we can increase the read capacity of the database. Replication also increases the availability of the database. For example, the load balancer can automatically take a faulty replica out of the pool when it detects that it’s no longer healthy or available. And when the leader fails, a replica can be reconfigured to take its place. Additionally, individual followers can be used to isolate specific workloads, like expensive analytics queries that are run periodically, so that they don’t impact the leader and other replicas.</p>
+<p>The replication between the leader and the followers can happen either fully synchronously, fully asynchronously, or as a combination of the two.</p>
+<p>If the replication is <em>fully asynchronous</em>, when the leader receives a write, it broadcasts it to the followers and immediately sends a response back to the client without waiting for the followers to acknowledge it. Although this approach minimizes the response time for the client, it’s not fault-tolerant. For example, the leader could crash right after acknowledging a write and before broadcasting it to the followers, resulting in data loss.</p>
+<p>In contrast, if replication is <em>fully synchronous</em>, the leader waits for the write to be acknowledged by the followers before returning a response to the client. This comes with a performance cost since a single slow replica increases the response time of every request. And if any replica is unreachable, the data store becomes unavailable. This approach is not scalable; the more followers there are, the more likely it is that at least one of them is slow or unavailable.</p>
+<p>In practice, relational databases often support a combination of synchronous and asynchronous replication. For example, in PostgreSQL, individual followers can be configured to receive updates synchronously<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>, rather than asynchronously, which is the default. So, for example, we could have a single synchronous follower whose purpose is to act as an up-to-date backup of the leader. That way, if the leader fails, we can fail over to the synchronous follower without incurring any data loss.</p>
+<p>Conceptually, the failover mechanism needs to: detect when the leader has failed, promote the synchronous follower to be the new leader and reconfigure the other replicas to follow it, and ensure client requests are sent to the new leader. Managed solutions like AWS RDS or Azure SQL Database, support read replicas<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> and automated failover<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> out of the box, among other features such as automated patching and backups.</p>
+<p>One caveat of replication is that it only helps to scale out reads, not writes. The other issue is that the entire database needs to fit on a single machine. Although we can work around that by moving some tables from the main database to others running on different nodes, we would only be delaying the inevitable. As you should know by now, we can overcome these limitations with partitioning.</p>
+</section>
+<section id="partitioning-1" class="level2" data-number="19.2">
+<h2 data-number="19.2"><span class="header-section-number">19.2</span> Partitioning</h2>
+<p>Partitioning allows us to scale out a database for both reads and writes. Even though traditional (centralized) relational databases generally don’t support it out of the box, we can implement it at the application layer in principle. However, implementing partitioning at the application layer is challenging and adds a lot of complexity to the system. For starters, we need to decide how to partition the data among the database instances and rebalance it when a partition becomes too hot or too big. Once the data is partitioned, queries that span multiple partitions need to be split into sub-queries and their responses have to be combined (think of aggregations or joins). Also, to support atomic transactions across partitions, we need to implement a distributed transaction protocol, like 2PC. Add to all that the requirement to combine partitioning with replication, and you can see how partitioning at the application layer becomes daunting.</p>
+<p>Taking a step back, the fundamental problem with traditional relational databases is that they have been designed under the assumption they fit on a single beefy machine. Because of that, they support a number of features that are hard to scale, like ACID transactions and joins. Relational databases were designed in an era where disk space was costly, and normalizing the data to reduce the footprint on disk was a priority, even if it came with a significant cost to unnormalize the data at query time with joins.<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a></p>
+<p>Times have changed, and storage is cheap nowadays, while CPU time isn’t. This is why, in the early 2000s, large tech companies began to build bespoke solutions for storing data designed from the ground up with high availability and scalability in mind.</p>
+</section>
+<section id="nosql" class="level2" data-number="19.3">
+<h2 data-number="19.3"><span class="header-section-number">19.3</span> NoSQL</h2>
+<p>These early solutions didn’t support SQL and more generally only implemented a fraction of the features offered by traditional relational data stores. White papers such as Bigtable<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> and Dynamo<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> revolutionized the industry and started a push towards scalable storage layers, resulting in a plethora of open source solutions inspired by them, like HBase and Cassandra.</p>
+<p>Since the first generation of these data stores didn’t support SQL, they were referred to as <em>NoSQL</em>. Nowadays, the designation is misleading as NoSQL stores have evolved to support features, like dialects of SQL, that used to be available only in relational data stores.</p>
+<p>While relational databases support stronger consistency models such as strict serializability, NoSQL stores embrace relaxed consistency models such as eventual and causal consistency to support high availability.</p>
+<p>Additionally, NoSQL stores generally don’t provide joins and rely on the data, often represented as key-value pairs or documents (e.g., JSON), to be unnormalized. A pure key-value store maps an opaque sequence of bytes (key) to an opaque sequence of bytes (value). A document store maps a key to a (possibly hierarchical) document without a strictly enforced schema. The main difference from a key-value store is that documents are interpreted and indexed and therefore can be queried based on their internal structure.</p>
+<p>Finally, since NoSQL stores natively support partitioning for scalability purposes, they have limited support for transactions. For example, Azure Cosmos DB currently only supports transactions scoped to individual partitions. On the other hand, since the data is stored in unnormalized form, there is less need for transactions or joins in the first place.</p>
+<p>Although the data models used by NoSQL stores are generally not relational, we can still use them to model relational data. But if we take a NoSQL store and try to use it as a relational database, we will end up with the worst of both worlds. If used correctly, NoSQL can handle many of the use cases that a traditional relational database can<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a>, while being essentially scalable from day 1.<a href="#fn8" class="footnote-ref" id="fnref8" epub:type="noteref">8</a></p>
+<p>The main requirement for using a NoSQL data store efficiently is to know the access patterns upfront and model the data accordingly; let’s see why that is so important. Take Amazon DynamoDB<a href="#fn9" class="footnote-ref" id="fnref9" epub:type="noteref">9</a>, for example; its main abstraction is a table that contains items. Each item can have different attributes, but it must have a primary key that uniquely identifies an item.</p>
+<p>The primary key can consist of either a single attribute, the <em>partition key</em>, or of two attributes, the <em>partition key</em> and the <em>sort key</em>. As you might suspect, the partition key dictates how the data is partitioned and distributed across nodes, while the sort key defines how the data is sorted within a partition, which allows for efficient range queries.</p>
+<!-- TODO: mention that DynamoDB is a distributed B+Tree (dvassalo) -->
+<p>DynamoDB creates three replicas for each partition and uses state machine replication to keep them in sync<a href="#fn10" class="footnote-ref" id="fnref10" epub:type="noteref">10</a>. Writes are routed to the leader, and an acknowledgment is sent to the client when two out of three replicas have received the write. Reads can be either eventually consistent (pick any replica) or strongly consistent (query the leader). Confusingly enough, the architecture of DynamoDB is very different from the one presented in the Dynamo paper, which we discussed in chapter <a href="#dynamo">11.3</a>.</p>
+<p>At a high level, DynamoDB’s API supports:</p>
+<ul>
+<li>CRUD operations on single items,</li>
+<li>querying multiple items that have the same partition key (optionally specifying conditions on the sort key),</li>
+<li>and scanning the entire table.</li>
+</ul>
+<p>There are no join operations, by design, since they don’t scale well. But that doesn’t mean we should implement joins in the application. Instead, as we will see shortly, we should model our data so that joins aren’t needed in the first place.</p>
+<p>The partition and sort key attributes are used to model the table’s access patterns. For example, suppose the most common access pattern is retrieving the list of orders for a specific customer sorted by date. In that case, it would make sense for the table to have the customer ID as the partition key, and the order creation date as the sort key:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Partition Key</th>
+<th>Sort Key</th>
+<th>Attribute</th>
+<th>Attribute</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>jonsnow</td>
+<td>2021-07-13</td>
+<td>OrderID: 1452</td>
+<td>Status: Shipped</td>
+</tr>
+<tr class="even">
+<td>aryastark</td>
+<td>2021-07-20</td>
+<td>OrderID: 5252</td>
+<td>Status: Placed</td>
+</tr>
+<tr class="odd">
+<td>branstark</td>
+<td>2021-07-22</td>
+<td>OrderID: 5260</td>
+<td>Status: Placed</td>
+</tr>
+</tbody>
+</table>
+<p>Now suppose that we also want the full name of the customer in the list of orders. While, in a relational database, a table contains only entities of a certain type (e.g., customer), in NoSQL, a table can contain entities of multiple types. Thus, we could store both customers and orders within the same table:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Partition Key</th>
+<th>Sort Key</th>
+<th>Attribute</th>
+<th>Attribute</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>jonsnow</td>
+<td>2021-07-13</td>
+<td>OrderID: 1452</td>
+<td>Status: Shipped</td>
+</tr>
+<tr class="even">
+<td>jonsnow</td>
+<td>jonsnow</td>
+<td>FullName: Jon Snow</td>
+<td>Address: …</td>
+</tr>
+<tr class="odd">
+<td>aryastark</td>
+<td>2021-07-20</td>
+<td>OrderID: 5252</td>
+<td>Status: Placed</td>
+</tr>
+<tr class="even">
+<td>aryastark</td>
+<td>aryastark</td>
+<td>FullName: Arya Stark</td>
+<td>Address: …</td>
+</tr>
+</tbody>
+</table>
+<p>Because a customer and its orders have the same partition key, we can now issue a single query that retrieves all entities for the desired customer.</p>
+<p>See what we just did? We have structured the table based on the access patterns so that queries won’t require any joins. Now think for a moment about how you would model the same data in normalized form in a relational database. You would probably have one table for orders and another for customers. And, to perform the same query, a join would be required at query time, which would be slower and harder to scale.</p>
+<p>The previous example is very simple, and DynamoDB supports secondary indexes to model more complex access patterns — local secondary indexes allow for alternate sort keys in the same table, while global secondary indexes allow for different partition and sort keys, with the caveat that index updates are asynchronous and eventually consistent.</p>
+<p>It’s a common misconception that NoSQL data stores are more flexible than relational databases because they can seamlessly scale without modeling the data upfront. Nothing is further from the truth — NoSQL requires a lot more attention to how the data is modeled. Because NoSQL stores are tightly coupled to the access patterns, they are a lot less flexible than relational databases.</p>
+<p>If there is one concept you should take away from this chapter, it’s this: using a NoSQL data store requires identifying the access patterns upfront to model the data accordingly. If you want to learn how to do that, I recommend reading “The DynamoDB Book”<a href="#fn11" class="footnote-ref" id="fnref11" epub:type="noteref">11</a>, even if you plan to use a different NoSQL store.</p>
+<p>As scalable data stores keep evolving, the latest trend is to combine the scalability of NoSQL with the ACID guarantees of relational databases. These new data stores are also referred to as NewSQL<a href="#fn12" class="footnote-ref" id="fnref12" epub:type="noteref">12</a>. While NoSQL data stores prioritize availability over consistency in the face of network partitions, NewSQL stores prefer consistency. The argument behind NewSQL stores is that, with the right design, the reduction in availability caused by enforcing strong consistency is hardly noticeable<a href="#fn13" class="footnote-ref" id="fnref13" epub:type="noteref">13</a> for many applications. That, combined with the fact that perfect 100% availability is not possible anyway (availability is defined in 9s), has spurred the drive to build storage systems that can scale but favor consistency over availability in the presence of network partitions. CockroachDB<a href="#fn14" class="footnote-ref" id="fnref14" epub:type="noteref">14</a> and Spanner<a href="#fn15" class="footnote-ref" id="fnref15" epub:type="noteref">15</a> are well-known examples of NewSQL data stores.</p>
+</section>
+</section>
+<section class="footnotes" epub:type="footnotes">
+<hr />
+<ol>
+<li id="fn1" epub:type="footnote"><p>“PostgreSQL Server Configuration, Replication,” <a href="https://www.postgresql.org/docs/14/runtime-config-replication.html" class="uri">https://www.postgresql.org/docs/14/runtime-config-replication.html</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" epub:type="footnote"><p>“Amazon RDS Read Replicas,” <a href="https://aws.amazon.com/rds/features/read-replicas/" class="uri">https://aws.amazon.com/rds/features/read-replicas/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" epub:type="footnote"><p>“Multi-AZ deployments for high availability,” <a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html" class="uri">https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" epub:type="footnote"><p>That said, reducing storage costs isn’t the only benefit of normalization: it also helps maintain data integrity. If a piece of data is duplicated in multiple places, then to update it, we have to make sure it gets updated everywhere. In contrast, if the data is normalized, we only need to update it in one place.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" epub:type="footnote"><p>“Bigtable: A Distributed Storage System for Structured Data,” <a href="https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf" class="uri">https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" epub:type="footnote"><p>we talked about Dynamo in section <a href="#dynamo">11.3</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7" epub:type="footnote"><p>“AWS re:Invent 2018: Amazon DynamoDB Deep Dive: Advanced Design Patterns for DynamoDB (DAT401),” <a href="https://www.youtube.com/watch?v=HaEPXoXVf2k" class="uri">https://www.youtube.com/watch?v=HaEPXoXVf2k</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8" epub:type="footnote"><p>On the other hand, while we certainly can find ways to scale a relational database, what works on day 1 might not work on day 10 or 100.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9" epub:type="footnote"><p>“Amazon DynamoDB,” <a href="https://aws.amazon.com/dynamodb/" class="uri">https://aws.amazon.com/dynamodb/</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn10" epub:type="footnote"><p>“AWS re:Invent 2018: Amazon DynamoDB Under the Hood: How We Built a Hyper-Scale Database (DAT321),” <a href="https://www.youtube.com/watch?v=yvBR71D0nAQ" class="uri">https://www.youtube.com/watch?v=yvBR71D0nAQ</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn11" epub:type="footnote"><p>“The DynamoDB Book,” <a href="https://www.dynamodbbook.com/" class="uri">https://www.dynamodbbook.com/</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn12" epub:type="footnote"><p>“Andy Pavlo — The official ten-year retrospective of NewSQL databases,” <a href="https://www.youtube.com/watch?v=LwkS82zs65g" class="uri">https://www.youtube.com/watch?v=LwkS82zs65g</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn13" epub:type="footnote"><p>“NewSQL database systems are failing to guarantee consistency, and I blame Spanner,” <a href="https://dbmsmusings.blogspot.com/2018/09/newsql-database-systems-are-failing-to.html" class="uri">https://dbmsmusings.blogspot.com/2018/09/newsql-database-systems-are-failing-to.html</a><a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn14" epub:type="footnote"><p>“CockroachDB,” <a href="https://github.com/cockroachdb/cockroach" class="uri">https://github.com/cockroachdb/cockroach</a><a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn15" epub:type="footnote"><p>we talked about Spanner in section <a href="#spanner">12.4</a><a href="#fnref15" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>

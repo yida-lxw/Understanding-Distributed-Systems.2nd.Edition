@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <title>ch033.xhtml</title>
+  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+</head>
+<body epub:type="bodymatter">
+<section id="dbcaching" class="level1" data-number="20">
+<h1 data-number="20"><span class="header-section-number">20</span> Caching</h1>
+<p>Suppose a significant fraction of requests that <em>Cruder</em> sends to its data store consists of a small pool of frequently accessed entries. In that case, we can improve the application’s performance and reduce the load on the data store by introducing a cache. A <em>cache</em> is a high-speed storage layer that temporarily buffers responses from an <em>origin</em>, like a data store, so that future requests can be served directly from it. It only provides best-effort guarantees, since its state is disposable and can be rebuilt from the origin. We have already seen some applications of caching when discussing the DNS protocol or CDNs.</p>
+<p>For a cache to be cost-effective, the proportion of requests that can be served directly from it (hit ratio) should be high. The <em>hit ratio</em> depends on several factors, such as the universe of cachable objects (the fewer, the better), the likelihood of accessing the same objects repeatedly (the higher, the better), and the size of the cache (the larger, the better).</p>
+<p>As a general rule of thumb, the higher up in the call stack caching is used, the more resources can be saved downstream. This is why the first use case for caching we discussed was client-side HTTP caching. However, it’s worth pointing out that caching is an optimization, and you don’t have a scalable architecture if the origin, e.g., the data store in our case, can’t withstand the load without the cache fronting it. If the access pattern suddenly changes, leading to cache misses, or the cache becomes unavailable, you don’t want your application to fall over (but it’s okay for it to become slower).</p>
+<section id="policies" class="level2" data-number="20.1">
+<h2 data-number="20.1"><span class="header-section-number">20.1</span> Policies</h2>
+<p>When a cache miss occurs, the missing object has to be requested from the origin, which can happen in two ways:</p>
+<ul>
+<li>After getting an “object-not-found” error from the cache, the application requests the object from the origin and updates the cache. In this case, the cache is referred to as a <em>side cache</em>, and it’s typically treated as a key-value store by the application.</li>
+<li>Alternatively, the cache is <em>inline</em>, and it communicates directly with the origin, requesting the missing object on behalf of the application. In this case, the application only ever accesses the cache. We have already seen an example of an inline cache when discussing HTTP caching.</li>
+</ul>
+<p>Because a cache has a limited capacity, one or more entries need to be evicted to make room for new ones when its capacity is reached. Which entry to remove depends on the eviction policy used by the cache and the objects’ access pattern. For example, one commonly used policy is to evict the <em>least recently used</em> (LRU) entry.</p>
+<p>A cache can also have an <em>expiration policy</em> that dictates when an object should be evicted, e.g., a TTL. When an object has been in the cache for longer than its TTL, it expires and can safely be evicted. The longer the expiration time, the higher the hit ratio, but also the higher the likelihood of serving stale and inconsistent data.</p>
+<p>The expiration doesn’t need to occur immediately, and it can be deferred to the next time the entry is requested. In fact, that might be preferable — if the origin (e.g., a data store) is temporarily unavailable, it’s more resilient to return an object with an expired TTL to the application rather than an error.</p>
+<p>An expiry policy based on TTL is a workaround for <em>cache invalidation</em>, which is very hard to implement in practice<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>. For example, if you were to cache the result of a database query, every time any of the data touched by that query changes (which could span thousands of records or more), the cached result would need to be invalidated somehow.</p>
+</section>
+<section id="local-cache" class="level2" data-number="20.2">
+<h2 data-number="20.2"><span class="header-section-number">20.2</span> Local cache</h2>
+<p>The simplest way to implement a cache is to co-locate it with the client. For example, the client could use a simple in-memory hash table or an embeddable key-value store, like RocksDB<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>, to cache responses (see Figure <a href="#fig:processcache">20.1</a>).</p>
+<div class="figure" style="text-align: center">
+<img alt="In-process cache" width="70%" src="../media/file50.png" />
+<p class="caption">
+Figure 20.1: In-process cache
+</p>
+</div>
+<p>Because each client cache is independent of the others, the same objects are duplicated across caches, wasting resources. For example, if every client has a local cache of 1GB, then no matter how many clients there are, the total size of the cache is 1 GB. Also, consistency issues will inevitably arise; for example, two clients might see different versions of the same object.</p>
+<p>Additionally, as the number of clients grows, the number of requests to the origin increases. This issue is exacerbated when clients restart, or new ones come online, and their caches need to be populated from scratch. This can cause a “thundering herd” effect where the downstream origin is hit with a spike of requests. The same can also happen when a specific object that wasn’t accessed before becomes popular all of a sudden.</p>
+<p>Clients can reduce the impact of a thundering herd by <em>coalescing</em> requests for the same object. The idea is that, at any given time, there should be at most one outstanding request per client to fetch a specific object.</p>
+</section>
+<section id="external-cache" class="level2" data-number="20.3">
+<h2 data-number="20.3"><span class="header-section-number">20.3</span> External cache</h2>
+<p>An external cache is a service dedicated to caching objects, typically in memory. Because it’s shared across clients, it addresses some of the drawbacks of local caches at the expense of greater complexity and cost (see Figure <a href="#fig:externalcache">20.2</a>). For example, Redis<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> or Memcached<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a> are popular caching services, also available as managed services on AWS and Azure.</p>
+<div class="figure" style="text-align: center">
+<img alt="Out-of-process cache" width="40%" src="../media/file51.png" />
+<p class="caption">
+Figure 20.2: Out-of-process cache
+</p>
+</div>
+<p>Unlike a local cache, an external cache can increase its throughput and size using replication and partitioning. For example, Redis<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> can automatically partition data across multiple nodes and replicate each partition using a leader-follower protocol.</p>
+<p>Since the cache is shared among its clients, there is only a single version of each object at any given time (assuming the cache is not replicated), which reduces consistency issues. Also, the number of times an object is requested from the origin doesn’t grow with the number of clients.</p>
+<p>Although an external cache decouples clients from the origin, the load merely shifts to the external cache. Therefore, the cache will eventually need to be scaled out if the load increases. When that happens, as little data as possible should be moved around (or dropped) to avoid the cache degrading or the hit ratio dropping significantly. Consistent hashing, or a similar partitioning technique, can help reduce the amount of data that needs to be shuffled when the cache is rebalanced.</p>
+<p>An external cache also comes with a maintenance cost as it’s yet another service that needs to be operated. Additionally, the latency to access it is higher than accessing a local cache because a network call is required.</p>
+<p>If the external cache is down, how should the clients react? You would think it might be okay to bypass the cache and directly hit the origin temporarily. But the origin might not be prepared to withstand a sudden surge of traffic. Consequently, the external cache becoming unavailable could cause a cascading failure, resulting in the origin becoming unavailable as well.</p>
+<p>To avoid that, clients could use an in-process cache as a defense against the external cache becoming unavailable. That said, the origin also needs to be prepared to handle these sudden “attacks” by, e.g., shedding requests; we will discuss a few approaches for achieving that in the book’s resiliency part. What’s important to remember is that caching is an optimization, and the system needs to survive without it at the cost of being slower.</p>
+</section>
+</section>
+<section class="footnotes" epub:type="footnotes">
+<hr />
+<ol>
+<li id="fn1" epub:type="footnote"><p>“Cache coherence,” <a href="https://en.wikipedia.org/wiki/Cache_coherence" class="uri">https://en.wikipedia.org/wiki/Cache_coherence</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" epub:type="footnote"><p>“RocksDB,” <a href="http://rocksdb.org/" class="uri">http://rocksdb.org/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" epub:type="footnote"><p>“Redis,” <a href="https://redis.io/" class="uri">https://redis.io/</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" epub:type="footnote"><p>“Memcached,” <a href="https://memcached.org/" class="uri">https://memcached.org/</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" epub:type="footnote"><p>“Redis cluster tutorial,” <a href="https://redis.io/topics/cluster-tutorial" class="uri">https://redis.io/topics/cluster-tutorial</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>

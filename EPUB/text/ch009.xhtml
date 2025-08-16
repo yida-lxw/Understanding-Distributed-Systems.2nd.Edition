@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <title>ch009.xhtml</title>
+  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+</head>
+<body epub:type="bodymatter">
+<section id="tcp" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Reliable links</h1>
+<p>At the internet layer, the communication between two nodes happens by routing packets to their destination from one router to the next. Two ingredients are required for this: a way to address nodes and a mechanism to route packets across routers.</p>
+<p>Addressing is handled by the IP protocol. For example, IPv6 provides a 128-bit address space, allowing <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>2</mn><mn>128</mn></msup><annotation encoding="application/x-tex">2^{128}</annotation></semantics></math> addresses. To decide where to send a packet, a router needs to consult a local routing table. The table maps a destination address to the address of the next router along the path to that destination. The responsibility of building and communicating the routing tables across routers lies with the Border Gateway Protocol (BGP<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>).</p>
+<p>Now, IP doesn’t guarantee that data sent over the internet will arrive at its destination. For example, if a router becomes overloaded, it might start dropping packets. This is where TCP<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> comes in, a transport-layer protocol that exposes a reliable communication channel between two processes on top of IP. TCP guarantees that a stream of bytes arrives in order without gaps, duplication, or corruption. TCP also implements a set of stability patterns to avoid overwhelming the network and the receiver.</p>
+<section id="reliability" class="level2" data-number="2.1">
+<h2 data-number="2.1"><span class="header-section-number">2.1</span> Reliability</h2>
+<p>To create the illusion of a reliable channel, TCP partitions a byte stream into discrete packets called segments. The segments are sequentially numbered, which allows the receiver to detect holes and duplicates. Every segment sent needs to be acknowledged by the receiver. When that doesn’t happen, a timer fires on the sending side and the segment is retransmitted. To ensure that the data hasn’t been corrupted in transit, the receiver uses a checksum to verify the integrity of a delivered segment.</p>
+</section>
+<section id="connection-lifecycle" class="level2" data-number="2.2">
+<h2 data-number="2.2"><span class="header-section-number">2.2</span> Connection lifecycle</h2>
+<p>A connection needs to be opened before any data can be transmitted on a TCP channel. The operating system manages the connection state on both ends through a <em>socket</em>. The socket keeps track of the state changes of the connection during its lifetime. At a high level, there are three states the connection can be in:</p>
+<ul>
+<li>The opening state in which the connection is being created.</li>
+<li>The established state in which the connection is open and data is being transferred.</li>
+<li>The closing state in which the connection is being closed.</li>
+</ul>
+<p>In reality, this is a simplification, as there are more states<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> than the three above.</p>
+<p>A server must be listening for connection requests from clients before a connection is established. TCP uses a three-way handshake to create a new connection, as shown in Figure <a href="#fig:handshake">2.1</a>:</p>
+<ol type="1">
+<li>The sender picks a random sequence number <em>x</em> and sends a SYN segment to the receiver.</li>
+<li>The receiver increments <em>x</em>, chooses a random sequence number <em>y</em>, and sends back a SYN/ACK segment.</li>
+<li>The sender increments both sequence numbers and replies with an ACK segment and the first bytes of application data.</li>
+</ol>
+<p>The sequence numbers are used by TCP to ensure the data is delivered in order and without holes.</p>
+<div class="figure" style="text-align: center">
+<img alt="Three-way handshake" width="100%" src="../media/file3.png" />
+<p class="caption">
+Figure 2.1: Three-way handshake
+</p>
+</div>
+<p>The handshake introduces a full round-trip in which no application data is sent. So until the connection has been opened, the bandwidth is essentially zero. The lower the round trip time is, the faster the connection can be established. Therefore, putting servers closer to the clients helps reduce this cold-start penalty.</p>
+<p>After the data transmission is complete, the connection needs to be closed to release all resources on both ends. This termination phase involves multiple round-trips. If it’s likely that another transmission will occur soon, it makes sense to keep the connection open to avoid paying the cold-start tax again.</p>
+<p>Moreover, closing a socket doesn’t dispose of it immediately as it transitions to a waiting state (<em>TIME_WAIT</em>) that lasts several minutes and discards any segments received during the wait. The wait prevents delayed segments from a closed connection from being considered part of a new connection. But if many connections open and close quickly, the number of sockets in the waiting state will continue to increase until it reaches the maximum number of sockets that can be open, causing new connection attempts to fail. This is another reason why processes typically maintain connection pools to avoid recreating connections repeatedly.</p>
+</section>
+<section id="flow-control" class="level2" data-number="2.3">
+<h2 data-number="2.3"><span class="header-section-number">2.3</span> Flow control</h2>
+<p>Flow control is a backoff mechanism that TCP implements to prevent the sender from overwhelming the receiver. The receiver stores incoming TCP segments waiting to be processed by the application into a receive buffer, as shown in Figure <a href="#fig:rcwnd">2.2</a>.</p>
+<div class="figure" style="text-align: center">
+<img alt="The receive buffer stores data that hasn&#39;t yet been processed by the destination process." width="100%" src="../media/file4.png" />
+<p class="caption">
+Figure 2.2: The receive buffer stores data that hasn’t yet been processed by the destination process.
+</p>
+</div>
+<p>The receiver also communicates the size of the buffer to the sender whenever it acknowledges a segment, as shown in Figure <a href="#fig:rcwnd1">2.3</a>. Assuming it’s respecting the protocol, the sender avoids sending more data than can fit in the receiver’s buffer.</p>
+<div class="figure" style="text-align: center">
+<img alt="The size of the receive buffer is communicated in the headers of acknowledgment segments." width="100%" src="../media/file5.png" />
+<p class="caption">
+Figure 2.3: The size of the receive buffer is communicated in the headers of acknowledgment segments.
+</p>
+</div>
+<p>This mechanism is not too dissimilar to rate-limiting at the service level, a mechanism that rejects a request when a specific quota is exceeded (see section <a href="#ratelimiting">28.3</a>). But, rather than rate-limiting on an API key or IP address, TCP is rate-limiting on a connection level.</p>
+</section>
+<section id="congestion-control" class="level2" data-number="2.4">
+<h2 data-number="2.4"><span class="header-section-number">2.4</span> Congestion control</h2>
+<p>TCP guards not only against overwhelming the receiver, but also against flooding the underlying network. The sender maintains a so-called <em>congestion window</em>, which represents the total number of outstanding segments that can be sent without an acknowledgment from the other side. The smaller the congestion window is, the fewer bytes can be in flight at any given time, and the less bandwidth is utilized.</p>
+<p>When a new connection is established, the size of the congestion window is set to a system default. Then, for every segment acknowledged, the window increases its size exponentially until it reaches an upper limit. This means we can’t use the network’s full capacity right after a connection is established. The shorter the round-trip time (RTT), the quicker the sender can start utilizing the underlying network’s bandwidth, as shown in Figure <a href="#fig:congestion">2.4</a>.</p>
+<div class="figure" style="text-align: center">
+<img alt="The shorter the RTT, the quicker the sender can start utilizing the underlying network&#39;s bandwidth." width="100%" src="../media/file6.png" />
+<p class="caption">
+Figure 2.4: The shorter the RTT, the quicker the sender can start utilizing the underlying network’s bandwidth.
+</p>
+</div>
+<p>What happens if a segment is lost? When the sender detects a missed acknowledgment through a timeout, a mechanism called <em>congestion avoidance</em> kicks in, and the congestion window size is reduced. From there onwards, the passing of time increases the window size<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a> by a certain amount, and timeouts decrease it by another.</p>
+<p>As mentioned earlier, the size of the congestion window defines the maximum number of bytes that can be sent without receiving an acknowledgment. Because the sender needs to wait for a full round trip to get an acknowledgment, we can derive the maximum theoretical bandwidth by dividing the size of the congestion window by the round trip time:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Bandwidth</mtext><mo>=</mo><mfrac><mtext mathvariant="normal">WinSize</mtext><mtext mathvariant="normal">RTT</mtext></mfrac></mrow><annotation encoding="application/x-tex">
+\text{Bandwidth} = \frac{\text{WinSize}}{\text{RTT}}
+</annotation></semantics></math></p>
+<p>The equation<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> shows that bandwidth is a function of latency. TCP will try very hard to optimize the window size since it can’t do anything about the round-trip time. However, that doesn’t always yield the optimal configuration. Due to the way congestion control works, the shorter the round-trip time, the better the underlying network’s bandwidth is utilized. This is more reason to put servers geographically close to the clients.</p>
+</section>
+<section id="custom-protocols" class="level2" data-number="2.5">
+<h2 data-number="2.5"><span class="header-section-number">2.5</span> Custom protocols</h2>
+<p>TCP’s reliability and stability come at the price of lower bandwidth and higher latencies than the underlying network can deliver. If we drop the stability and reliability mechanisms that TCP provides, what we get is a simple protocol named <em>User Datagram Protocol</em><a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> (UDP) — a connectionless transport layer protocol that can be used as an alternative to TCP.</p>
+<p>Unlike TCP, UDP does not expose the abstraction of a byte stream to its clients. As a result, clients can only send discrete packets with a limited size called <em>datagrams</em>. UDP doesn’t offer any reliability as datagrams don’t have sequence numbers and are not acknowledged. UDP doesn’t implement flow and congestion control either. Overall, UDP is a lean and bare-bones protocol. It’s used to bootstrap custom protocols, which provide some, but not all, of the stability and reliability guarantees that TCP does<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a>.</p>
+<p>For example, in multiplayer games, clients sample gamepad events several times per second and send them to a server that keeps track of the global game state. Similarly, the server samples the game state several times per second and sends these snapshots back to the clients. If a snapshot is lost in transmission, there is no value in retransmitting it as the game evolves in real-time; by the time the retransmitted snapshot would get to the destination, it would be obsolete. This is a use case where UDP shines; in contrast, TCP would attempt to redeliver the missing data and degrade the game’s experience.</p>
+</section>
+</section>
+<section class="footnotes" epub:type="footnotes">
+<hr />
+<ol>
+<li id="fn1" epub:type="footnote"><p>“RFC 4271: A Border Gateway Protocol 4 (BGP-4),” <a href="https://datatracker.ietf.org/doc/html/rfc4271" class="uri">https://datatracker.ietf.org/doc/html/rfc4271</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" epub:type="footnote"><p>“RFC 793: Transmission Control Protocol,” <a href="https://tools.ietf.org/html/rfc793" class="uri">https://tools.ietf.org/html/rfc793</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" epub:type="footnote"><p>“TCP State Diagram,” <a href="https://en.wikipedia.org/wiki/Transmission_Control_Protocol#/media/File:Tcp_state_diagram_fixed_new.svg" class="uri">https://en.wikipedia.org/wiki/Transmission_Control_Protocol#/media/File:Tcp_state_diagram_fixed_new.svg</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" epub:type="footnote"><p>“CUBIC: A New TCP-Friendly High-Speed TCP Variant,” <a href="https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.153.3152&amp;rep=rep1&amp;type=pdf" class="uri">https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.153.3152&amp;rep=rep1&amp;type=pdf</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" epub:type="footnote"><p>“Bandwidth-delay product,” <a href="https://en.wikipedia.org/wiki/Bandwidth-delay_product" class="uri">https://en.wikipedia.org/wiki/Bandwidth-delay_product</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" epub:type="footnote"><p>“RFC 768: User Datagram Protocol,” <a href="https://datatracker.ietf.org/doc/html/rfc768" class="uri">https://datatracker.ietf.org/doc/html/rfc768</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7" epub:type="footnote"><p>As we will later see, HTTP 3 is based on UDP to avoid some of TCP’s shortcomings.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>

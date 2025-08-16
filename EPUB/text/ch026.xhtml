@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <title>ch026.xhtml</title>
+  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+</head>
+<body epub:type="bodymatter">
+<section id="scalability-intro" class="level1 unnumbered unlisted">
+<h1 class="unnumbered unlisted">Introduction</h1>
+<blockquote>
+<p><em>“Treat servers like cattle, not pets.”</em></p>
+<p>– Bill Baker</p>
+</blockquote>
+<p>Over the last few decades, the number of people with access to the internet has steadily climbed. In 1996, only 1% of people worldwide had access to the internet, while today, it’s over 65%. In turn, this has increased the total addressable market of online businesses and led to the need for scalable systems that can handle millions of concurrent users.</p>
+<p>For an application to scale, it must run without performance degradations as load increases. And as mentioned in chapter <a href="#introduction">1</a>, the only long-term solution for increasing the application’s capacity is to architect it so that it can scale horizontally.</p>
+<p>In this part, we will walk through the journey of scaling a simple CRUD web application called <em>Cruder</em>. <em>Cruder</em> is comprised of a single-page JavaScript application that communicates with an application server through a RESTful HTTP API. The server uses the local disk to store large files, like images and videos, and a relational database to persist the application’s state. Both the database and the application server are hosted on the same machine, which is managed by a compute platform like AWS EC2. Also, the server’s public IP address is advertised by a managed DNS service, like AWS Route 53<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>.</p>
+<p>Users interact with <em>Cruder</em> through their browsers. Typically, a browser issues a DNS request to resolve the domain name to an IP address (if it doesn’t have it cached already), opens a TLS connection with the server, and sends its first HTTP <em>GET</em> request to it (see Figure <a href="#fig:cruder">13.2</a>).</p>
+<div class="figure" style="text-align: center">
+<img alt="Cruder&#39;s architecture" width="70%" src="../media/file33.png" />
+<p class="caption">
+Figure 13.2: Cruder’s architecture
+</p>
+</div>
+<p>Although this architecture is good enough for a proof of concept, it’s not scalable or fault-tolerant. Of course, not all applications need to be highly available and scalable, but since you are reading this book to learn how such applications are built, we can assume that the application’s backend will eventually need to serve millions of requests per second.</p>
+<p>And so, as the number of requests grows, the application server will require more resources (e.g., CPU, memory, disk, network) and eventually reach its capacity, and its performance will start to degrade. Similarly, as the database stores more data and serves more queries, it will inevitably slow down as it competes for resources with the application server.</p>
+<p>The simplest and quickest way to increase the capacity is to <em>scale up</em> the machine hosting the application. For example, we could:</p>
+<ul>
+<li>increase the number of threads capable of running simultaneously by provisioning more processors or cores,</li>
+<li>increase disk throughput by provisioning more disks (RAID),</li>
+<li>increase network throughput by provisioning more NICs,</li>
+<li>reduce random disk access latency by provisioning solid-state disks (SSD),</li>
+<li>or reduce page faults by provisioning more memory.</li>
+</ul>
+<p>The caveat is that the application needs to be able to leverage the additional hardware at its disposal. For example, adding more cores to a single-threaded application will not make much difference. More importantly, when we’ve maxed out on the hardware front, the application will eventually hit a hard physical limit that we can’t overcome no matter how much money we are willing to throw at it.</p>
+<p>The alternative to scaling up is to <em>scale out</em> by distributing the application across multiple nodes. Although this makes the application more complex, eventually it will pay off. For example, we can move the database to a dedicated machine as a first step. By doing that, we have increased the capacity of both the server and the database since they no longer have to compete for resources. This is an example of a more general pattern called <em>functional decomposition</em>: breaking down an application into separate components, each with its own well-defined responsibility (see Figure <a href="#fig:cruder-split">13.3</a>).</p>
+<div class="figure" style="text-align: center">
+<img alt="Moving the database to its own dedicated machine is an example of functional decomposition" width="70%" src="../media/file34.png" />
+<p class="caption">
+Figure 13.3: Moving the database to its own dedicated machine is an example of functional decomposition
+</p>
+</div>
+<p>As we will repeatedly see in the following chapters, there are other two general patterns that we can exploit (and combine) to build scalable applications: splitting data into partitions and distributing them among nodes (<em>partitioning</em>) and replicating functionality or data across nodes, also known as horizontal scaling (<em>replication</em>). In the following chapters, we will explore techniques based on those patterns for further increasing <em>Cruder</em>’s capacity, which require increasingly more effort to exploit.</p>
+<p>Chapter <a href="#httpcaching">14</a> discusses the use of client-side caching to reduce the number of requests hitting the application.</p>
+<p>Chapter <a href="#cdn">15</a> describes using a content delivery network (CDN), a geographically distributed network of managed reverse proxies, to further reduce the number of requests the application needs to handle.</p>
+<p>Chapter <a href="#partitioning">16</a> dives into partitioning, a technique used by CDNs, and pretty much any distributed data store, to handle large volumes of data. The chapter explores different partitioning strategies, such as range and hash partitioning, and the challenges that partitioning introduces.</p>
+<p>Chapter <a href="#filestorage">17</a> discusses the benefits of offloading the storage of large static files, such as images and videos, to a managed file store. It then describes the architecture of Azure Storage, a highly available and scalable file store.</p>
+<p>Chapter <a href="#load-balancing">18</a> talks about how to increase the application’s capacity by load-balancing requests across a pool of servers. The chapter starts with a simple approach based on DNS and then explores more flexible solutions that operate at the transport and application layers of the network stack.</p>
+<p>Chapter <a href="#datastorage">19</a> describes how to scale out the application’s relational database using replication and partitioning and the challenges that come with it. It then introduces NoSQL data stores as a solution to these challenges and recounts their evolution since their initial adoption in the industry.</p>
+<p>Chapter <a href="#dbcaching">20</a> takes a stab at discussing caching from a more general point of view by diving into the benefits and pitfalls of putting a cache in front of the application’s data store. Although caching is a deceptively simple technique, it can create subtle consistency and operational issues that are all too easy to dismiss.</p>
+<p>Chapter <a href="#microservices">21</a> talks about scaling the development of the application across multiple teams by decomposing it into independently deployable services. Next, it introduces the concept of an API gateway as a means for external clients to communicate with the backend after it has been decomposed into separated services.</p>
+<p>Chapter <a href="#controlplane">22</a> describes the benefits of separating the serving of client requests (<em>data plane</em>) from the management of the system’s metadata and configuration (<em>control plane</em>), which is a common pattern in large-scale systems.</p>
+<p>Chapter <a href="#messaging">23</a> explores the use of asynchronous messaging channels to decouple the communication between services, allowing two services to communicate even if one of them is temporarily unavailable. Messaging offers many other benefits, which we will explore in the chapter along with its best practices and pitfalls.</p>
+</section>
+<section class="footnotes" epub:type="footnotes">
+<hr />
+<ol>
+<li id="fn1" epub:type="footnote"><p>“Amazon Route 53,” <a href="https://aws.amazon.com/route53/" class="uri">https://aws.amazon.com/route53/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>

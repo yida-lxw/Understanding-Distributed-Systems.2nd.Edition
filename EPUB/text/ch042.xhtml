@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <title>ch042.xhtml</title>
+  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+</head>
+<body epub:type="bodymatter">
+<section id="faultisolation" class="level1" data-number="26">
+<h1 data-number="26"><span class="header-section-number">26</span> Fault isolation</h1>
+<p>So far, we have discussed how to address infrastructure faults with redundancy, but there are other kinds of failures that we can’t tolerate with redundancy alone because of their high degree of correlation.</p>
+<p>For example, suppose a specific user sends malformed requests (deliberately or not) that cause the servers handling them to crash because of a bug. Since the bug is in the code, it doesn’t matter how many DCs and regions our application is deployed to; if the user’s requests can land anywhere, they can affect all DCs and regions. Due to their nature, these requests are sometimes referred to as poison pills.</p>
+<p>Similarly, if the requests of a specific user require a lot more resources than others, they can degrade the performance for every other user (aka noisy neighbor effect).</p>
+<p>The main issue in the previous examples is that the blast radius of poison pills and noisy neighbors is the entire application. To reduce it, we can partition the application’s stack by user so that the requests of a specific user can only ever affect the partition it was assigned to.<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> That way, even if a user is degrading a partition, the issue is isolated from the rest of the system.</p>
+<p>For example, suppose we have 6 instances of a stateless service behind a load balancer, divided into 3 partitions (see Figure <a href="#fig:bulkheadpartition">26.1</a>). In this case, a noisy or poisonous user can only ever impact 33 percent of users. And as the number of partitions increases, the blast radius decreases further.</p>
+<div class="figure" style="text-align: center">
+<img alt="Service instances partitioned into 3 partitions" width="90%" src="../media/file65.png" />
+<p class="caption">
+Figure 26.1: Service instances partitioned into 3 partitions
+</p>
+</div>
+<p>The use of partitions for fault isolation is also referred to as the <em>bulkhead pattern</em>, named after the compartments of a ship’s hull. If one compartment is damaged and fills up with water, the leak is isolated to that partition and doesn’t spread to the rest of the ship.</p>
+<section id="shuffle-sharding" class="level2" data-number="26.1">
+<h2 data-number="26.1"><span class="header-section-number">26.1</span> Shuffle sharding</h2>
+<p>The problem with partitioning is that users who are unlucky enough to land on a degraded partition are impacted as well. For stateless services, there is a very simple, yet powerful, variation of partitioning called shuffle sharding<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> that can help mitigate that.</p>
+<p>The idea is to introduce <em>virtual partitions</em> composed of random (but permanent) subsets of service instances. This makes it much more unlikely for two users to be allocated to the same partition as each other.</p>
+<p>Let’s go back to our previous example of a stateless service with 6 instances. How many combinations of virtual partitions with 2 instances can we build out of 6 instances? If you recall the combinations formula from your high school statistics class, the answer is 15:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mrow><mi>n</mi><mi>!</mi></mrow><mrow><mi>r</mi><mi>!</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>n</mi><mo>−</mo><mi>r</mi><mo stretchy="true" form="postfix">)</mo></mrow><mi>!</mi></mrow></mfrac><mo>=</mo><mfrac><mrow><mn>6</mn><mi>!</mi></mrow><mrow><mn>2</mn><mi>!</mi><mn>4</mn><mi>!</mi></mrow></mfrac><mo>=</mo><mn>15</mn></mrow><annotation encoding="application/x-tex">
+\frac{n!}{r!(n - r)!} = \frac{6!}{2!4!} = 15
+</annotation></semantics></math></p>
+<p>There are now 15 partitions for a user to be assigned to, while before, we had only 3, which makes it a lot less likely for two users to end up in the same partition. The caveat is that virtual partitions partially overlap (see Figure <a href="#fig:bulkheadshuffle">26.2</a>). But by combining shuffle sharding with a load balancer that removes faulty instances, and clients that retry failed requests, we can build a system with much better fault isolation than one with physical partitions alone.</p>
+<div class="figure" style="text-align: center">
+<img alt="Virtual partitions are far less likely to fully overlap with each other." width="90%" src="../media/file66.png" />
+<p class="caption">
+Figure 26.2: Virtual partitions are far less likely to fully overlap with each other.
+</p>
+</div>
+</section>
+<section id="cellarch" class="level2" data-number="26.2">
+<h2 data-number="26.2"><span class="header-section-number">26.2</span> Cellular architecture</h2>
+<p>In the previous examples, we discussed partitioning in the context of stateless services. We can take it up a notch and partition the entire application stack, including its dependencies (load balancers, compute services, storage services, etc.), by user<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> into <em>cells</em><a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>. Each cell is completely independent of others, and a gateway service is responsible for routing requests to the right cells.</p>
+<p>We have already seen an example of a “cellular” architecture when discussing Azure Storage in Chapter <a href="#filestorage">17</a>. In Azure Storage, a cell is a storage cluster, and accounts are partitioned across storage clusters (see Figure <a href="#fig:aslayers2">26.3</a>).</p>
+<div class="figure" style="text-align: center">
+<img alt="Each storage cluster (stamp) is a cell in Azure Storage." width="80%" src="../media/file44.png" />
+<p class="caption">
+Figure 26.3: Each storage cluster (stamp) is a cell in Azure Storage.
+</p>
+</div>
+<p>An unexpected benefit of cellular architectures comes from setting limits to the maximum capacity of a cell. That way, when the system needs to scale out, a new cell is added rather than scaling out existing ones. Since a cell has a maximum size, we can thoroughly test and benchmark it at that size, knowing that we won’t have any surprises in the future and hit some unexpected brick wall.</p>
+</section>
+</section>
+<section class="footnotes" epub:type="footnotes">
+<hr />
+<ol>
+<li id="fn1" epub:type="footnote"><p>We discussed partitioning in chapter <a href="#partitioning">16</a> from a scalability point of view.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" epub:type="footnote"><p>“Shuffle Sharding: Massive and Magical Fault Isolation,” <a href="https://aws.amazon.com/blogs/architecture/shuffle-sharding-massive-and-magical-fault-isolation/" class="uri">https://aws.amazon.com/blogs/architecture/shuffle-sharding-massive-and-magical-fault-isolation/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" epub:type="footnote"><p>Partitioning by user is just an example; we could partition just as well by physical location, workload, or any other dimension that makes sense for the application.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" epub:type="footnote"><p>“New Relic case: Huge scale, small clusters: Using Cells to scale in the Cloud,” <a href="https://www.youtube.com/watch?v=eMikCXiBlOA" class="uri">https://www.youtube.com/watch?v=eMikCXiBlOA</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>

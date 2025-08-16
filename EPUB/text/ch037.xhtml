@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <title>ch037.xhtml</title>
+  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+</head>
+<body epub:type="bodymatter">
+<section id="scalability-outro" class="level1 unnumbered unlisted">
+<h1 class="unnumbered unlisted">Summary</h1>
+<p>Building scalable applications boils down to exploiting three orthogonal patterns:</p>
+<ul>
+<li>breaking the application into separate services, each with its own well-defined responsibility (<em>functional decomposition</em>);</li>
+<li>splitting data into partitions and distributing them across nodes (<em>partitioning</em>);</li>
+<li>replicating functionality or data across nodes (<em>replication</em>).</li>
+</ul>
+<p>We have seen plenty of applications of these patterns over the past few chapters. By now, you should have a feel for the pros and cons of each pattern.</p>
+<p>There is another message I subtly tried to convey: there is a small subset of managed services that you can use to build a surprisingly large number of applications. The main attraction of managed services is that someone else gets paged for them.<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a></p>
+<p>Depending on which cloud provider you are using, the name of the services and their APIs differ somewhat, but conceptually they serve the same use cases. You should be familiar with some way to run your application instances in the cloud (e.g., EC2) and load-balance traffic to them (e.g., ELB). And since you want your applications to be stateless, you also need to be familiar with a file store (e.g., S3), a key-value/document store (e.g., DynamoDB), and a messaging service (e.g., SQS, Kinesis). I would argue that these technologies are reasonable enough defaults for building a large number of scalable applications. Once you have a scalable core, you can add optimizations, such as caching in the form of managed Redis/Memcached or CDNs.</p>
+<!--chapter:end:markdown/Scalability.Rmd-->
+</section>
+<section class="footnotes" epub:type="footnotes">
+<hr />
+<ol>
+<li id="fn1" epub:type="footnote"><p>As we will discuss in Part V, maintaining a service is no small feat.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>

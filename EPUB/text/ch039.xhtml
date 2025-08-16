@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <title>ch039.xhtml</title>
+  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+</head>
+<body epub:type="bodymatter">
+<section id="resiliency-intro" class="level1 unnumbered unlisted">
+<h1 class="unnumbered unlisted">Introduction</h1>
+<blockquote>
+<p><em>“Anything that can go wrong will go wrong.”</em></p>
+<p>– Murphy’s law</p>
+</blockquote>
+<p>In the last part, we discussed the three fundamental scalability patterns: functional decomposition, data partitioning, and replication. They all have one thing in common: they increase the number of moving parts (machines, services, processes, etc.) in our applications. But since every part has a probability of failing, the more moving parts there are, the higher the chance that any of them will fail. Eventually, anything that can go wrong will go wrong <a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>; power outages, hardware faults, software crashes, memory leaks — you name it.</p>
+<p>Remember when we talked about availability and “nines” in chapter <a href="#introduction">1</a>? Well, to guarantee just two nines, an application can only be unavailable for up to 15 minutes a day. That’s very little time to take any manual action when something goes wrong. And if we strive for three nines, we only have 43 minutes per <em>month</em> available. Clearly, the more nines we want, the faster our systems need to detect, react to, and repair faults as they occur. In this part, we will discuss a variety of resiliency best practices and patterns to achieve that.</p>
+<p>To build fault-tolerant applications, we first need to have an idea of what can go wrong. In chapter <a href="#failure-causes">24</a>, we will explore some of the most common root causes of failures.</p>
+<p>Chapter <a href="#redundancy">25</a> describes how to use redundancy, the replication of functionality or state, to increase the availability of a system. As we will learn, redundancy is only helpful when the redundant nodes can’t fail for the same reason at the same time, i.e., when failures are not correlated.</p>
+<p>Chapter <a href="#faultisolation">26</a> discusses how to isolate correlated failures by partitioning resources and then describes two very powerful forms of partitioning: shuffle sharding and cellular architectures.</p>
+<p>Chapter <a href="#downstream-resiliency">27</a> dives into more tactical resiliency patterns for tolerating failures of downstream dependencies that you can apply to existing systems with few changes, like timeouts and retries.</p>
+<p>Chapter <a href="#upstream-resiliency">28</a> discusses resiliency patterns, like load shedding and rate-limiting, for protecting systems against overload from upstream dependencies.</p>
+</section>
+<section class="footnotes" epub:type="footnotes">
+<hr />
+<ol>
+<li id="fn1" epub:type="footnote"><p>Also known as Murphy’s law<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>

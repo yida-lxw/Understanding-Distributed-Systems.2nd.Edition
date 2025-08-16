@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <title>ch043.xhtml</title>
+  <style>
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+</head>
+<body epub:type="bodymatter">
+<section id="downstream-resiliency" class="level1" data-number="27">
+<h1 data-number="27"><span class="header-section-number">27</span> Downstream resiliency</h1>
+<p>Now that we have discussed how to reduce the impact of faults at the architectural level with redundancy and partitioning, we will dive into tactical resiliency patterns that stop faults from propagating from one component or service to another. In this chapter, we will discuss patterns that protect a service from failures of downstream dependencies.</p>
+<section id="timeout" class="level2" data-number="27.1">
+<h2 data-number="27.1"><span class="header-section-number">27.1</span> Timeout</h2>
+<p>When a network call is made, it’s best practice to configure a timeout to fail the call if no response is received within a certain amount of time. If the call is made without a timeout, there is a chance it will never return, and as mentioned in chapter <a href="#failure-causes">24</a>, network calls that don’t return lead to resource leaks. Thus, the role of timeouts is to detect connectivity faults and stop them from cascading from one component to another. In general, timeouts are a must-have for operations that can potentially never return, like acquiring a mutex.</p>
+<p>Unfortunately, some network APIs don’t have a way to set a timeout in the first place, while others have no timeout configured by default. For example, JavaScript’s <em>XMLHttpRequest</em> is <em>the</em> web API to retrieve data from a server asynchronously, and its default timeout is zero<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>, which means there is no timeout:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> xhr <span class="op">=</span> <span class="kw">new</span> <span class="bu">XMLHttpRequest</span>()<span class="op">;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>xhr<span class="op">.</span><span class="fu">open</span>(<span class="st">&quot;GET&quot;</span><span class="op">,</span> <span class="st">&quot;/api&quot;</span><span class="op">,</span> <span class="kw">true</span>)<span class="op">;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">// No timeout by default, so it needs to be set explicitly!</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>xhr<span class="op">.</span><span class="at">timeout</span> <span class="op">=</span> <span class="dv">10000</span><span class="op">;</span> <span class="co">// 10K milliseconds</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>xhr<span class="op">.</span><span class="at">onload</span> <span class="op">=</span> <span class="kw">function</span> () {</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Request finished</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>xhr<span class="op">.</span><span class="at">ontimeout</span> <span class="op">=</span> <span class="kw">function</span> (e) {</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Request timed out</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>xhr<span class="op">.</span><span class="fu">send</span>(<span class="kw">null</span>)<span class="op">;</span></span></code></pre></div>
+<p>The <em>fetch</em> web API is a modern replacement for <em>XMLHttpRequest</em> that uses Promises. When the fetch API was initially introduced, there was no way to set a timeout at all<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>. Browsers have only later added support for timeouts through the Abort API<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>. Things aren’t much rosier for Python; the popular <em>requests</em> library uses a default timeout of infinity<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>. And Go’s <em>HTTP package</em> doesn’t use timeouts<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> by default.</p>
+<p>Modern HTTP clients for Java and .NET do a better job and usually, come with default timeouts. For example, .NET Core <em>HttpClient</em> has a default timeout of 100 seconds<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a>. It’s lax but arguably better than not having a timeout at all.</p>
+<p>As a rule of thumb, always set timeouts when making network calls, and be wary of third-party libraries that make network calls but don’t expose settings for timeouts.</p>
+<p>But how do we determine a good timeout duration? One way is to base it on the desired false timeout rate<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a>. For example, suppose we have a service calling another, and we are willing to accept that 0.1% of downstream requests that would have eventually returned a response time out (i.e., 0.1% false timeout rate). To accomplish that, we can configure the timeout based on the 99.9th percentile of the downstream service’s response time.</p>
+<p>We also want to have good monitoring in place to measure the entire lifecycle of a network call, like the duration of the call, the status code received, and whether a timeout was triggered. We will talk more about monitoring later in the book, but the point I want to make here is that we have to measure what happens at the integration points of our systems, or we are going to have a hard time debugging production issues.</p>
+<p>Ideally, a network call should be wrapped within a library function that sets a timeout and monitors the request so that we don’t have to remember to do this for each call. Alternatively, we can also use a reverse proxy co-located on the same machine, which intercepts remote calls made by our process. The proxy can enforce timeouts and monitor calls, relieving our process ofthis responsibility. We talked about this in section <a href="#l7lb">18.3</a> when discussing the sidecar pattern and the service mesh.</p>
+</section>
+<section id="retry" class="level2" data-number="27.2">
+<h2 data-number="27.2"><span class="header-section-number">27.2</span> Retry</h2>
+<p>We know by now that a client should configure a timeout when making a network request. But what should it do when the request fails or times out? The client has two options at that point: it can either fail fast or retry the request. If a short-lived connectivity issue caused the failure or timeout, then retrying after some <em>backoff time</em> has a high probability of succeeding. However, if the downstream service is overwhelmed, retrying immediately after will only worsen matters. This is why retrying needs to be slowed down with increasingly longer delays between the individual retries until either a maximum number of retries is reached or enough time has passed since the initial request.</p>
+<section id="exponential-backoff" class="level3" data-number="27.2.1">
+<h3 data-number="27.2.1"><span class="header-section-number">27.2.1</span> Exponential backoff</h3>
+<p>To set the delay between retries, we can use a <em>capped exponential function</em>, where the delay is derived by multiplying the initial backoff duration by a constant that increases exponentially after each attempt, up to some maximum value (the cap):</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">delay</mtext><mo>=</mo><mi>m</mi><mi>i</mi><mi>n</mi><mrow><mo stretchy="true" form="prefix">(</mo><mtext mathvariant="normal">cap</mtext><mo>,</mo><mtext mathvariant="normal">initial-backoff</mtext><mo>⋅</mo><msup><mn>2</mn><mtext mathvariant="normal">attempt</mtext></msup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\text{delay} = min(\text{cap}, \text{initial-backoff} \cdot 2^{\text{attempt}})</annotation></semantics></math></p>
+<p>For example, if the cap is set to 8 seconds, and the initial backoff duration is 2 seconds, then the first retry delay is 2 seconds, the second is 4 seconds, the third is 8 seconds, and any further delay will be capped to 8 seconds.</p>
+<p>Although exponential backoff does reduce the pressure on the downstream dependency, it still has a problem. When the downstream service is temporarily degraded, multiple clients will likely see their requests failing around the same time. This will cause clients to retry simultaneously, hitting the downstream service with load spikes that further degrade it, as shown in Figure <a href="#fig:retrystorm">27.1</a>.</p>
+<div class="figure" style="text-align: center">
+<img alt="Retry storm" width="100%" src="../media/file67.png" />
+<p class="caption">
+Figure 27.1: Retry storm
+</p>
+</div>
+<p>To avoid this herding behavior, we can introduce random jitter<a href="#fn8" class="footnote-ref" id="fnref8" epub:type="noteref">8</a> into the delay calculation. This spreads retries out over time, smoothing out the load to the downstream service:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">delay</mtext><mo>=</mo><mi>r</mi><mi>a</mi><mi>n</mi><mi>d</mi><mi>o</mi><mi>m</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mi>m</mi><mi>i</mi><mi>n</mi><mrow><mo stretchy="true" form="prefix">(</mo><mtext mathvariant="normal">cap</mtext><mo>,</mo><mtext mathvariant="normal">initial-backoff</mtext><mo>⋅</mo><msup><mn>2</mn><mtext mathvariant="normal">attempt</mtext></msup><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\text{delay} = random(0, min(\text{cap}, \text{initial-backoff} \cdot 2^{\text{attempt}}))</annotation></semantics></math></p>
+<p>Actively waiting and retrying failed network requests isn’t the only way to implement retries. In batch applications that don’t have strict real-time requirements, a process can park a failed request into a <em>retry queue</em>. The same process, or possibly another, can read from the same queue later and retry the failed requests.</p>
+<p>Just because a network call can be retried doesn’t mean it should be. If the error is not short-lived, for example, because the process is not authorized to access the remote endpoint, it makes no sense to retry the request since it will fail again. In this case, the process should fail fast and cancel the call right away. And as discussed in chapter <a href="#idempotency">5.7</a>, we should also understand the consequences of retrying a network call that isn’t idempotent and whose side effects can affect the application’s correctness.</p>
+</section>
+<section id="retry-amplification" class="level3" data-number="27.2.2">
+<h3 data-number="27.2.2"><span class="header-section-number">27.2.2</span> Retry amplification</h3>
+<p>Suppose that handling a user request requires going through a chain of three services. The user’s client calls service A, which calls service B, which in turn calls service C. If the intermediate request from service B to service C fails, should B retry the request or not? Well, if B does retry it, A will perceive a longer execution time for its request, making it more likely to hit A’s timeout. If that happens, A retries the request, making it more likely for the client to hit its timeout and retry.</p>
+<p>Having retries at multiple levels of the dependency chain can amplify the total number of retries — the deeper a service is in the chain, the higher the load it will be exposed to due to retry amplification (see Figure <a href="#fig:retryamplification">27.2</a>).</p>
+<div class="figure" style="text-align: center">
+<img alt="Retry amplification in action" width="100%" src="../media/file68.png" />
+<p class="caption">
+Figure 27.2: Retry amplification in action
+</p>
+</div>
+<p>And if the pressure gets bad enough, this behavior can easily overload downstream services. That’s why, when we have long dependency chains, we should consider retrying at a single level of the chain and failing fast in all the others.</p>
+</section>
+</section>
+<section id="circuit-breaker" class="level2" data-number="27.3">
+<h2 data-number="27.3"><span class="header-section-number">27.3</span> Circuit breaker</h2>
+<p>Suppose a service uses timeouts to detect whether a downstream dependency is unavailable and retries to mitigate transient failures. If the failures aren’t transient and the downstream dependency remains unresponsive, what should it do then? If the service keeps retrying failed requests, it will necessarily become slower for its clients. In turn, this slowness can spread to the rest of the system.</p>
+<p>To deal with non-transient failures, we need a mechanism that detects long-term degradations of downstream dependencies and stops new requests from being sent downstream in the first place. After all, the fastest network call is the one we don’t have to make. The mechanism in question is the <em>circuit breaker</em>, inspired by the same functionality implemented in electrical circuits.</p>
+<p>The goal of the circuit breaker is to allow a sub-system to fail without slowing down the caller. To protect the system, calls to the failing sub-system are temporarily blocked. Later, when the sub-system recovers and failures stop, the circuit breaker allows calls to go through again.</p>
+<p>Unlike retries, circuit breakers prevent network calls entirely, making the pattern particularly useful for non-transient faults. In other words, retries are helpful when the expectation is that the next call will succeed, while circuit breakers are helpful when the expectation is that the next call will fail.</p>
+<p>A circuit breaker can be implemented as a state machine with three states: open, closed, and half-open (see Figure <a href="#fig:cb">27.3</a>).</p>
+<div class="figure" style="text-align: center">
+<img alt="Circuit breaker state machine" width="80%" src="../media/file69.png" />
+<p class="caption">
+Figure 27.3: Circuit breaker state machine
+</p>
+</div>
+<p>In the closed state, the circuit breaker merely acts as a pass-through for network calls. In this state, the circuit breaker tracks the number of failures, like errors and timeouts. If the number goes over a certain threshold within a predefined time interval, the circuit breaker trips and opens the circuit.</p>
+<p>When the circuit is open, network calls aren’t attempted and fail immediately. As an open circuit breaker can have business implications, we need to consider what should happen when a downstream dependency is down. If the dependency is non-critical, we want our service to degrade gracefully rather than to stop entirely. Think of an airplane that loses one of its non-critical sub-systems in flight; it shouldn’t crash but rather gracefully degrade to a state where the plane can still fly and land. Another example is Amazon’s front page; if the recommendation service is unavailable, the page renders without recommendations. It’s a better outcome than failing to render the whole page entirely.</p>
+<p>After some time has passed, the circuit breaker gives the downstream dependency another chance and transitions to the half-open state. In the half-open state, the next call is allowed to pass through to the downstream service. If the call succeeds, the circuit breaker transitions to the closed state; if the call fails instead, it transitions back to the open state.</p>
+<p>You might think that’s all there is to understand how a circuit breaker works, but the devil is in the details. For example, how many failures are enough to consider a downstream dependency down? How long should the circuit breaker wait to transition from the open to the half-open state? It really depends on the specific context; only by using data about past failures can we make an informed decision.</p>
+</section>
+</section>
+<section class="footnotes" epub:type="footnotes">
+<hr />
+<ol>
+<li id="fn1" epub:type="footnote"><p>“Web APIs: XMLHttpRequest.timeout,” <a href="https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/timeout" class="uri">https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/timeout</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" epub:type="footnote"><p>“Add a timeout option, to prevent hanging,” <a href="https://github.com/whatwg/fetch/issues/951" class="uri">https://github.com/whatwg/fetch/issues/951</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" epub:type="footnote"><p>“Web APIs: AbortController,” <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortController" class="uri">https://developer.mozilla.org/en-US/docs/Web/API/AbortController</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" epub:type="footnote"><p>“Requests Quickstart: Timeouts,” <a href="https://requests.readthedocs.io/en/master/user/quickstart/#timeouts" class="uri">https://requests.readthedocs.io/en/master/user/quickstart/#timeouts</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" epub:type="footnote"><p>“net/http: make default configs have better timeouts,” <a href="https://github.com/golang/go/issues/24138" class="uri">https://github.com/golang/go/issues/24138</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" epub:type="footnote"><p>“HttpClient.Timeout Property,” <a href="https://docs.microsoft.com/en-us/dotnet/api/system.net.http.httpclient.timeout?view=net-6.0#remarks" class="uri">https://docs.microsoft.com/en-us/dotnet/api/system.net.http.httpclient.timeout?view=net-6.0#remarks</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7" epub:type="footnote"><p>“Timeouts, retries, and backoff with jitter,” <a href="https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/" class="uri">https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8" epub:type="footnote"><p>“Exponential Backoff And Jitter,” <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/" class="uri">https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+</body>
+</html>
