@@ -120,49 +120,49 @@
       </navPoint>
       <navPoint id="navPoint-18">
         <navLabel>
-          <text>2.3 Flow control</text>
+          <text>2.3 流量控制</text>
         </navLabel>
         <content src="text/ch009.xhtml#flow-control" />
       </navPoint>
       <navPoint id="navPoint-19">
         <navLabel>
-          <text>2.4 Congestion control</text>
+          <text>2.4 拥塞控制</text>
         </navLabel>
         <content src="text/ch009.xhtml#congestion-control" />
       </navPoint>
       <navPoint id="navPoint-20">
         <navLabel>
-          <text>2.5 Custom protocols</text>
+          <text>2.5 自定义协议</text>
         </navLabel>
         <content src="text/ch009.xhtml#custom-protocols" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-21">
       <navLabel>
-        <text>3 Secure links</text>
+        <text>3 安全链接</text>
       </navLabel>
       <content src="text/ch010.xhtml#tls" />
       <navPoint id="navPoint-22">
         <navLabel>
-          <text>3.1 Encryption</text>
+          <text>3.1 加密</text>
         </navLabel>
         <content src="text/ch010.xhtml#encryption" />
       </navPoint>
       <navPoint id="navPoint-23">
         <navLabel>
-          <text>3.2 Authentication</text>
+          <text>3.2 认证</text>
         </navLabel>
         <content src="text/ch010.xhtml#authentication" />
       </navPoint>
       <navPoint id="navPoint-24">
         <navLabel>
-          <text>3.3 Integrity</text>
+          <text>3.3 数据完整性</text>
         </navLabel>
         <content src="text/ch010.xhtml#integrity" />
       </navPoint>
       <navPoint id="navPoint-25">
         <navLabel>
-          <text>3.4 Handshake</text>
+          <text>3.4 握手</text>
         </navLabel>
         <content src="text/ch010.xhtml#handshake" />
       </navPoint>

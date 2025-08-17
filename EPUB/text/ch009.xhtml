@@ -9,92 +9,102 @@
 </head>
 <body epub:type="bodymatter">
 <section id="tcp" class="level1" data-number="2">
-<h1 data-number="2"><span class="header-section-number">2</span> Reliable links</h1>
-<p>At the internet layer, the communication between two nodes happens by routing packets to their destination from one router to the next. Two ingredients are required for this: a way to address nodes and a mechanism to route packets across routers.</p>
-<p>Addressing is handled by the IP protocol. For example, IPv6 provides a 128-bit address space, allowing <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>2</mn><mn>128</mn></msup><annotation encoding="application/x-tex">2^{128}</annotation></semantics></math> addresses. To decide where to send a packet, a router needs to consult a local routing table. The table maps a destination address to the address of the next router along the path to that destination. The responsibility of building and communicating the routing tables across routers lies with the Border Gateway Protocol (BGP<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>).</p>
-<p>Now, IP doesn’t guarantee that data sent over the internet will arrive at its destination. For example, if a router becomes overloaded, it might start dropping packets. This is where TCP<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> comes in, a transport-layer protocol that exposes a reliable communication channel between two processes on top of IP. TCP guarantees that a stream of bytes arrives in order without gaps, duplication, or corruption. TCP also implements a set of stability patterns to avoid overwhelming the network and the receiver.</p>
+<h1 data-number="2"><span class="header-section-number">2</span> 可靠的链接</h1>
+<p>在网络层，两个节点之间的通信是通过将数据包从一个路由器路由到下一个路由器来实现的。为此需要两个要素：节点寻址的方法，以及在路由器之间路由数据包的机制。</p>
+<p>寻址功能由IP协议负责处理。例如，IPv6提供128位地址空间，可支持<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>2</mn><mn>128</mn></msup><annotation encoding="application/x-tex">2^{128}</annotation></semantics></math>个地址。路由器需要通过查询本地路由表来决定数据包的转发路径，该路由表将目标地址映射至通往该目的地的下一跳路由器地址。而构建路由表并在路由器之间传递路由信息的职责，则由边界网关协议(BGP<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>)承担。</p>
+<p>目前，IP协议并不保证互联网上发送的数据一定能到达目的地。例如，当路由器过载时，就可能会开始丢弃数据包。这时就需要TCP<sup><a href="#fn2" id="fnref2">2</a></sup>协议发挥作用——这个传输层协议在上层IP协议之上，为两个进程之间暴露了可靠的通信信道。TCP协议能确保字节流按顺序到达，不丢包、不重复、无损坏。同时TCP还实现了一套稳定性模式，以避免网络和接收方过载。</p>
 <section id="reliability" class="level2" data-number="2.1">
-<h2 data-number="2.1"><span class="header-section-number">2.1</span> Reliability</h2>
-<p>To create the illusion of a reliable channel, TCP partitions a byte stream into discrete packets called segments. The segments are sequentially numbered, which allows the receiver to detect holes and duplicates. Every segment sent needs to be acknowledged by the receiver. When that doesn’t happen, a timer fires on the sending side and the segment is retransmitted. To ensure that the data hasn’t been corrupted in transit, the receiver uses a checksum to verify the integrity of a delivered segment.</p>
+<h2 data-number="2.1"><span class="header-section-number">2.1</span> 可靠性</h2>
+<p>TCP通过将字节流分割为称为报文段的独立数据包，来营造可靠信道的假象。每个报文段都带有顺序编号，这使得接收方能检测出缺失序号和重复数据。所有发出的报文段都必须得到接收方的确认应答，若未收到应答，发送端的计时器会触发并重传该报文段。为确保数据传输过程中未被篡改，接收方会通过校验和来验证报文段的完整性。</p>
 </section>
 <section id="connection-lifecycle" class="level2" data-number="2.2">
-<h2 data-number="2.2"><span class="header-section-number">2.2</span> Connection lifecycle</h2>
-<p>A connection needs to be opened before any data can be transmitted on a TCP channel. The operating system manages the connection state on both ends through a <em>socket</em>. The socket keeps track of the state changes of the connection during its lifetime. At a high level, there are three states the connection can be in:</p>
+<h2 data-number="2.2"><span class="header-section-number">2.2</span> 连接生命周期</h2>
+
+<p>在TCP信道上传输任何数据之前，需要打开连接。操作系统通过<em>套接字</em>管理两端的连接状态。套接字在其生命周期内跟踪连接状态的变化。站在更高级别的角度思考，连接可以处于以下三种状态：</p>
 <ul>
-<li>The opening state in which the connection is being created.</li>
-<li>The established state in which the connection is open and data is being transferred.</li>
-<li>The closing state in which the connection is being closed.</li>
+<li>打开状态：当连接被创建时处于的状态。</li>
+<li>建立状态：当连接被打开，而且数据正在被传输时处于的状态。</li>
+<li>关闭状态：当连接被关闭时处于的状态。</li>
 </ul>
-<p>In reality, this is a simplification, as there are more states<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> than the three above.</p>
-<p>A server must be listening for connection requests from clients before a connection is established. TCP uses a three-way handshake to create a new connection, as shown in Figure <a href="#fig:handshake">2.1</a>:</p>
+<p>实际上，这只是一个简化版。因为实际上存在的状态<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>比上述的3种状态要多。</p>
+<p>服务器必须在建立连接之前监听来自客户端的连接请求。TCP使用三次握手来创建新连接，如图<a href="#fig:handshake">2.1</a>所示：</p>
 <ol type="1">
-<li>The sender picks a random sequence number <em>x</em> and sends a SYN segment to the receiver.</li>
-<li>The receiver increments <em>x</em>, chooses a random sequence number <em>y</em>, and sends back a SYN/ACK segment.</li>
-<li>The sender increments both sequence numbers and replies with an ACK segment and the first bytes of application data.</li>
+<li>发送者随机选择一个序列号 <em>x</em> 并向接收者发送一个 SYN 报文段。</li>
+<li>接收者递增<em>x</em>的值 ，选择一个随机序列号 <em>y</em>，并发送一个 SYN/ACK 报文段作为回应。</li>
+<li>发送者将两个序列号都递增，并回复一个 ACK 报文段以及应用数据的第一个字节。</li>
 </ol>
-<p>The sequence numbers are used by TCP to ensure the data is delivered in order and without holes.</p>
+<p>TCP使用序列号来保证数据按顺序传输并且没有数据丢包。</p>
 <div class="figure" style="text-align: center">
 <img alt="Three-way handshake" width="100%" src="../media/file3.png" />
 <p class="caption">
-Figure 2.1: Three-way handshake
+图 2.1: 3次握手
 </p>
 </div>
-<p>The handshake introduces a full round-trip in which no application data is sent. So until the connection has been opened, the bandwidth is essentially zero. The lower the round trip time is, the faster the connection can be established. Therefore, putting servers closer to the clients helps reduce this cold-start penalty.</p>
-<p>After the data transmission is complete, the connection needs to be closed to release all resources on both ends. This termination phase involves multiple round-trips. If it’s likely that another transmission will occur soon, it makes sense to keep the connection open to avoid paying the cold-start tax again.</p>
-<p>Moreover, closing a socket doesn’t dispose of it immediately as it transitions to a waiting state (<em>TIME_WAIT</em>) that lasts several minutes and discards any segments received during the wait. The wait prevents delayed segments from a closed connection from being considered part of a new connection. But if many connections open and close quickly, the number of sockets in the waiting state will continue to increase until it reaches the maximum number of sockets that can be open, causing new connection attempts to fail. This is another reason why processes typically maintain connection pools to avoid recreating connections repeatedly.</p>
+
+<p>握手过程引入了一个完整的往返周期，期间不发送任何应用数据。因此在连接建立之前，带宽实际上为零。往返时延(RTT)越低，连接建立速度越快。由此可见，将服务器部署在靠近客户端的位置有助于降低这种冷启动的开销。</p>
+<p>数据传输完成后，需要关闭连接以释放两端的资源。这个终止阶段涉及多次往返通信。如果短期内可能再次传输数据，保持连接处于打开状态可以避免重复经历冷启动过程。</p>
+<p>此外，关闭套接字并不会立即释放它——套接字会进入持续数分钟的等待状态(<em>TIME_WAIT</em>)，在此期间会丢弃接收到的所有报文段。这种等待机制可以防止已关闭连接的延迟报文段被误认为属于新连接的。但如果大量连接频繁打开和关闭，处于等待状态的套接字数量将持续增加，直到达到最大可打开的套接字数量，从而导致新连接创建失败。这正是一般进程会维护连接池以避免重复创建连接的另一个重要原因。</p>
+
 </section>
 <section id="flow-control" class="level2" data-number="2.3">
-<h2 data-number="2.3"><span class="header-section-number">2.3</span> Flow control</h2>
-<p>Flow control is a backoff mechanism that TCP implements to prevent the sender from overwhelming the receiver. The receiver stores incoming TCP segments waiting to be processed by the application into a receive buffer, as shown in Figure <a href="#fig:rcwnd">2.2</a>.</p>
+<h2 data-number="2.3"><span class="header-section-number">2.3</span> 流量控制</h2>
+<p>流量控制是TCP采用的一种退避机制，用于防止发送方传输过快导致接收方过载。接收方会将应用程序尚未处理的TCP数据包暂存在接收缓冲区中，如图<a href="#fig:rcwnd">2.2</a>所示。</p>
 <div class="figure" style="text-align: center">
 <img alt="The receive buffer stores data that hasn&#39;t yet been processed by the destination process." width="100%" src="../media/file4.png" />
 <p class="caption">
-Figure 2.2: The receive buffer stores data that hasn’t yet been processed by the destination process.
+图 2.2: 接收缓冲区存储尚未被目标进程处理的数据。
 </p>
 </div>
-<p>The receiver also communicates the size of the buffer to the sender whenever it acknowledges a segment, as shown in Figure <a href="#fig:rcwnd1">2.3</a>. Assuming it’s respecting the protocol, the sender avoids sending more data than can fit in the receiver’s buffer.</p>
+
+<p>每当接收方确认一个报文段时，接收方还会将缓冲区的大小传递给发送方，如图<a href="#fig:rcwnd1">2.3</a>所示。假设它遵守协议，则发送方会避免发送超出接收方缓冲区容量的数据。</p>
 <div class="figure" style="text-align: center">
-<img alt="The size of the receive buffer is communicated in the headers of acknowledgment segments." width="100%" src="../media/file5.png" />
+
+<img alt="接收缓冲区的大小存储在确认报文段的header部分进行通信。" width="100%" src="../media/file5.png" />
 <p class="caption">
-Figure 2.3: The size of the receive buffer is communicated in the headers of acknowledgment segments.
+图 2.3: 接收缓冲区的大小存储在确认报文段的header部分进行通信。
 </p>
 </div>
-<p>This mechanism is not too dissimilar to rate-limiting at the service level, a mechanism that rejects a request when a specific quota is exceeded (see section <a href="#ratelimiting">28.3</a>). But, rather than rate-limiting on an API key or IP address, TCP is rate-limiting on a connection level.</p>
+<p>此机制与在服务级别的速率限制机制并不太相似，该机制在超过特定配额时拒绝请求(见第<a href="#ratelimiting">28.3</a>章节)。但是，与基于API密钥或IP地址的速率限制不同，TCP是在连接级别进行速率限制。</p>
 </section>
 <section id="congestion-control" class="level2" data-number="2.4">
-<h2 data-number="2.4"><span class="header-section-number">2.4</span> Congestion control</h2>
-<p>TCP guards not only against overwhelming the receiver, but also against flooding the underlying network. The sender maintains a so-called <em>congestion window</em>, which represents the total number of outstanding segments that can be sent without an acknowledgment from the other side. The smaller the congestion window is, the fewer bytes can be in flight at any given time, and the less bandwidth is utilized.</p>
-<p>When a new connection is established, the size of the congestion window is set to a system default. Then, for every segment acknowledged, the window increases its size exponentially until it reaches an upper limit. This means we can’t use the network’s full capacity right after a connection is established. The shorter the round-trip time (RTT), the quicker the sender can start utilizing the underlying network’s bandwidth, as shown in Figure <a href="#fig:congestion">2.4</a>.</p>
+<h2 data-number="2.4"><span class="header-section-number">2.4</span> 拥塞控制</h2>
+<p>TCP不仅能防止接收方过载，还能避免底层网络拥塞。发送方维护一个所谓的<em>拥塞窗口</em>，表示在未收到对方确认的情况下可以发送的最大数据段数量。拥塞窗口越小，同一时刻传输中的数据量就越少，占用的带宽也就越低。</p> 
+<p>当新链接建立时，拥塞窗口大小会被设为系统默认值。之后每接收到一个数据段的确认，窗口大小就会指数级增长，直到达到上限。这意味着连接刚建立时无法立即使用网络的全部带宽。如图<a href="#fig:congestion">2.4</a>所示，往返时延(RTT)越短，发送方就能越快利用底层网络的带宽。</p>
 <div class="figure" style="text-align: center">
-<img alt="The shorter the RTT, the quicker the sender can start utilizing the underlying network&#39;s bandwidth." width="100%" src="../media/file6.png" />
+<img alt="RTT越短，发送者就能越快开始利用底层网络的带宽。" width="100%" src="../media/file6.png" />
 <p class="caption">
-Figure 2.4: The shorter the RTT, the quicker the sender can start utilizing the underlying network’s bandwidth.
+图 2.4: RTT越短，发送者就能越快开始利用底层网络的带宽。
 </p>
 </div>
-<p>What happens if a segment is lost? When the sender detects a missed acknowledgment through a timeout, a mechanism called <em>congestion avoidance</em> kicks in, and the congestion window size is reduced. From there onwards, the passing of time increases the window size<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a> by a certain amount, and timeouts decrease it by another.</p>
-<p>As mentioned earlier, the size of the congestion window defines the maximum number of bytes that can be sent without receiving an acknowledgment. Because the sender needs to wait for a full round trip to get an acknowledgment, we can derive the maximum theoretical bandwidth by dividing the size of the congestion window by the round trip time:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Bandwidth</mtext><mo>=</mo><mfrac><mtext mathvariant="normal">WinSize</mtext><mtext mathvariant="normal">RTT</mtext></mfrac></mrow><annotation encoding="application/x-tex">
-\text{Bandwidth} = \frac{\text{WinSize}}{\text{RTT}}
+
+<p>如果报文段丢失了会发生什么？当发送方通过超时检测到一个确认报文段丢失时，就会触发<em>拥塞避免</em>机制，拥塞窗口的大小会被减小。此后，随着时间推移，窗口大小<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>会按一定量增加，而超时则会使窗口按一定量减少。</p> 
+<p>如前所述，拥塞窗口的大小定义了在未收到确认报文段的情况下可以发送的最大数据量。由于发送方需要等待完整的往返时延才能获得确认报文段，因此我们可以通过将拥塞窗口的大小除以往返时延来推导出最大理论带宽：</p>
+
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">带宽</mtext><mo>=</mo><mfrac><mtext mathvariant="normal">窗口大小</mtext><mtext mathvariant="normal">往返时延(RTT)</mtext></mfrac></mrow><annotation encoding="application/x-tex">
+\text{带宽} = \frac{\text{窗口大小}}{\text{往返时延(RTT)}}
 </annotation></semantics></math></p>
-<p>The equation<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> shows that bandwidth is a function of latency. TCP will try very hard to optimize the window size since it can’t do anything about the round-trip time. However, that doesn’t always yield the optimal configuration. Due to the way congestion control works, the shorter the round-trip time, the better the underlying network’s bandwidth is utilized. This is more reason to put servers geographically close to the clients.</p>
+
+<p>该公式<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>表明带宽是关于往返时延(RTT)的函数。由于TCP无法改变往返时延，因此会极力优化窗口大小。然而，这并不总能得到最优配置。由于拥塞控制的工作方式的缘故，往返时延越短，底层网络带宽的利用率就越高。这进一步说明了将服务器部署在靠近客户端地理位置的重要性。</p>
+
 </section>
 <section id="custom-protocols" class="level2" data-number="2.5">
-<h2 data-number="2.5"><span class="header-section-number">2.5</span> Custom protocols</h2>
-<p>TCP’s reliability and stability come at the price of lower bandwidth and higher latencies than the underlying network can deliver. If we drop the stability and reliability mechanisms that TCP provides, what we get is a simple protocol named <em>User Datagram Protocol</em><a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> (UDP) — a connectionless transport layer protocol that can be used as an alternative to TCP.</p>
-<p>Unlike TCP, UDP does not expose the abstraction of a byte stream to its clients. As a result, clients can only send discrete packets with a limited size called <em>datagrams</em>. UDP doesn’t offer any reliability as datagrams don’t have sequence numbers and are not acknowledged. UDP doesn’t implement flow and congestion control either. Overall, UDP is a lean and bare-bones protocol. It’s used to bootstrap custom protocols, which provide some, but not all, of the stability and reliability guarantees that TCP does<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a>.</p>
-<p>For example, in multiplayer games, clients sample gamepad events several times per second and send them to a server that keeps track of the global game state. Similarly, the server samples the game state several times per second and sends these snapshots back to the clients. If a snapshot is lost in transmission, there is no value in retransmitting it as the game evolves in real-time; by the time the retransmitted snapshot would get to the destination, it would be obsolete. This is a use case where UDP shines; in contrast, TCP would attempt to redeliver the missing data and degrade the game’s experience.</p>
+<h2 data-number="2.5"><span class="header-section-number">2.5</span> 自定义协议</h2>
+
+<p>TCP的可靠性和稳定性是以牺牲带宽和增加延迟为代价的，其实际性能往往低于底层网络的物理极限。如果我们舍弃TCP提供的稳定性和可靠性机制，得到的就是一个名为<em>用户数据报协议</em><a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a>(UDP)的简易协议 — 这是一种无连接的传输层协议，可作为TCP的替代方案。</p> <p>与TCP不同，UDP不会向客户端提供字节流抽象。因此，客户端只能发送称为<em>数据报</em>的有限大小离散数据包。UDP不提供任何可靠性保证，因为数据报既没有序列号也不需要确认应答。UDP也不实现流量控制和拥塞控制。总体而言，UDP是一种轻量级的基础协议，通常用于构建自定义协议，这些协议仅提供TCP部分(而非全部)的稳定性和可靠性保证<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a>。</p> 
+<p>比如，在多人在线游戏中,客户端每秒多次采集手柄事件并发送给记录全局游戏状态的服务器，服务器同样会每秒多次采集游戏状态并将快照发回客户端。如果某个快照在传输过程中丢失，重传将毫无价值——因为游戏是实时演进的，当重传的快照到达时早已过时。这正是UDP大显身手的场景；相比之下，TCP会坚持重传丢失数据，反而会降低游戏体验。</p>
+
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
 <hr />
 <ol>
-<li id="fn1" epub:type="footnote"><p>“RFC 4271: A Border Gateway Protocol 4 (BGP-4),” <a href="https://datatracker.ietf.org/doc/html/rfc4271" class="uri">https://datatracker.ietf.org/doc/html/rfc4271</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“RFC 793: Transmission Control Protocol,” <a href="https://tools.ietf.org/html/rfc793" class="uri">https://tools.ietf.org/html/rfc793</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“TCP State Diagram,” <a href="https://en.wikipedia.org/wiki/Transmission_Control_Protocol#/media/File:Tcp_state_diagram_fixed_new.svg" class="uri">https://en.wikipedia.org/wiki/Transmission_Control_Protocol#/media/File:Tcp_state_diagram_fixed_new.svg</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“CUBIC: A New TCP-Friendly High-Speed TCP Variant,” <a href="https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.153.3152&amp;rep=rep1&amp;type=pdf" class="uri">https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.153.3152&amp;rep=rep1&amp;type=pdf</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Bandwidth-delay product,” <a href="https://en.wikipedia.org/wiki/Bandwidth-delay_product" class="uri">https://en.wikipedia.org/wiki/Bandwidth-delay_product</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“RFC 768: User Datagram Protocol,” <a href="https://datatracker.ietf.org/doc/html/rfc768" class="uri">https://datatracker.ietf.org/doc/html/rfc768</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>As we will later see, HTTP 3 is based on UDP to avoid some of TCP’s shortcomings.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1" epub:type="footnote"><p>“RFC 4271: 边界网关协议 4 (BGP-4),” <a href="https://datatracker.ietf.org/doc/html/rfc4271" class="uri">https://datatracker.ietf.org/doc/html/rfc4271</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" epub:type="footnote"><p>“RFC 793: 传输控制协议,” <a href="https://tools.ietf.org/html/rfc793" class="uri">https://tools.ietf.org/html/rfc793</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" epub:type="footnote"><p>“TCP状态图,” <a href="https://en.wikipedia.org/wiki/Transmission_Control_Protocol#/media/File:Tcp_state_diagram_fixed_new.svg" class="uri">https://en.wikipedia.org/wiki/Transmission_Control_Protocol#/media/File:Tcp_state_diagram_fixed_new.svg</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" epub:type="footnote"><p>“CUBIC: 一种新型的对TCP友好的高速TCP变体,” <a href="https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.153.3152&amp;rep=rep1&amp;type=pdf" class="uri">https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.153.3152&amp;rep=rep1&amp;type=pdf</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" epub:type="footnote"><p>“带宽时延积,” <a href="https://en.wikipedia.org/wiki/Bandwidth-delay_product" class="uri">https://en.wikipedia.org/wiki/Bandwidth-delay_product</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" epub:type="footnote"><p>“RFC 768: 用户数据报协议,” <a href="https://datatracker.ietf.org/doc/html/rfc768" class="uri">https://datatracker.ietf.org/doc/html/rfc768</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7" epub:type="footnote"><p>正如我们稍后将看到的那样，HTT3基于DPP实现，以规避TCP的一些缺点<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>
