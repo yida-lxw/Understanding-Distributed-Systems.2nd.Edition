@@ -9,37 +9,40 @@
 </head>
 <body epub:type="bodymatter">
 <section id="communication-intro" class="level1 unnumbered unlisted">
-<h1 class="unnumbered unlisted">Introduction</h1>
+<h1 class="unnumbered unlisted">通信简介</h1>
 <blockquote>
-<p><em>“The network is reliable.”</em></p>
-<p>– Fallacies of distributed computing, L. Peter Deutsch</p>
+<p><em>“网络是可靠的。”</em></p>
+<p>– 分布式计算的谬论， [美]劳伦斯·彼得·多伊奇</p>
 </blockquote>
-<p>Communication between processes over the network, or <em>inter-process communication</em> (IPC), is at the heart of distributed systems — it’s what makes distributed systems distributed. In order for processes to communicate, they need to agree on a set of rules that determine how data is processed and formatted. Network protocols specify such rules.</p>
-<p>The protocols are arranged in a stack<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>, where each layer builds on the abstraction provided by the layer below, and lower layers are closer to the hardware. When a process sends data to another through the network stack, the data moves from the top layer to the bottom one and vice-versa at the other end, as shown in Figure <a href="#fig:stack">1.3</a>:</p>
+<p>网络中进程之间的通信，或<em>进程间通信</em>(IPC)，是分布式系统的核心 — 它是使分布式系统分布式化的因素。为了进程间能够通信，它们需要就一组规则达成一致，这些规则决定了数据如何处理和格式化。而网络协议规定了这些规则。</p>
+<p>协议以栈<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>的形式排列，每一层都基于下一层提供的抽象构建，而较低层更接近硬件。当进程通过网络协议栈发送数据时，数据从顶层逐层传递至底层；在接收端则反之，从底层逐层传输至顶层，如图<a href="#fig:stack">1.3</a>所示:</p>
 <div class="figure" style="text-align: center">
 <img alt="Internet protocol suite" width="100%" src="../media/file2.png" />
 <p class="caption">
-Figure 1.3: Internet protocol suite
+图 1.3: 互联网协议族
 </p>
 </div>
 <ul>
-<li>The <em>link layer</em> consists of network protocols that operate on local network links, like Ethernet or Wi-Fi, and provides an interface to the underlying network hardware. Switches operate at this layer and forward Ethernet packets based on their destination MAC address<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>.</li>
-<li>The <em>internet layer</em> routes packets from one machine to another across the network. The Internet Protocol (IP) is the core protocol of this layer, which delivers packets on a best-effort basis (i.e., packets can be dropped, duplicated, or corrupted). Routers operate at this layer and forward IP packets to the next router along the path to their final destination.</li>
-<li>The <em>transport layer</em> transmits data between two processes. To enable multiple processes hosted on the same machine to communicate at the same time, port numbers are used to address the processes on either end. The most important protocol in this layer is the Transmission Control Protocol (TCP), which creates a reliable communication channel on top of IP.</li>
-<li>Finally, the <em>application layer</em> defines high-level communication protocols, like HTTP or DNS. Typically your applications will target this level of abstraction.</li>
+<li><em>链路层</em>由在本地网络链路上运行的网络协议(如以太网或Wi-Fi)组成，并提供与底层网络硬件通信的接口。交换机工作在这一层，并基于目的MAC地址<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>转发以太网数据包。</li>
+<li><em>网络层</em>负责将数据包跨网络从一台机器路由到另一台机器。该层的核心协议是网际协议(IP），它将尽最大努力投递数据包(即数据包可能会被丢弃、重复或损坏)。路由器工作在这一层，它沿着路径将IP数据包转发至下一跳路由器，直至最终抵达目的地。</li>
+<li><em>传输层</em>在两个进程之间传输数据。为了实现同一台机器上托管的多个进程能够同时通信，该层通过端口号对通信两端的进程进行寻址。该层中最重要的协议是传输控制协议(TCP)，它在IP协议之上构建了一个可靠的通信信道。</li>
+<li>最后，<em>应用层</em>定义了高级通信协议，例如HTTP或DNS。通常应用程序会直接使用这一层的抽象接口。</li>
 </ul>
-<p>Even though each protocol builds on top of another, sometimes the abstractions leak. If you don’t have a good grasp of how the lower layers work, you will have a hard time troubleshooting networking issues that will inevitably arise. More importantly, having an appreciation of the complexity of what happens when you make a network call will make you a better systems builder.</p>
-<p>Chapter <a href="#tcp">2</a> describes how to build a reliable communication channel (TCP) on top of an unreliable one (IP), which can drop or duplicate data or deliver it out of order. Building reliable abstractions on top of unreliable ones is a common pattern we will encounter again in the rest of the book.</p>
-<p>Chapter <a href="#tls">3</a> describes how to build a secure channel (TLS) on top of a reliable one (TCP). Security is a core concern of any system, and in this chapter, we will get a taste of what it takes to secure a network connection from prying eyes and malicious agents.</p>
-<p>Chapter <a href="#dns">4</a> dives into how the phone book of the internet (DNS) works, which allows nodes to discover others using names. At its heart, DNS is a distributed, hierarchical, and eventually consistent key-value store. By studying it, we will get the first taste of eventual consistency<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> and the challenges it introduces.</p>
-<p>Chapter <a href="#api">5</a> concludes this part by discussing how loosely coupled services communicate with each other through APIs by describing the implementation of a RESTful HTTP API built upon the protocols introduced earlier.</p>
+<p>尽管每个协议都构建在另一个协议之上，但有时会发生抽象泄露。如果你未能熟练掌握底层协议的工作原理，当网络问题不可避免地发生时，您在排查网络问题时将会愈发艰难。更重要的是，了解发起网络调用时其背后的复杂性，会让你成为更优秀的系统构建者。</p>
+
+
+<p>第<a href="#tcp">2</a>章阐述了如何在不可靠的网际协议(IP)之上构建可靠的通信信道(TCP)——网际协议层可能会丢弃数据包、数据重复或乱序传递。在不可靠基础上构建可靠抽象是一种常见模式，在本书后续章节中我们将反复遇到。</p> 
+<p>第<a href="#tls">3</a>章描述了如何在可靠的传输层(TCP)之上建立安全信道(TLS)。安全性是所有系统的核心问题，本章我们将初探如何保护网络连接免受窥探和恶意攻击。</p> 
+<p>第<a href="#dns">4</a>章深入解析互联网"电话簿"(DNS)的工作原理，它使得节点能够通过名称相互发现。DNS本质上是一个分布式、层次化、最终一致性的K-V()存储系统。通过研究它，我们将初次领略最终一致性<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>及其带来的挑战。</p> 
+<p>第<a href="#api">5</a>章作为本部分的总结，通过描述基于前述协议实现的RESTful HTTP API，讨论松耦合服务如何通过API进行通信。</p>
+
 </section>
 <section class="footnotes" epub:type="footnotes">
 <hr />
 <ol>
-<li id="fn1" epub:type="footnote"><p>“Internet protocol suite,” <a href="https://en.wikipedia.org/wiki/Internet_protocol_suite" class="uri">https://en.wikipedia.org/wiki/Internet_protocol_suite</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“MAC address,” <a href="https://en.wikipedia.org/wiki/MAC_address" class="uri">https://en.wikipedia.org/wiki/MAC_address</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>We will learn more about consistency models in chapter <a href="#replication">10</a>.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1" epub:type="footnote"><p>“互联网协议族,” <a href="https://en.wikipedia.org/wiki/Internet_protocol_suite" class="uri">https://en.wikipedia.org/wiki/Internet_protocol_suite</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" epub:type="footnote"><p>“MAC地址,” <a href="https://en.wikipedia.org/wiki/MAC_address" class="uri">https://en.wikipedia.org/wiki/MAC_address</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" epub:type="footnote"><p>我们将在第<a href="#replication">10</a>章中学习关于一致性模型的更多细节.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

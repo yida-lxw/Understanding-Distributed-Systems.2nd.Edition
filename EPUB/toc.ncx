@@ -8,113 +8,113 @@
     <meta name="cover" content="cover_jpg" />
   </head>
   <docTitle>
-    <text>Understanding Distributed Systems</text>
+    <text>深入理解分布式系统</text>
   </docTitle>
   <navMap>
     <navPoint id="navPoint-0">
       <navLabel>
-        <text>Understanding Distributed Systems</text>
+        <text>深入理解分布式系统</text>
       </navLabel>
       <content src="text/title_page.xhtml" />
     </navPoint>
     <navPoint id="navPoint-1">
       <navLabel>
-        <text>Understanding Distributed Systems</text>
+        <text>深入理解分布式系统</text>
       </navLabel>
       <content src="text/ch001.xhtml#understanding-distributed-systems" />
     </navPoint>
     <navPoint id="navPoint-2">
       <navLabel>
-        <text>Copyright</text>
+        <text>版权页</text>
       </navLabel>
       <content src="text/ch002.xhtml#copyright" />
     </navPoint>
     <navPoint id="navPoint-3">
       <navLabel>
-        <text>About the author</text>
+        <text>作者简介</text>
       </navLabel>
       <content src="text/ch003.xhtml#about-the-author" />
     </navPoint>
     <navPoint id="navPoint-4">
       <navLabel>
-        <text>Acknowledgements</text>
+        <text>致谢</text>
       </navLabel>
       <content src="text/ch004.xhtml#acknowledgements" />
     </navPoint>
     <navPoint id="navPoint-5">
       <navLabel>
-        <text>Preface</text>
+        <text>前言</text>
       </navLabel>
       <content src="text/ch005.xhtml#preface" />
     </navPoint>
     <navPoint id="navPoint-6">
       <navLabel>
-        <text>1 Introduction</text>
+        <text>1 分布式系统简介</text>
       </navLabel>
       <content src="text/ch006.xhtml#introduction" />
       <navPoint id="navPoint-7">
         <navLabel>
-          <text>1.1 Communication</text>
+          <text>1.1 通信</text>
         </navLabel>
         <content src="text/ch006.xhtml#communication" />
       </navPoint>
       <navPoint id="navPoint-8">
         <navLabel>
-          <text>1.2 Coordination</text>
+          <text>1.2 协调</text>
         </navLabel>
         <content src="text/ch006.xhtml#coordination" />
       </navPoint>
       <navPoint id="navPoint-9">
         <navLabel>
-          <text>1.3 Scalability</text>
+          <text>1.3 可扩展性</text>
         </navLabel>
         <content src="text/ch006.xhtml#scalability" />
       </navPoint>
       <navPoint id="navPoint-10">
         <navLabel>
-          <text>1.4 Resiliency</text>
+          <text>1.4 弹性</text>
         </navLabel>
         <content src="text/ch006.xhtml#resiliency" />
       </navPoint>
       <navPoint id="navPoint-11">
         <navLabel>
-          <text>1.5 Maintainability</text>
+          <text>1.5 可维护性</text>
         </navLabel>
         <content src="text/ch006.xhtml#maintainability" />
       </navPoint>
       <navPoint id="navPoint-12">
         <navLabel>
-          <text>1.6 Anatomy of a distributed system</text>
+          <text>1.6 分布式系统架构解析</text>
         </navLabel>
         <content src="text/ch006.xhtml#anatomy-of-a-distributed-system" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-13">
       <navLabel>
-        <text>(PART) Communication</text>
+        <text>第一部分 通信</text>
       </navLabel>
       <content src="text/ch007.xhtml#part-communication" />
     </navPoint>
     <navPoint id="navPoint-14">
       <navLabel>
-        <text>Introduction</text>
+        <text>通信简介</text>
       </navLabel>
       <content src="text/ch008.xhtml#communication-intro" />
     </navPoint>
     <navPoint id="navPoint-15">
       <navLabel>
-        <text>2 Reliable links</text>
+        <text>2 可靠的链接</text>
       </navLabel>
       <content src="text/ch009.xhtml#tcp" />
       <navPoint id="navPoint-16">
         <navLabel>
-          <text>2.1 Reliability</text>
+          <text>2.1 可靠性</text>
         </navLabel>
         <content src="text/ch009.xhtml#reliability" />
       </navPoint>
       <navPoint id="navPoint-17">
         <navLabel>
-          <text>2.2 Connection lifecycle</text>
+          <text>2.2 连接生命周期</text>
         </navLabel>
         <content src="text/ch009.xhtml#connection-lifecycle" />
       </navPoint>

@@ -55,7 +55,7 @@
 </section>
 <section id="resiliency" class="level2" data-number="1.4">
 <h2 data-number="1.4"><span class="header-section-number">1.4</span> 弹性</h2>
-<p>当分布式系统即使发生故障也能继续完成工作时，我们就说它具有弹性。在规模扩大时，任何可能出错的事情将会出错。每个组件都有发生故障的可能性 — 节点可能崩溃，网络链接可能被中断等等。无论这个可能性有多小，只要组件越多，系统执行的操作越多，故障的数量就会越高。情况也会变得更糟，因为如果组件没有很好地隔离，一个组件的故障可能会增加另一个组件故障的可能性。</p>
+<p>当分布式系统即使发生故障也能继续完成工作时，我们就说它具有弹性。在规模扩大时，任何可能出错的事情将会出错。每个组件都有发生故障的概率 — 节点可能崩溃，网络链接可能被中断等等。无论这个概率有多小，只要组件越多，系统执行的操作越多，故障的数量就会越高。情况也会变得更糟，因为如果组件没有很好地隔离，一个组件的故障可能会增加另一个组件发生故障的概率。</p>
 <p>未检查的故障可能会影响系统的<em>可用性</em><a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>，即系统可供使用的时间百分比。它的比率定义为应用程序可以服务请求的时间(<em>uptime</em>)除以测量的总时间(<em>uptime</em>加上<em>downtime</em>，<em>downtime</em>即应用程序无法服务请求的时间)。</p>
 <p>可用性通常以"9"的数量级来描述，这是一种表示可用百分比的简写方式。三个9(99.9%)通常被认为是用户可接受的最低标准，而达到四个9(99.99%)及以上的系统则被视为高可用。</p>
 <table>
@@ -88,7 +88,7 @@
 </tr>
 </tbody>
 </table>
-<p>如果系统无法抵御故障，其可用性将不可避免地下降。因此，分布式系统需要接受故障，并准备好使用冗余、故障隔离和自愈机制等技术来抵御故障，我们将在本书第四部分中讨论这些技术，<em>弹性</em>.</p>
+<p>如果系统无法抵御故障，其可用性将不可避免地下降。因此，分布式系统需要接受故障，并准备好使用冗余、故障隔离和自愈机制等技术来抵御故障，我们将在本书第四部分<em>弹性</em> 中讨论这些技术。</p>
 </section>
 <section id="maintainability" class="level2" data-number="1.5">
 <h2 data-number="1.5"><span class="header-section-number">1.5</span> 可维护性</h2>
@@ -98,10 +98,10 @@
 <p>一直以来，开发人员、测试人员和运维人员属于不同团队，但微服务和DevOps的兴起改变了这一切。如今，同一个团队内设计和实现系统的人员同时也负责测试和运维。这是一件好事，因为没有比随时待命更好的方法来发现系统的不足之处。本书第五部分将探索测试和运维分布式系统的最佳实践。</p>
 </section>
 <section id="anatomy-of-a-distributed-system" class="level2" data-number="1.6">
-<h2 data-number="1.6"><span class="header-section-number">1.6</span> 解剖分布式系统</h2>
+<h2 data-number="1.6"><span class="header-section-number">1.6</span> 分布式系统架构解析</h2>
 <p>分布式系统形态和规模各异。在这本书中，我们主要关注运行在通用机器上并实现某种业务服务的后端应用程序。因此，可以说分布式系统是一组通过网络链路进行通信的机器。然而，从运行时角度来看，分布式系统是一组通过<em>进程间通信</em>(IPC)机制如HTTP进行通信的软件进程。从实现角度来看，分布式系统是一组通过API进行通信的松散耦合组件(服务)。所有这些都是有效的和有用的架构视角。在本书的其余部分，我们将根据具体议题灵活切换论述视角。</p>
 <p>一个<em>服务</em>实现了整体系统功能的一个特定部分。服务的核心是业务逻辑，它暴露接口以与外界通信。一些接口定义了服务向其用户提供的一些操作。相比之下，其他接口定义了服务可以在其他服务上调用的操作，如数据存储、消息代理等。</p>
-<p>由于进程无法直接调用彼此的接口，因此需要通过<em>适配器</em>将进程间通信(IPC)机制与服务接口连接。入站适配器是服务<em>应用程序编程接口</em>(API)的组成部分，它通过调用服务接口中定义的操作来处理从IPC机制(如HTTP)接收到的请求。相反，出站适配器允许业务逻辑访问外部服务，如数据存储。这种架构风格也被称为端口和适配器架构<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>。其设计理念是业务逻辑不取决于技术细节;相反，技术细节取决于业务逻辑(依赖倒置原则<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>)。图<a href="#fig:service">1.2</a>直观演示了这一设计理念。</p>
+<p>由于进程无法直接调用彼此的接口，因此需要通过<em>适配器</em>将进程间通信(IPC)机制与服务接口连接。入站适配器是服务<em>应用程序编程接口</em>(API)的组成部分，它通过调用服务接口中定义的操作来处理从IPC机制(如HTTP)接收到的请求。相反，出站适配器允许业务逻辑访问外部服务，如数据存储。这种架构风格也被称为端口与适配器架构<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>。其设计理念是业务逻辑不取决于技术细节;相反，技术细节取决于业务逻辑(依赖倒置原则<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>)。图<a href="#fig:service">1.2</a>直观演示了这一设计理念。</p>
 <div class="figure" style="text-align: center">
 <img alt="In this example, the business logic uses the repository interface, implemented by the PostgreSQL adapter, to access the database. In contrast, the HTTP adapter handles incoming requests by calling operations defined in the service interface." width="100%" src="../media/file1.png" />
 <p class="caption">
@@ -115,11 +115,11 @@
 <section class="footnotes" epub:type="footnotes">
 <hr />
 <ol>
-<li id="fn1" epub:type="footnote"><p>“The Law of Leaky Abstractions,” <a href="https://www.joelonsoftware.com/2002/11/11/the-law-of-leaky-abstractions/" class="uri">https://www.joelonsoftware.com/2002/11/11/the-law-of-leaky-abstractions/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Amazon EC2,” <a href="https://aws.amazon.com/ec2/" class="uri">https://aws.amazon.com/ec2/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“AWS Well-Architected Framework, Availability,” <a href="https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/availability.html" class="uri">https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/availability.html</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“Ports And Adapters Architecture,” <a href="http://wiki.c2.com/?PortsAndAdaptersArchitecture" class="uri">http://wiki.c2.com/?PortsAndAdaptersArchitecture</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Dependency inversion principle,” <a href="https://en.wikipedia.org/wiki/Dependency_inversion_principle" class="uri">https://en.wikipedia.org/wiki/Dependency_inversion_principle</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1" epub:type="footnote"><p>“抽象泄露定律,” <a href="https://www.joelonsoftware.com/2002/11/11/the-law-of-leaky-abstractions/" class="uri">https://www.joelonsoftware.com/2002/11/11/the-law-of-leaky-abstractions/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" epub:type="footnote"><p>亚马逊 EC2,” <a href="https://aws.amazon.com/ec2/" class="uri">https://aws.amazon.com/ec2/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" epub:type="footnote"><p>“AWS架构良好的框架，可用性，” <a href="https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/availability.html" class="uri">https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/availability.html</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" epub:type="footnote"><p>“端口与适配器架构,” <a href="http://wiki.c2.com/?PortsAndAdaptersArchitecture" class="uri">http://wiki.c2.com/?PortsAndAdaptersArchitecture</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" epub:type="footnote"><p>“依赖倒置原则,” <a href="https://en.wikipedia.org/wiki/Dependency_inversion_principle" class="uri">https://en.wikipedia.org/wiki/Dependency_inversion_principle</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>
