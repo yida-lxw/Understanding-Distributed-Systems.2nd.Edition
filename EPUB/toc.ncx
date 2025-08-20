@@ -169,7 +169,7 @@
     </navPoint>
     <navPoint id="navPoint-26">
       <navLabel>
-        <text>4 Discovery</text>
+        <text>4 服务发现</text>
       </navLabel>
       <content src="text/ch011.xhtml#dns" />
     </navPoint>
