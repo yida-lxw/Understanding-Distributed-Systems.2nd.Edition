@@ -10,13 +10,13 @@
 <body epub:type="bodymatter">
 <section id="tls" class="level1" data-number="3">
 <h1 data-number="3"><span class="header-section-number">3</span> 安全链接</h1>
-<p>现在我们知道如何通过网络可靠地将字节数据从一个进程发送到另一个进程。但问题是这些字节数据都是以明文形式发送，中间人可能会拦截我们的通信。为了避免这种情况, 我们可以使用 <em>传输层安全协议(TLS)</em><a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> 。TLS是运行在TCP之上，并且对通信信道进行了加密。因此,应用层协议，比如HTTP，可以利用它来进行安全通信。简而言之，TLS协议提供了数据的 <em>加密</em>, <em>认证</em>,  以及保证了通信数据的<em>完整性</em>。</p>
+<p>现在我们知道如何通过网络可靠地将字节数据从一个进程发送到另一个进程。但问题是这些字节数据都是以明文形式发送，中间人可能会拦截我们的通信。为了避免这种情况, 我们可以使用 <em>传输层安全协议(TLS)</em><a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> 。TLS是运行在TCP之上，并且对通信信道进行了加密。因此，应用层协议，比如HTTP，可以利用TLS来进行安全通信。简而言之，TLS协议提供了数据的 <em>加密</em>, <em>认证</em>,  以及保证了通信数据的<em>完整性</em>。</p>
 <section id="encryption" class="level2" data-number="3.1">
 <h2 data-number="3.1"><span class="header-section-number">3.1</span> 加密</h2>
 <p>加密保证了客户端和服务端之间传输的数据是经过混淆的，且只能被通信进程读取。</p>
-<p>当TLS连接首次建立时，客户端和服务端会使用<em>非对称加密</em>来协商一个共享的密钥。首先，双方都会生成一个由私钥和公钥组成的密钥对。然后进程可以通过交换它们的公钥来创建一个共享的密钥。这个要得益于密钥对的一些数学特性<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>。这种方式的优美之处在于共享密钥从未通过网络进行传输。</p>
-<p>尽管非对称加密执行效率很慢且开销大，但是它仅仅只用于创建共享密钥。然后, 此后便会切换至高效且经济的<em>对称加密</em>方式。系统会定期重新协商共享密钥，即使密钥遭破解，也能将可解密的数据量控制在最小范围。</p>
-<p>对正在传输中的数据进行加密虽然会带来CPU开销，但是由于现代处理器都自带了专门的加密指令集，这种开销几乎可以忽略不计。因此，所有通信包括非公网环境传输,都应采用TLS加密。</p>
+<p>当TLS连接首次建立时，客户端和服务端会使用<em>非对称加密</em>来协商一个共享的密钥。首先，双方都会生成一个由私钥和公钥组成的密钥对。然后进程可以通过交换它们的公钥来创建一个共享的密钥。这要得益于密钥对的一些数学特性<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>。这种方式的优美之处在于共享密钥从未通过网络进行传输。</p>
+<p>尽管非对称加密执行效率很慢且开销大，但是它仅仅只用于创建共享密钥。然后便会切换至高效且经济的<em>对称加密</em>方式。系统会定期重新协商共享密钥，即使密钥遭破解，也能将可解密的数据量控制在最小范围。</p>
+<p>对正在传输中的数据进行加密虽然会带来CPU开销，但是由于现代处理器都自带了专门的加密指令集，这种开销几乎可以忽略不计。因此，所有通信传输，包括非公网环境,都应采用TLS加密。</p>
 </section>
 <section id="authentication" class="level2" data-number="3.2">
 <h2 data-number="3.2"><span class="header-section-number">3.2</span> 认证</h2>
