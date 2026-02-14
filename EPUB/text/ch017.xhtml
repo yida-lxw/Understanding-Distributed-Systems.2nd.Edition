@@ -1,28 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch017.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch017.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="failure" class="level1" data-number="7">
-<h1 data-number="7"><span class="header-section-number">7</span> Failure detection</h1>
-<p>Several things can go wrong when a client sends a request to a server. In the best case, the client sends a request and receives a response. But what if no response comes back after some time? In that case, it’s impossible to tell whether the server is just very slow, it crashed, or a message couldn’t be delivered because of a network issue (see Figure <a href="#fig:failure">7.1</a>).</p>
+<section class="level1" data-number="7" id="failure">
+<h1 data-number="7"><span class="header-section-number">7</span> 故障检测</h1>
+<p>当客户端向服务器发送请求时，可能会出现多种问题。最理想的情况是，客户端发送请求并收到响应。但如果一段时间后没有响应返回呢？在这种情况下，我们无法判断究竟是服务器运行缓慢、服务器崩溃，还是由于网络问题导致消息无法送达（参见图<a href="#fig:failure">7.1</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="The client can&#39;t tell whether the server is slow, it crashed or a message was delayed/dropped because of a network issue." width="60%" src="../media/file10.png" />
+<img alt="客户端无法判断是服务器响应慢、服务器崩溃，还是由于网络问题导致消息延迟或丢失。" src="../media/file10.png" width="60%"/>
 <p class="caption">
-Figure 7.1: The client can’t tell whether the server is slow, it crashed or a message was delayed/dropped because of a network issue.
+图 7.1：客户端无法判断是服务器响应慢、服务器崩溃，还是由于网络问题导致消息延迟或丢失。
 </p>
 </div>
-<p>In the worst case, the client will wait forever for a response that will never arrive. The best it can do is make an educated guess, after some time has passed, on whether the server is unavailable. The client can configure a timeout to trigger if it hasn’t received a response from the server after a certain amount of time. If and when the timeout triggers, the client considers the server unavailable and either throws an error or retries the request.</p>
-<p>The tricky part is deciding how long to wait for the timeout to trigger. If the delay is too short, the client might wrongly assume the server is unavailable; if the delay is too long, the client might waste time waiting for a response that will never arrive. In summary, it’s not possible to build a perfect failure detector.</p>
-<p>But a process doesn’t need to wait to send a message to find out that the destination is not reachable. It can also proactively try to maintain a list of available processes using pings or heartbeats.</p>
-<p>A <em>ping</em> is a periodic request that a process sends to another to check whether it’s still available. The process expects a response to the ping within a specific time frame. If no response is received, a timeout triggers and the destination is considered unavailable. However, the process will continue to send pings to it to detect if and when it comes back online.</p>
-<p>A <em>heartbeat</em> is a message that a process periodically sends to another. If the destination doesn’t receive a heartbeat within a specific time frame, it triggers a timeout and considers the process unavailable. But if the process comes back to life later and starts sending out heartbeats, it will eventually be considered to be available again.</p>
-<p>Pings and heartbeats are generally used for processes that interact with each other frequently, in situations where an action needs to be taken as soon as one of them is no longer reachable. In other circumstances, detecting failures just at communication time is good enough.</p>
+<p>在最坏的情况下，客户端将永远等待一个永远不会到达的响应。它最多只能在一段时间过去后，根据经验判断服务器是否不可用。客户端可以配置一个超时机制，如果在特定时间内未收到服务器的响应，则触发超时。当超时触发时，客户端会认为服务器不可用，并选择抛出错误或重试请求。</p>
+<p>棘手之处在于决定等待超时触发的时间长度。如果延迟太短，客户端可能会错误地认为服务器不可用；如果延迟太长，客户端可能会浪费时间等待一个永远不会到来的响应。总之，构建一个完美的故障检测器是不可能的。</p>
+<p>但进程无需等待发送消息来发现目标不可达。它也可以主动尝试使用ping或心跳来维护可用进程列表。</p>
+<p><em>心跳检测</em>是一种进程定期向另一个进程发送的请求，用于检查其是否仍然可用。该进程期望在特定时间范围内收到心跳检测的响应。如果未收到响应，则会触发超时，目标被视为不可用。然而，该进程将继续向其发送心跳检测，以探测其是否以及何时恢复在线状态。</p>
+<p>一个<em>心跳</em>是进程定期发送给另一个进程的消息。如果目标在特定时间范围内没有收到心跳，就会触发超时并认为该进程不可用。但如果该进程稍后恢复并开始发送心跳，最终它将被再次视为可用。</p>
+<p>心跳检测通常用于频繁交互的进程之间，当需要在一个进程变得不可达时立即采取行动的情况下。在其他情况下，仅在通信时检测故障就足够了。</p>
 </section>
 </body>
 </html>

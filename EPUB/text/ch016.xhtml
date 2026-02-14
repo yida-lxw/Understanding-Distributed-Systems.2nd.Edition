@@ -1,46 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch016.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch016.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="models" class="level1" data-number="6">
-<h1 data-number="6"><span class="header-section-number">6</span> System models</h1>
-<p>To reason about distributed systems, we need to define precisely what can and can’t happen. A <em>system model</em> encodes expectations about the behavior of processes, communication links, and timing; think of it as a set of assumptions that allow us to reason about distributed systems by ignoring the complexity of the actual technologies used to implement them.</p>
-<p>For example, these are some common models for communication links:</p>
+<section class="level1" data-number="6" id="models">
+<h1 data-number="6"><span class="header-section-number">6</span> 系统模型</h1>
+<p>为了系统性分析与思考分布式系统，我们需要精确地定义可能发生和不可能发生的情况。<em>系统模型</em>编码了对进程、通信链路和时序行为的预期；可以将其视为一组假设，允许我们通过忽略实现这些系统所用实际技术的复杂性来系统性分析与思考分布式系统。</p>
+<p>例如，以下是通信链路的一些常见模型：</p>
 <ul>
-<li>The <em>fair-loss link</em> model assumes that messages may be lost and duplicated, but if the sender keeps retransmitting a message, eventually it will be delivered to the destination.</li>
-<li>The <em>reliable link</em> model assumes that a message is delivered exactly once, without loss or duplication. A reliable link can be implemented on top of a fair-loss one by de-duplicating messages at the receiving side.</li>
-<li>The <em>authenticated reliable link</em> model makes the same assumptions as the reliable link but additionally assumes that the receiver can authenticate the sender.</li>
+<li><em>公平丢失链路</em>模型假设消息可能会丢失和重复，但如果发送方持续重传消息，最终它将被送达目的地。</li>
+<li><em>可靠链路</em>模型假设消息被精确地送达一次，没有丢失或重复。通过在接收端对消息进行去重，可以在公平丢失链路之上实现可靠链路。</li>
+<li><em>认证可靠链路</em>模型与可靠链路做出相同的假设，但额外假设接收方能够验证发送方的身份。</li>
 </ul>
-<p>Even though these models are just abstractions of real communication links, they are useful to verify the correctness of algorithms. And, as we have seen in the previous chapters, it’s possible to build a reliable and authenticated communication link on top of a fair-loss one. For example, TCP implements reliable transmission (and more), while TLS implements authentication (and more).</p>
-<p>Similarly, we can model the behavior of processes based on the type of failures we expect to happen:</p>
+<p>尽管这些模型只是真实通信链路的抽象，但它们对于验证算法的正确性非常有用。并且，正如我们在前几章所见，可以在公平丢失链路之上构建可靠且经过身份验证的通信链路。例如，TCP实现了可靠传输（以及更多功能），而TLS实现了身份验证（以及更多功能）。</p>
+<p>类似地，我们可以根据预期发生的故障类型来对进程的行为进行建模：</p>
 <ul>
-<li>The <em>arbitrary-fault</em> model assumes that a process can deviate from its algorithm in arbitrary ways, leading to crashes or unexpected behaviors caused by bugs or malicious activity. For historical reasons, this model is also referred to as the “Byzantine” model. More interestingly, it can be theoretically proven that a system using this model can tolerate up to <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mfrac><mn>1</mn><mn>3</mn></mfrac><annotation encoding="application/x-tex">\frac{1}{3}</annotation></semantics></math> of faulty processes<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> and still operate correctly.</li>
-<li>The <em>crash-recovery</em> model assumes that a process doesn’t deviate from its algorithm but can crash and restart at any time, losing its in-memory state.</li>
-<li>The <em>crash-stop</em> model assumes that a process doesn’t deviate from its algorithm but doesn’t come back online if it crashes. Although this seems unrealistic for software crashes, it models unrecoverable hardware faults and generally makes the algorithms simpler.</li>
+<li><em>任意故障</em>模型假设一个进程可能以任意方式偏离其算法，导致由程序错误或恶意活动引发的崩溃或意外行为。由于历史原因，该模型也被称为“拜占庭”模型。更有趣的是，理论上可以证明，使用该模型的系统最多可以容忍<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mfrac><mn>1</mn><mn>3</mn></mfrac><annotation encoding="application/x-tex">\frac{1}{3}</annotation></semantics></math>的故障进程<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>，并且仍能正确运行。</li>
+<li><em>崩溃-恢复</em>模型假设一个进程不会偏离其算法，但可能在任何时刻崩溃并重启，同时丢失其内存中的状态。</li>
+<li><em>崩溃-停止</em>模型假设一个进程不会偏离其算法，但如果崩溃则不会重新上线。尽管这对于软件崩溃来说似乎不现实，但它模拟了不可恢复的硬件故障，并且通常能使算法更简单。</li>
 </ul>
-<p>The arbitrary-fault model is typically used to model safety-critical systems like airplane engines, nuclear power plants, and systems where a single entity doesn’t fully control all the processes (e.g., digital cryptocurrencies such as Bitcoin). These use cases are outside the book’s scope, and the algorithms presented here will generally assume a crash-recovery model.</p>
-<p>Finally, we can also model timing assumptions:</p>
+<p>任意故障模型通常用于建模安全关键系统，例如飞机引擎、核电站，以及单个实体不完全控制所有流程的系统（例如比特币等数字货币）。这些用例超出了本书的范围，此处介绍的算法通常假设采用崩溃恢复模型。</p>
+<p>最后，我们还可以对时序假设进行建模：</p>
 <ul>
-<li>The <em>synchronous</em> model assumes that sending a message or executing an operation never takes more than a certain amount of time. This is not very realistic for the type of systems we care about, where we know that sending messages over the network can potentially take a very long time, and processes can be slowed down by, e.g., garbage collection cycles or page faults.</li>
-<li>The <em>asynchronous</em> model assumes that sending a message or executing an operation on a process can take an unbounded amount of time. Unfortunately, many problems can’t be solved under this assumption; if sending messages can take an infinite amount of time, algorithms can get stuck and not make any progress at all. Nevertheless, this model is useful because it’s simpler than models that make timing assumptions, and therefore algorithms based on it are also easier to implement<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>.</li>
-<li>The <em>partially synchronous</em> model assumes that the system behaves synchronously most of the time. This model is typically representative enough of real-world systems.</li>
+<li><em>同步</em>模型假设发送消息或执行操作所需的时间永远不会超过某个特定时长。这对于我们所关注的系统类型来说并不十分现实，因为我们知道通过网络发送消息可能需要很长时间，并且进程可能会因垃圾回收周期或页面错误等原因而变慢。</li>
+<li><em>异步</em>模型假设在进程上发送消息或执行操作可能需要无限长的时间。遗憾的是，在这种假设下许多问题无法得到解决；如果发送消息可能需要无限长的时间，算法可能会陷入停滞，根本无法取得任何进展。尽管如此，这个模型仍然有用，因为它比那些做出时间假设的模型更简单，因此基于它的算法也更容易实现<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>。</li>
+<li><em>部分同步</em>模型假设系统在大多数时间表现为同步。这个模型通常足以代表现实世界的系统。</li>
 </ul>
-<p>In the rest of the book, we will generally assume a system model with fair-loss links, crash-recovery processes, and partial synchrony. If you are curious and want to learn more about other system models, “Introduction to Reliable and Secure Distributed Programming”<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> is an excellent theoretical book that explores distributed algorithms for a variety of models not considered in this text.</p>
-<p>But remember, models are just an abstraction of reality<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a> since they don’t represent the real world with all its nuances. So, as you read along, question the models’ assumptions and try to imagine how algorithms that rely on them could break in practice.</p>
+<p>在本书的其余部分，我们通常将假设一个具有公平丢失链路、崩溃恢复进程和部分同步性的系统模型。如果你对此感到好奇，并希望了解更多关于其他系统模型的信息，《可靠与安全分布式编程导论》<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>是一本出色的理论书籍，它探讨了本文未考虑的各种模型下的分布式算法。</p>
+<p>但请记住，模型只是现实的一种抽象<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>，因为它们无法呈现真实世界中所有的细微差别。因此，在阅读过程中，请带着质疑的眼光看待这些模型的假设，并试着想象依赖这些模型的算法在实践中可能出现的问题。</p>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“The Byzantine Generals Problem,” <a href="https://lamport.azurewebsites.net/pubs/byz.pdf" class="uri">https://lamport.azurewebsites.net/pubs/byz.pdf</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Unreliable Failure Detectors for Reliable Distributed Systems,” <a href="https://www.cs.utexas.edu/~lorenzo/corsi/cs380d/papers/p225-chandra.pdf" class="uri">https://www.cs.utexas.edu/~lorenzo/corsi/cs380d/papers/p225-chandra.pdf</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“Introduction to Reliable and Secure Distributed Programming,” <a href="https://www.distributedprogramming.net/" class="uri">https://www.distributedprogramming.net/</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“All models are wrong,” <a href="https://en.wikipedia.org/wiki/All_models_are_wrong" class="uri">https://en.wikipedia.org/wiki/All_models_are_wrong</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>《拜占庭将军问题》，<a class="uri" href="https://lamport.azurewebsites.net/pubs/byz.pdf">https://lamport.azurewebsites.net/pubs/byz.pdf</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>《用于可靠分布式系统的不可靠故障检测器》，<a class="uri" href="https://www.cs.utexas.edu/~lorenzo/corsi/cs380d/papers/p225-chandra.pdf">https://www.cs.utexas.edu/~lorenzo/corsi/cs380d/papers/p225-chandra.pdf</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>《可靠与安全分布式编程导论》，<a class="uri" href="https://www.distributedprogramming.net/">https://www.distributedprogramming.net/</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>《所有模型都是错误的》，<a class="uri" href="https://en.wikipedia.org/wiki/All_models_are_wrong">https://en.wikipedia.org/wiki/All_models_are_wrong</a><a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

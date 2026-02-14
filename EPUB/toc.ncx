@@ -186,19 +186,19 @@
       </navPoint>
       <navPoint id="navPoint-29">
         <navLabel>
-          <text>5.2 Resources</text>
+          <text>5.2 资源</text>
         </navLabel>
         <content src="text/ch012.xhtml#resources" />
       </navPoint>
       <navPoint id="navPoint-30">
         <navLabel>
-          <text>5.3 Request methods</text>
+          <text>5.3 请求方法</text>
         </navLabel>
         <content src="text/ch012.xhtml#request-methods" />
       </navPoint>
       <navPoint id="navPoint-31">
         <navLabel>
-          <text>5.4 Response status codes</text>
+          <text>5.4 响应状态码</text>
         </navLabel>
         <content src="text/ch012.xhtml#response-status-codes" />
       </navPoint>
@@ -210,74 +210,74 @@
       </navPoint>
       <navPoint id="navPoint-33">
         <navLabel>
-          <text>5.6 Evolution</text>
+          <text>5.6 演进</text>
         </navLabel>
         <content src="text/ch012.xhtml#evolution" />
       </navPoint>
       <navPoint id="navPoint-34">
         <navLabel>
-          <text>5.7 Idempotency</text>
+          <text>5.7 幂等性</text>
         </navLabel>
         <content src="text/ch012.xhtml#idempotency" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-35">
       <navLabel>
-        <text>Summary</text>
+        <text>本章总结</text>
       </navLabel>
       <content src="text/ch013.xhtml#communication-outro" />
     </navPoint>
     <navPoint id="navPoint-36">
       <navLabel>
-        <text>(PART) Coordination</text>
+        <text>第二部分 协调</text>
       </navLabel>
       <content src="text/ch014.xhtml#part-coordination" />
     </navPoint>
     <navPoint id="navPoint-37">
       <navLabel>
-        <text>Introduction</text>
+        <text>引言</text>
       </navLabel>
       <content src="text/ch015.xhtml#coordination-intro" />
     </navPoint>
     <navPoint id="navPoint-38">
       <navLabel>
-        <text>6 System models</text>
+        <text>6 系统模型</text>
       </navLabel>
       <content src="text/ch016.xhtml#models" />
     </navPoint>
     <navPoint id="navPoint-39">
       <navLabel>
-        <text>7 Failure detection</text>
+        <text>7 故障检测</text>
       </navLabel>
       <content src="text/ch017.xhtml#failure" />
     </navPoint>
     <navPoint id="navPoint-40">
       <navLabel>
-        <text>8 Time</text>
+        <text>8 时间</text>
       </navLabel>
       <content src="text/ch018.xhtml#time" />
       <navPoint id="navPoint-41">
         <navLabel>
-          <text>8.1 Physical clocks</text>
+          <text>8.1 物理时钟</text>
         </navLabel>
         <content src="text/ch018.xhtml#physical-clocks" />
       </navPoint>
       <navPoint id="navPoint-42">
         <navLabel>
-          <text>8.2 Logical clocks</text>
+          <text>8.2 逻辑时钟</text>
         </navLabel>
         <content src="text/ch018.xhtml#logical-clocks" />
       </navPoint>
       <navPoint id="navPoint-43">
         <navLabel>
-          <text>8.3 Vector clocks</text>
+          <text>8.3 向量时钟</text>
         </navLabel>
         <content src="text/ch018.xhtml#vector-clocks" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-44">
       <navLabel>
-        <text>9 Leader election</text>
+        <text>9 领导选举</text>
       </navLabel>
       <content src="text/ch019.xhtml#leader" />
       <navPoint id="navPoint-45">

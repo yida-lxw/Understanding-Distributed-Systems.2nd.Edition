@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch012.xhtml</title>
-  <style>
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch012.xhtml</title>
+<style>
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
@@ -70,239 +71,239 @@ code span.va { color: #19177c; } /* Variable */
 code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="api" class="level1" data-number="5">
-<h1 data-number="5"><span class="header-section-number">5</span> APIs</h1>
-<p>Now that we know how a client can discover the IP address of a server and create a reliable and secure communication link with it, we want the client to invoke operations offered by the server. To that end, the server uses an adapter — which defines its application programming interface (API) — to translate messages received from the communication link to interface calls implemented by its business logic (see Figure <a href="#fig:service">1.2</a>).</p>
-<p>The communication style between a client and a server can be <em>direct</em> or <em>indirect</em>, depending on whether the client communicates directly with the server or indirectly through a broker. Direct communication requires that both processes are up and running for the communication to succeed. However, sometimes this guarantee is either not needed or very hard to achieve, in which case indirect communication is a better fit. An example of indirect communication is <em>messaging</em>. In this model, the sender and the receiver don’t communicate directly, but they exchange messages through a message channel (the broker). The sender sends messages to the channel, and on the other side, the receiver reads messages from it. Later in chapter <a href="#messaging">23</a>, we will see how message channels are implemented and how to best use them.</p>
-<p>In this chapter, we will focus our attention on a direct communication style called <em>request-response</em>, in which a client sends a <em>request message</em> to the server, and the server replies with a <em>response message</em>. This is similar to a function call but across process boundaries and over the network.</p>
-<p>The request and response messages contain data that is serialized in a language-agnostic format. The choice of format determines a message’s serialization and deserialization speed, whether it’s human-readable, and how hard it is to evolve it over time. A <em>textual</em> format like JSON<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> is self-describing and human-readable, at the expense of increased verbosity and parsing overhead. On the other hand, a binary format like Protocol Buffers<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> is leaner and more performant than a textual one at the expense of human readability.</p>
-<p>When a client sends a request to a server, it can block and wait for the response to arrive, making the communication <em>synchronous</em>. Alternatively, it can ask the outbound adapter to invoke a callback when it receives the response, making the communication <em>asynchronous</em>.</p>
-<p>Synchronous communication is inefficient, as it blocks threads that could be used to do something else. Some languages, like JavaScript, C#, and Go, can completely hide callbacks through language primitives such as async/await<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>. These primitives make writing asynchronous code as straightforward as writing synchronous code.</p>
-<p>Commonly used IPC technologies for request-response interactions are HTTP and gRPC<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>. Typically, internal APIs used for server-to-server communications within an organization are implemented with a high-performance RPC framework like gRPC. In contrast, external APIs available to the public tend to be based on HTTP, since web browsers can easily make HTTP requests via JavaScript code.</p>
-<p>A popular set of design principles for designing elegant and scalable HTTP APIs is representational state transfer (REST<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>), and an API based on these principles is said to be RESTful. For example, these principles include that:</p>
+<section class="level1" data-number="5" id="api">
+<h1 data-number="5"><span class="header-section-number">5</span> 应用程序编程接口(API)</h1>
+<p>既然我们已经了解了客户端如何发现服务器的IP地址并与其建立可靠且安全的通信链路，那么接下来我们希望客户端能够调用服务器提供的操作。为此，服务器使用一个适配器——它定义了服务器的应用程序编程接口（API）——将接收自通信链路的消息转换为由其业务逻辑实现的接口调用（参见图<a href="#fig:service">1.2</a>）。</p>
+<p>客户端与服务器之间的通信方式可以是<em>直接</em>或<em>间接</em>的，这取决于客户端是直接与服务器通信，还是通过代理间接通信。直接通信要求两个进程都处于启动运行状态，通信才能成功。然而，有时这种保证并非必需或难以实现，在这种情况下，间接通信更为合适。间接通信的一个例子是<em>消息传递</em>。在此模型中，发送方和接收方不直接通信，而是通过消息通道（代理）交换消息。发送方向通道发送消息，而接收方则从通道读取消息。在后面的<a href="#messaging">第23章</a>中，我们将看到消息通道是如何实现的，以及如何最好地使用它们。</p>
+<p>在本章中，我们将重点关注一种名为<em>请求-响应</em>的直接通信方式，即客户端向服务器发送<em>请求消息</em>，服务器则回复<em>响应消息</em>。这类似于函数调用，但跨越了进程边界并通过网络进行。</p>
+<p>请求与响应消息中包含以语言无关格式序列化的数据。格式的选择决定了消息序列化与反序列化的速度、是否具备人类可读性，以及随时间演进的难易程度。<em>文本</em>格式（如JSON<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>）具备自描述性与人类可读性，但代价是冗长性增加与解析开销。另一方面，二进制格式（如Protocol Buffers<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>）相比文本格式更为精简且性能更高，但牺牲了人类可读性。</p>
+<p>当客户端向服务器发送请求时，它可以阻塞并等待响应到达，使通信变得<em>同步</em>。或者，它也可以要求出站适配器在收到响应时调用回调函数，从而使通信变得<em>异步</em>。</p>
+<p>同步通信效率低下，因为它会阻塞本可用于执行其他任务的线程。某些编程语言，如JavaScript、C#和Go，可以通过async/await等原语完全隐藏回调<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>。这些原语使得编写异步代码变得像编写同步代码一样简单明了。</p>
+<p>常用于请求-响应交互的IPC技术包括HTTP和gRPC<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>。通常，组织内部用于服务器间通信的内部API会采用如gRPC这样的高性能RPC框架实现。相比之下，面向公众开放的外部API则倾向于基于HTTP构建，因为网络浏览器能通过JavaScript代码轻松发起HTTP请求。</p>
+<p>一套广受欢迎的设计原则，用于设计优雅且可扩展的HTTP API，称为表述性状态转移（REST<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>），而基于这些原则的API则被称为RESTful。例如，这些原则包括：</p>
 <ul>
-<li>requests are stateless, and therefore each request contains all the necessary information required to process it;</li>
-<li>responses are implicitly or explicitly labeled as cacheable or non-cacheable. If a response is cacheable, the client can reuse the response for a later, equivalent request.</li>
+<li>请求是无状态的，因此每个请求都包含处理它所需的所有必要信息；</li>
+<li>响应会被隐式或显式地标记为可缓存或不可缓存。如果一个响应是可缓存的，客户端可以在后续的等效请求中重用该响应。</li>
 </ul>
-<p>Given the ubiquity of RESTful HTTP APIs, we will walk through the process of creating an HTTP API in the rest of the chapter.</p>
-<section id="http" class="level2" data-number="5.1">
+<p>鉴于RESTful HTTP API的普遍存在，我们将在本章的剩余部分逐步讲解创建HTTP API的过程。</p>
+<section class="level2" data-number="5.1" id="http">
 <h2 data-number="5.1"><span class="header-section-number">5.1</span> HTTP</h2>
-<p><em>HTTP</em><a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> is a request-response protocol used to encode and transport information between a client and a server. In an <em>HTTP transaction</em>, the client sends a <em>request message</em> to the server’s API endpoint, and the server replies back with a <em>response message</em>, as shown in Figure <a href="#fig:http">5.1</a>.</p>
-<p>In HTTP 1.1, a message is a textual block of data that contains a start line, a set of headers, and an optional body:</p>
+<p><em>HTTP</em><a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a> 是一种请求-响应协议，用于在客户端和服务器之间编码和传输信息。在一次<em>HTTP事务</em>中，客户端向服务器的API端点发送一条<em>请求消息</em>，服务器则回复一条<em>响应消息</em>，如图<a href="#fig:http">5.1</a>所示。</p>
+<p>在HTTP 1.1中，消息是一个文本数据块，包含起始行、一组头部和一个可选的正文：</p>
 <ul>
-<li>In a request message, the <em>start line</em> indicates what the request is for, and in a response message, it indicates whether the request was successful or not.</li>
-<li>The <em>headers</em> are key-value pairs with metadata that describes the message.</li>
-<li>The message <em>body</em> is a container for data.</li>
+<li>在请求消息中，<em>起始行</em>指明了请求的目的；在响应消息中，它则表明请求是否成功。</li>
+<li><em>头部</em>是描述消息元数据的键值对。</li>
+<li>消息<em>正文</em>是数据的容器。</li>
 </ul>
 <div class="figure" style="text-align: center">
-<img alt="An example HTTP transaction between a browser and a web server" width="90%" src="../media/file9.png" />
+<img alt="An example HTTP transaction between a browser and a web server" src="../media/file9.png" width="90%"/>
 <p class="caption">
-Figure 5.1: An example HTTP transaction between a browser and a web server
+图 5.1: 浏览器与Web服务器之间的HTTP事务示例
 </p>
 </div>
-<p>HTTP is a stateless protocol, which means that everything needed by a server to process a request needs to be specified within the request itself, without context from previous requests. HTTP uses TCP for the reliability guarantees discussed in chapter <a href="#tcp">2</a>. When it runs on top of TLS, it’s also referred to as HTTPS.</p>
-<p>HTTP 1.1 keeps a connection to a server open by default to avoid needing to create a new one for the next transaction. However, a new request can’t be issued until the response to the previous one has been received (aka <em>head-of-line blocking</em> or HOL blocking); in other words, the transactions have to be serialized. For example, a browser that needs to fetch several images to render an HTML page has to download them one at a time, which can be very inefficient.</p>
-<p>Although HTTP 1.1 technically allows some type of requests to be pipelined<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a>, it still suffers from HOL blocking as a single slow response will block all the responses after it. With HTTP 1.1, the typical way to improve the throughput of outgoing requests is by creating multiple connections. However, this comes with a price because connections consume resources like memory and sockets.</p>
-<p>HTTP 2<a href="#fn8" class="footnote-ref" id="fnref8" epub:type="noteref">8</a> was designed from the ground up to address the main limitations of HTTP 1.1. It uses a binary protocol rather than a textual one, allowing it to multiplex multiple concurrent request-response transactions (streams) on the same connection. In early 2020 about half of the most-visited websites on the internet were using the new HTTP 2 standard.</p>
-<p>HTTP 3<a href="#fn9" class="footnote-ref" id="fnref9" epub:type="noteref">9</a> is the latest iteration of the HTTP standard, which is based on UDP and implements its own transport protocol to address some of TCP’s shortcomings<a href="#fn10" class="footnote-ref" id="fnref10" epub:type="noteref">10</a>. For example, with HTTP 2, a packet loss over the TCP connection blocks all streams (HOL), but with HTTP 3 a packet loss interrupts only one stream, not all of them.</p>
-<p>This book uses the HTTP 1.1 standard for illustration purposes since its plain text format is easier to display. Moreover, HTTP 1.1 is still widely used.</p>
+<p>HTTP是一种无状态协议，这意味着服务器处理请求所需的一切信息都必须在请求本身中指定，而不依赖于先前请求的上下文。HTTP使用TCP来获得第<a href="#tcp">2</a>章讨论的可靠性保证。当它在TLS之上运行时，也被称为HTTPS。</p>
+<p>HTTP 1.1默认保持与服务器的连接开放，以避免为下一次事务创建新连接。然而，在收到前一个请求的响应之前，无法发出新的请求（也称为<em>队头阻塞</em>或HOL阻塞）；换句话说，事务必须串行化。例如，浏览器需要获取多个图像来渲染HTML页面时，必须逐个下载它们，这可能非常低效。</p>
+<p>尽管HTTP 1.1在技术上允许某些类型的请求进行流水线处理<a class="footnote-ref" epub:type="noteref" href="#fn7" id="fnref7">7</a>，但它仍然受到HOL阻塞的影响，因为单个缓慢的响应会阻塞其后的所有响应。对于HTTP 1.1，提高出站请求吞吐量的典型方法是创建多个连接。然而，这是有代价的，因为连接会消耗内存和套接字等资源。</p>
+<p>HTTP 2<a class="footnote-ref" epub:type="noteref" href="#fn8" id="fnref8">8</a> 从头开始设计，旨在解决HTTP 1.1的主要限制。它使用二进制协议而非文本协议，允许在同一连接上多路复用多个并发的请求-响应事务（流）。到2020年初，互联网上大约一半访问量最大的网站都在使用新的HTTP 2标准。</p>
+<p>HTTP 3<a class="footnote-ref" epub:type="noteref" href="#fn9" id="fnref9">9</a> 是HTTP标准的最新版本，它基于UDP并实现了自己的传输协议，以解决TCP的一些缺点<a class="footnote-ref" epub:type="noteref" href="#fn10" id="fnref10">10</a>。例如，在HTTP 2中，TCP连接上的数据包丢失会阻塞所有流（HOL），但在HTTP 3中，数据包丢失只会中断一个流，而不是所有流。</p>
+<p>本书出于说明目的使用HTTP 1.1标准，因为其纯文本格式更易于展示。此外，HTTP 1.1仍然被广泛使用。</p>
 </section>
-<section id="resources" class="level2" data-number="5.2">
-<h2 data-number="5.2"><span class="header-section-number">5.2</span> Resources</h2>
-<p>Suppose we would like to implement a service to manage the product catalog of an e-commerce application. The service must allow customers to browse the catalog and administrators to create, update, or delete products. Although that sounds simple, in order to expose this service via HTTP, we first need to understand how to model APIs with HTTP.</p>
-<p>An HTTP server hosts resources, where a <em>resource</em> can be a physical or abstract entity, like a document, an image, or a collection of other resources. A URL identifies a resource by describing its location on the server.</p>
-<p>In our catalog service, the collection of products is a type of resource, which could be accessed with a URL like <em><a href="https://www.example.com/products?sort=price" class="uri">https://www.example.com/products?sort=price</a></em>, where:</p>
+<section class="level2" data-number="5.2" id="resources">
+<h2 data-number="5.2"><span class="header-section-number">5.2</span> 资源</h2>
+<p>假设我们想要实现一个服务来管理电子商务应用程序的产品目录。该服务必须允许客户浏览目录，并允许管理员创建、更新或删除产品。尽管这听起来很简单，但为了通过HTTP公开此服务，我们首先需要了解如何使用HTTP来构建API。</p>
+<p>HTTP服务器托管资源，其中<em>资源</em>可以是物理或抽象的实体，例如文档、图像或其他资源的集合。URL通过描述资源在服务器上的位置来标识它。</p>
+<p>在我们的目录服务中，产品集合就是一种资源类型，可以通过类似<em><a class="uri" href="https://www.example.com/products?sort=price">https://www.example.com/products?sort=price</a></em>的URL来访问，其中：</p>
 <ul>
-<li><em>https</em> is the protocol;</li>
-<li><em>www.example.com</em> is the hostname;</li>
-<li><em>products</em> is the name of the resource;</li>
-<li><em>?sort=price</em> is the query string, which contains additional parameters that affect how the service handles the request; in this case, the sort order of the list of products returned in the response.</li>
+<li><em>https</em>是协议；</li>
+<li><em>www.example.com</em>是主机名；</li>
+<li><em>products</em>是资源名称；</li>
+<li><em>?sort=price</em>是查询字符串，它包含影响服务如何处理请求的附加参数；在本例中，它指定了响应中返回的产品列表的排序方式。</li>
 </ul>
-<p>The URL without the query string is also referred to as the API’s <em>/products</em> endpoint.</p>
-<p>URLs can also model relationships between resources. For example, since a product is a resource that belongs to the collection of products, the product with the unique identifier 42 could have the following relative URL: <em>/products/42</em>. And if the product also has a list of reviews associated with it, we could append its resource name to the product’s URL, i.e., <em>/products/42/reviews</em>. However, the API becomes more complex as the nesting of resources increases, so it’s a balancing act.</p>
-<p>Naming resources is only one part of the equation; we also have to serialize the resources on the wire when they are transmitted in the body of request and response messages. When a client sends a request to get a resource, it adds specific headers to the message to describe the preferred representation for the resource. The server uses these headers to pick the most appropriate representation<a href="#fn11" class="footnote-ref" id="fnref11" epub:type="noteref">11</a> for the response. Generally, in HTTP APIs, JSON is used to represent non-binary resources. For example, this is how the representation of <em>/products/42</em> might look:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;id&quot;</span><span class="fu">:</span> <span class="dv">42</span><span class="fu">,</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;Laptop&quot;</span><span class="fu">,</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;price&quot;</span><span class="fu">:</span> <span class="dv">999</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>不带查询字符串的URL也被称为API的<em>/products</em>端点。</p>
+<p>URL还可以构建资源之间的关系。例如，由于产品是属于产品集合的一种资源，具有唯一标识符42的产品可以拥有以下相对URL：<em>/products/42</em>。如果该产品还关联着一个评论列表，我们可以将评论的资源名称附加到产品URL之后，即<em>/products/42/reviews</em>。然而，随着资源嵌套层级的增加，API会变得更加复杂，因此需要权衡利弊。</p>
+<p>为资源命名只是问题的一部分；当资源在请求和响应消息的正文中传输时，我们还必须在网络上对它们进行序列化。当客户端发送请求以获取资源时，它会在消息中添加特定的头部信息，以描述其偏好的资源表示形式。服务器使用这些头部信息来为响应选择最合适的表示形式<a class="footnote-ref" epub:type="noteref" href="#fn11" id="fnref11">11</a>。通常，在HTTP API中，JSON用于表示非二进制资源。例如，<em>/products/42</em>的表示形式可能如下所示：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb1-2"><a aria-hidden="true" href="#cb1-2" tabindex="-1"></a>  <span class="dt">"id"</span><span class="fu">:</span> <span class="dv">42</span><span class="fu">,</span></span>
+<span id="cb1-3"><a aria-hidden="true" href="#cb1-3" tabindex="-1"></a>  <span class="dt">"category"</span><span class="fu">:</span> <span class="st">"Laptop"</span><span class="fu">,</span></span>
+<span id="cb1-4"><a aria-hidden="true" href="#cb1-4" tabindex="-1"></a>  <span class="dt">"price"</span><span class="fu">:</span> <span class="dv">999</span></span>
+<span id="cb1-5"><a aria-hidden="true" href="#cb1-5" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
 </section>
-<section id="request-methods" class="level2" data-number="5.3">
-<h2 data-number="5.3"><span class="header-section-number">5.3</span> Request methods</h2>
-<p>HTTP requests can create, read, update, and delete (CRUD) resources using request <em>methods</em>. When a client makes a request to a server for a particular resource, it specifies which method to use. You can think of a request method as the verb or action to use on a resource.</p>
-<p>The most commonly used methods are <em>POST</em>, <em>GET</em>, <em>PUT</em>, and <em>DELETE</em>. For example, the API of our catalog service could be defined as follows:</p>
+<section class="level2" data-number="5.3" id="request-methods">
+<h2 data-number="5.3"><span class="header-section-number">5.3</span> 请求方法</h2>
+<p>HTTP 请求可以使用请求<em>方法</em>来创建、读取、更新和删除（CRUD）资源。当客户端向服务器请求特定资源时，它会指定要使用的方法。您可以将请求方法视为对资源使用的动词或操作。</p>
+<p>最常用的方法是 <em>POST</em>、<em>GET</em>、<em>PUT</em> 和 <em>DELETE</em>。例如，我们的目录服务的 API 可以定义如下：</p>
 <ul>
-<li><em>POST /products</em> — Create a new product and return the URL of the new resource.</li>
-<li><em>GET /products</em> — Retrieve a list of products. The query string can be used to filter, paginate, and sort the collection.</li>
-<li><em>GET /products/42</em> — Retrieve product 42.</li>
-<li><em>PUT /products/42</em> — Update product 42.</li>
-<li><em>DELETE /products/42</em> — Delete product 42.</li>
+<li><em>POST /products</em> — 创建一个新产品并返回新资源的 URL。</li>
+<li><em>GET /products</em> — 检索产品列表。查询字符串可用于过滤、分页和排序集合。</li>
+<li><em>GET /products/42</em> — 检索产品 42。</li>
+<li><em>PUT /products/42</em> — 更新产品 42。</li>
+<li><em>DELETE /products/42</em> — 删除产品 42。</li>
 </ul>
-<p>Request methods can be categorized based on whether they are safe and whether they are idempotent. A <em>safe</em> method should not have any visible side effects and can safely be cached. An <em>idempotent</em> method can be executed multiple times, and the end result should be the same as if it was executed just a single time. Idempotency is a crucial aspect of APIs, and we will talk more about it later in section <a href="#idempotency">5.7</a>.</p>
+<p>请求方法可以根据其是否安全以及是否幂等来分类。一个<em>安全</em>的方法不应有任何可见的副作用，并且可以安全地被缓存。一个<em>幂等</em>的方法可以执行多次，最终结果应与只执行一次相同。幂等性是 API 的一个关键方面，我们将在后面的 <a href="#idempotency">5.7</a> 节中详细讨论。</p>
 <table>
 <thead>
 <tr class="header">
-<th>Method</th>
-<th>Safe</th>
-<th>Idempotent</th>
+<th>方法</th>
+<th>安全</th>
+<th>幂等</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>POST</td>
-<td>No</td>
-<td>No</td>
+<td>否</td>
+<td>否</td>
 </tr>
 <tr class="even">
 <td>GET</td>
-<td>Yes</td>
-<td>Yes</td>
+<td>是</td>
+<td>是</td>
 </tr>
 <tr class="odd">
 <td>PUT</td>
-<td>No</td>
-<td>Yes</td>
+<td>否</td>
+<td>是</td>
 </tr>
 <tr class="even">
 <td>DELETE</td>
-<td>No</td>
-<td>Yes</td>
+<td>否</td>
+<td>是</td>
 </tr>
 </tbody>
 </table>
 </section>
-<section id="response-status-codes" class="level2" data-number="5.4">
-<h2 data-number="5.4"><span class="header-section-number">5.4</span> Response status codes</h2>
-<p>After the server has received a request, it needs to process it and send a response back to the client. The HTTP response contains a <em>status code</em><a href="#fn12" class="footnote-ref" id="fnref12" epub:type="noteref">12</a> to communicate to the client whether the request succeeded or not. Different status code ranges have different meanings.</p>
-<p>Status codes between 200 and 299 are used to communicate success. For example, <em>200 (OK)</em> means that the request succeeded, and the body of the response contains the requested resource.</p>
-<p>Status codes between 300 and 399 are used for redirection. For example, <em>301 (Moved Permanently)</em> means that the requested resource has been moved to a different URL specified in the response message <em>Location</em> header.</p>
-<p>Status codes between 400 and 499 are reserved for client errors. A request that fails with a client error will usually return the same error if it’s retried since the error is caused by an issue with the client, not the server. Because of that, it shouldn’t be retried. Some common client errors are:</p>
+<section class="level2" data-number="5.4" id="response-status-codes">
+<h2 data-number="5.4"><span class="header-section-number">5.4</span> 响应状态码</h2>
+<p>服务器收到请求后，需要处理它并向客户端发送响应。HTTP响应包含一个<em>状态码</em><a class="footnote-ref" epub:type="noteref" href="#fn12" id="fnref12">12</a>，用于告知客户端请求是否成功。不同的状态码范围具有不同的含义。</p>
+<p>200到299之间的状态码用于表示成功。例如，<em>200 (OK)</em> 表示请求成功，响应正文包含所请求的资源。</p>
+<p>300到399之间的状态码用于重定向。例如，<em>301 (Moved Permanently)</em> 表示请求的资源已移动到响应消息<em>Location</em>头部中指定的另一个URL。</p>
+<p>400到499之间的状态码保留给客户端错误。由于错误是由客户端而非服务器的问题引起的，因此以客户端错误而失败的请求如果重试，通常会返回相同的错误。因此，不应重试此类请求。一些常见的客户端错误有：</p>
 <ul>
-<li><em>400 (Bad Request)</em> — Validating the client-side input has failed.</li>
-<li><em>401 (Unauthorized)</em> — The client isn’t authenticated.</li>
-<li><em>403 (Forbidden)</em> — The client is authenticated, but it’s not allowed to access the resource.</li>
-<li><em>404 (Not Found)</em> — The server couldn’t find the requested resource.</li>
+<li><em>400 (Bad Request)</em> — 客户端输入验证失败。</li>
+<li><em>401 (Unauthorized)</em> — 客户端未通过身份验证。</li>
+<li><em>403 (Forbidden)</em> — 客户端已通过身份验证，但不允许访问该资源。</li>
+<li><em>404 (Not Found)</em> — 服务器找不到请求的资源。</li>
 </ul>
-<p>Status codes between 500 and 599 are reserved for server errors. A request that fails with a server error can be retried as the issue that caused it to fail might be temporary. These are some typical server status codes:</p>
+<p>500到599之间的状态码保留给服务器错误。由于导致其失败的问题可能是暂时的，因此由于服务器错误而失败的请求可以重试。以下是一些典型的服务器状态码：</p>
 <ul>
-<li><em>500 (Internal Server Error)</em> — The server encountered an unexpected error that prevented it from handling the request.</li>
-<li><em>502 (Bad Gateway)</em> — The server, while acting as a gateway or proxy, received an invalid response from a downstream server it accessed while attempting to handle the request.<a href="#fn13" class="footnote-ref" id="fnref13" epub:type="noteref">13</a></li>
-<li><em>503 (Service Unavailable)</em> — The server is currently unable to handle the request due to a temporary overload or scheduled maintenance.</li>
+<li><em>500 (Internal Server Error)</em> — 服务器遇到意外错误，无法处理请求。</li>
+<li><em>502 (Bad Gateway)</em> — 服务器在充当网关或代理角色时，它会尝试访问其下游服务器来处理请求，但是收到了无效响应。<a class="footnote-ref" epub:type="noteref" href="#fn13" id="fnref13">13</a></li>
+<li><em>503 (Service Unavailable)</em> — 由于临时过载或计划维护，服务器当前无法处理请求。</li>
 </ul>
 </section>
-<section id="openapi" class="level2" data-number="5.5">
+<section class="level2" data-number="5.5" id="openapi">
 <h2 data-number="5.5"><span class="header-section-number">5.5</span> OpenAPI</h2>
-<p>Now that we understand how to model an API with HTTP, we can write an adapter that handles HTTP requests by calling the business logic of the catalog service. For example, suppose the service is defined by the following interface:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode c#"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> CatalogService</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  List<span class="op">&lt;</span>Product<span class="op">&gt;</span> <span class="fu">GetProducts</span><span class="op">(...);</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  Product <span class="fu">GetProduct</span><span class="op">(...);</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">void</span> <span class="fu">AddProduct</span><span class="op">(...);</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">void</span> <span class="fu">DeleteProduct</span><span class="op">(...);</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">void</span> <span class="fu">UpdateProduct</span><span class="op">(...)</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>So when the HTTP adapter receives a <em>GET /products</em> request to retrieve the list of all products, it will invoke the <em>GetProducts(…)</em> method and convert the result into an HTTP response. Although this is a simple example, you can see how the adapter connects the IPC mechanism (HTTP) to the business logic.</p>
-<p>We can generate a skeleton of the HTTP adapter by defining the API of the service with an <em>interface definition language</em> (IDL). An IDL is a language-independent definition of the API that can be used to generate boilerplate code for the server-side adapter and client-side software development kits (SDKs) in your languages of choice.</p>
-<p>The OpenAPI<a href="#fn14" class="footnote-ref" id="fnref14" epub:type="noteref">14</a> specification, which evolved from the Swagger project, is one of the most popular IDLs for RESTful HTTP APIs. With it, we can formally describe the API in a YAML document, including the available endpoints, supported request methods, and response status codes for each endpoint, and the schema of the resources’ JSON representation.</p>
-<p>For example, this is how part of the <em>/products</em> endpoint of the catalog service’s API could be defined:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">openapi</span><span class="kw">:</span><span class="at"> </span><span class="fl">3.0.0</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">info</span><span class="kw">:</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1.0.0&quot;</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">title</span><span class="kw">:</span><span class="at"> Catalog Service API</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">paths</span><span class="kw">:</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">/products</span><span class="kw">:</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">get</span><span class="kw">:</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> List products</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">parameters</span><span class="kw">:</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">in</span><span class="kw">:</span><span class="at"> query</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sort</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">schema</span><span class="kw">:</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">responses</span><span class="kw">:</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">&quot;200&quot;</span><span class="kw">:</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">description</span><span class="kw">:</span><span class="at"> list of products in catalog</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">content</span><span class="kw">:</span></span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">application/json</span><span class="kw">:</span></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">schema</span><span class="kw">:</span></span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">type</span><span class="kw">:</span><span class="at"> array</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">items</span><span class="kw">:</span></span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">$ref</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;#/components/schemas/ProductItem&quot;</span></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">&quot;400&quot;</span><span class="kw">:</span></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">description</span><span class="kw">:</span><span class="at"> bad input</span></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="fu">components</span><span class="kw">:</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schemas</span><span class="kw">:</span></span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ProductItem</span><span class="kw">:</span></span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">required</span><span class="kw">:</span></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> id</span></span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> name</span></span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> category</span></span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">id</span><span class="kw">:</span></span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> number</span></span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span></span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">category</span><span class="kw">:</span></span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span></code></pre></div>
-<p>Although this is a very simple example and we won’t go deeper into OpenAPI, it should give you an idea of its expressiveness. With this definition, we can then run a tool to generate the API’s documentation, boilerplate adapters, and client SDKs.</p>
+<p>既然我们已经理解了如何使用HTTP来构建API，那么我们就可以编写一个适配器，通过调用目录服务的业务逻辑来处理HTTP请求。例如，假设该服务由以下接口定义：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode c#"><code class="sourceCode cs"><span id="cb2-1"><a aria-hidden="true" href="#cb2-1" tabindex="-1"></a><span class="kw">interface</span> CatalogService</span>
+<span id="cb2-2"><a aria-hidden="true" href="#cb2-2" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb2-3"><a aria-hidden="true" href="#cb2-3" tabindex="-1"></a>  List<span class="op">&lt;</span>Product<span class="op">&gt;</span> <span class="fu">GetProducts</span><span class="op">(...);</span></span>
+<span id="cb2-4"><a aria-hidden="true" href="#cb2-4" tabindex="-1"></a>  Product <span class="fu">GetProduct</span><span class="op">(...);</span></span>
+<span id="cb2-5"><a aria-hidden="true" href="#cb2-5" tabindex="-1"></a>  <span class="dt">void</span> <span class="fu">AddProduct</span><span class="op">(...);</span></span>
+<span id="cb2-6"><a aria-hidden="true" href="#cb2-6" tabindex="-1"></a>  <span class="dt">void</span> <span class="fu">DeleteProduct</span><span class="op">(...);</span></span>
+<span id="cb2-7"><a aria-hidden="true" href="#cb2-7" tabindex="-1"></a>  <span class="dt">void</span> <span class="fu">UpdateProduct</span><span class="op">(...)</span></span>
+<span id="cb2-8"><a aria-hidden="true" href="#cb2-8" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>因此，当HTTP适配器收到一个<em>GET /products</em>请求以获取所有产品列表时，它将调用<em>GetProducts(…)</em>方法并将结果转换为HTTP响应。虽然这是一个简单的例子，但你可以看到适配器是如何将IPC机制（HTTP）连接到业务逻辑的。</p>
+<p>我们可以通过使用<em>接口定义语言</em>（IDL）来定义服务的API，从而生成HTTP适配器的骨架。IDL是一种与语言无关的API定义，可用于生成服务器端适配器以及您所选语言的客户端软件开发工具包（SDK）的模板代码。</p>
+<p>OpenAPI<a class="footnote-ref" epub:type="noteref" href="#fn14" id="fnref14">14</a>规范源自Swagger项目，是RESTful HTTP API最流行的接口描述语言之一。通过它，我们可以在YAML文档中正式描述API，包括可用的端点、支持的请求方法、每个端点的响应状态码，以及资源JSON表示的结构。</p>
+<p>例如，目录服务API的<em>/products</em>端点可以这样定义部分内容：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a aria-hidden="true" href="#cb3-1" tabindex="-1"></a><span class="fu">openapi</span><span class="kw">:</span><span class="at"> </span><span class="fl">3.0.0</span></span>
+<span id="cb3-2"><a aria-hidden="true" href="#cb3-2" tabindex="-1"></a><span class="fu">info</span><span class="kw">:</span></span>
+<span id="cb3-3"><a aria-hidden="true" href="#cb3-3" tabindex="-1"></a><span class="at">  </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">"1.0.0"</span></span>
+<span id="cb3-4"><a aria-hidden="true" href="#cb3-4" tabindex="-1"></a><span class="at">  </span><span class="fu">title</span><span class="kw">:</span><span class="at"> 目录服务 API</span></span>
+<span id="cb3-5"><a aria-hidden="true" href="#cb3-5" tabindex="-1"></a></span>
+<span id="cb3-6"><a aria-hidden="true" href="#cb3-6" tabindex="-1"></a><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb3-7"><a aria-hidden="true" href="#cb3-7" tabindex="-1"></a><span class="at">  </span><span class="fu">/products</span><span class="kw">:</span></span>
+<span id="cb3-8"><a aria-hidden="true" href="#cb3-8" tabindex="-1"></a><span class="at">    </span><span class="fu">get</span><span class="kw">:</span></span>
+<span id="cb3-9"><a aria-hidden="true" href="#cb3-9" tabindex="-1"></a><span class="at">      </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> 列出产品</span></span>
+<span id="cb3-10"><a aria-hidden="true" href="#cb3-10" tabindex="-1"></a><span class="at">      </span><span class="fu">parameters</span><span class="kw">:</span></span>
+<span id="cb3-11"><a aria-hidden="true" href="#cb3-11" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">in</span><span class="kw">:</span><span class="at"> query</span></span>
+<span id="cb3-12"><a aria-hidden="true" href="#cb3-12" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sort</span></span>
+<span id="cb3-13"><a aria-hidden="true" href="#cb3-13" tabindex="-1"></a><span class="at">          </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb3-14"><a aria-hidden="true" href="#cb3-14" tabindex="-1"></a><span class="at">          </span><span class="fu">schema</span><span class="kw">:</span></span>
+<span id="cb3-15"><a aria-hidden="true" href="#cb3-15" tabindex="-1"></a><span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
+<span id="cb3-16"><a aria-hidden="true" href="#cb3-16" tabindex="-1"></a><span class="at">      </span><span class="fu">responses</span><span class="kw">:</span></span>
+<span id="cb3-17"><a aria-hidden="true" href="#cb3-17" tabindex="-1"></a><span class="at">        </span><span class="fu">"200"</span><span class="kw">:</span></span>
+<span id="cb3-18"><a aria-hidden="true" href="#cb3-18" tabindex="-1"></a><span class="at">          </span><span class="fu">description</span><span class="kw">:</span><span class="at"> 目录中的产品列表</span></span>
+<span id="cb3-19"><a aria-hidden="true" href="#cb3-19" tabindex="-1"></a><span class="at">          </span><span class="fu">content</span><span class="kw">:</span></span>
+<span id="cb3-20"><a aria-hidden="true" href="#cb3-20" tabindex="-1"></a><span class="at">            </span><span class="fu">application/json</span><span class="kw">:</span></span>
+<span id="cb3-21"><a aria-hidden="true" href="#cb3-21" tabindex="-1"></a><span class="at">              </span><span class="fu">schema</span><span class="kw">:</span></span>
+<span id="cb3-22"><a aria-hidden="true" href="#cb3-22" tabindex="-1"></a><span class="at">                </span><span class="fu">type</span><span class="kw">:</span><span class="at"> array</span></span>
+<span id="cb3-23"><a aria-hidden="true" href="#cb3-23" tabindex="-1"></a><span class="at">                </span><span class="fu">items</span><span class="kw">:</span></span>
+<span id="cb3-24"><a aria-hidden="true" href="#cb3-24" tabindex="-1"></a><span class="at">                  </span><span class="fu">$ref</span><span class="kw">:</span><span class="at"> </span><span class="st">"#/components/schemas/ProductItem"</span></span>
+<span id="cb3-25"><a aria-hidden="true" href="#cb3-25" tabindex="-1"></a><span class="at">        </span><span class="fu">"400"</span><span class="kw">:</span></span>
+<span id="cb3-26"><a aria-hidden="true" href="#cb3-26" tabindex="-1"></a><span class="at">          </span><span class="fu">description</span><span class="kw">:</span><span class="at"> 错误的输入</span></span>
+<span id="cb3-27"><a aria-hidden="true" href="#cb3-27" tabindex="-1"></a></span>
+<span id="cb3-28"><a aria-hidden="true" href="#cb3-28" tabindex="-1"></a><span class="fu">components</span><span class="kw">:</span></span>
+<span id="cb3-29"><a aria-hidden="true" href="#cb3-29" tabindex="-1"></a><span class="at">  </span><span class="fu">schemas</span><span class="kw">:</span></span>
+<span id="cb3-30"><a aria-hidden="true" href="#cb3-30" tabindex="-1"></a><span class="at">    </span><span class="fu">ProductItem</span><span class="kw">:</span></span>
+<span id="cb3-31"><a aria-hidden="true" href="#cb3-31" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
+<span id="cb3-32"><a aria-hidden="true" href="#cb3-32" tabindex="-1"></a><span class="at">      </span><span class="fu">required</span><span class="kw">:</span></span>
+<span id="cb3-33"><a aria-hidden="true" href="#cb3-33" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> id</span></span>
+<span id="cb3-34"><a aria-hidden="true" href="#cb3-34" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> name</span></span>
+<span id="cb3-35"><a aria-hidden="true" href="#cb3-35" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> category</span></span>
+<span id="cb3-36"><a aria-hidden="true" href="#cb3-36" tabindex="-1"></a><span class="at">      </span><span class="fu">properties</span><span class="kw">:</span></span>
+<span id="cb3-37"><a aria-hidden="true" href="#cb3-37" tabindex="-1"></a><span class="at">        </span><span class="fu">id</span><span class="kw">:</span></span>
+<span id="cb3-38"><a aria-hidden="true" href="#cb3-38" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> number</span></span>
+<span id="cb3-39"><a aria-hidden="true" href="#cb3-39" tabindex="-1"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span></span>
+<span id="cb3-40"><a aria-hidden="true" href="#cb3-40" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
+<span id="cb3-41"><a aria-hidden="true" href="#cb3-41" tabindex="-1"></a><span class="at">        </span><span class="fu">category</span><span class="kw">:</span></span>
+<span id="cb3-42"><a aria-hidden="true" href="#cb3-42" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span></code></pre></div>
+<p>尽管这是一个非常简单的示例，我们不会深入探讨OpenAPI，但它应该能让你对其表达能力有所了解。有了这个定义，我们就可以运行工具来生成API的文档、模板适配器和客户端SDK。</p>
 </section>
-<section id="evolution" class="level2" data-number="5.6">
-<h2 data-number="5.6"><span class="header-section-number">5.6</span> Evolution</h2>
-<p>An API starts out as a well-designed interface<a href="#fn15" class="footnote-ref" id="fnref15" epub:type="noteref">15</a>. Slowly but surely, it will have to change to adapt to new use cases. The last thing we want to do when evolving an API is to introduce a breaking change that requires all clients to be modified at once, some of which we might have no control over.</p>
-<p>There are two types of changes that can break compatibility, one at the endpoint level and another at the message level. For example, if we were to change the <em>/products</em> endpoint to <em>/new-products</em>, it would obviously break clients that haven’t been updated to support the new endpoint. The same applies when making a previously optional query parameter mandatory.</p>
-<p>Changing the schema of request or response messages in a backward-incompatible way can also wreak havoc. For example, changing the type of the <em>category</em> property in the <em>Product</em> schema from string to number is a breaking change that would cause the old deserialization logic to blow up in clients. Similar arguments<a href="#fn16" class="footnote-ref" id="fnref16" epub:type="noteref">16</a> can be made for messages represented with other serialization formats, like Protocol Buffers.</p>
-<p>REST APIs should be versioned to support breaking changes, e.g., by prefixing a version number in the URLs (<em>/v1/products/</em>). However, as a general rule of thumb, APIs should evolve in a backward-compatible way unless there is a very good reason. Although backward-compatible APIs tend not to be particularly elegant, they are practical.</p>
+<section class="level2" data-number="5.6" id="evolution">
+<h2 data-number="5.6"><span class="header-section-number">5.6</span> 演进</h2>
+<p>一个API最初是一个精心设计的接口<a class="footnote-ref" epub:type="noteref" href="#fn15" id="fnref15">15</a>。缓慢但必然地，它需要改变以适应新的用例。在演进API时，我们最不希望做的就是引入破坏性变更，这要求所有客户端必须立即修改，而其中一些客户端可能不在我们的控制范围内。</p>
+<p>有两种类型的变更会破坏兼容性，一种在端点层面，另一种在消息层面。例如，如果我们将 <em>/products</em> 端点改为 <em>/new-products</em>，这显然会破坏那些尚未更新以支持新端点的客户端。同样，将一个原本可选的查询参数变为必填参数也会导致同样的问题。</p>
+<p>以向后不兼容的方式更改请求或响应消息的结构也可能造成严重破坏。例如，将 <em>Product</em> 模式中 <em>category</em> 属性的类型从字符串改为数字，就是一个破坏性变更，会导致旧的客户端反序列化逻辑崩溃。对于使用其他序列化格式（如Protocol Buffers）表示的消息，也存在类似的论点<a class="footnote-ref" epub:type="noteref" href="#fn16" id="fnref16">16</a>。</p>
+<p>REST API应该进行版本控制以支持破坏性变更，例如，在URL中加上版本号前缀（<em>/v1/products/</em>）。然而，作为一个通用经验法则，除非有非常充分的理由，否则API应该以向后兼容的方式演进。尽管向后兼容的API往往不是特别优雅，但它们很实用。</p>
 </section>
-<section id="idempotency" class="level2" data-number="5.7">
-<h2 data-number="5.7"><span class="header-section-number">5.7</span> Idempotency</h2>
-<p>When an API request times out, the client has no idea whether the server actually received the request or not. For example, the server could have processed the request and crashed right before sending a response back to the client.</p>
-<p>An effective way for clients to deal with transient failures such as these is to retry the request one or more times until they get a response back. Some HTTP request methods (e.g., PUT, DELETE) are considered inherently idempotent as the effect of executing multiple identical requests is identical to executing only one request<a href="#fn17" class="footnote-ref" id="fnref17" epub:type="noteref">17</a>. For example, if the server processes the same PUT request for the same resource twice in a row, the end effect would be the same as if the PUT request was executed only once.</p>
-<p>But what about requests that are not inherently idempotent? For example, suppose a client issues a POST request to add a new product to the catalog service. If the request times out, the client has no way of knowing whether the request succeeded or not. If the request succeeds, retrying it will create two identical products, which is not what the client intended.</p>
-<p>In order to deal with this case, the client might have to implement some kind of reconciliation logic that checks for duplicate products and removes them when the request is retried. You can see how this introduces a lot of complexity for the client. Instead of pushing this complexity to the client, a better solution would be for the server to create the product only once by making the POST request idempotent, so that no matter how many times that specific request is retried, it will appear as if it only executed once.</p>
-<p>For the server to detect that a request is a duplicate, it needs to be decorated with an idempotency key — a unique identifier (e.g., a UUID). The identifier could be part of a header, like <em>Idempotency-Key</em> in Stripe’s API<a href="#fn18" class="footnote-ref" id="fnref18" epub:type="noteref">18</a>. For the server to detect duplicates, it needs to remember all the request identifiers it has seen by storing them in a database. When a request comes in, the server checks the database to see if the request ID is already present. If it’s not there, it adds the request identifier to the database and executes the request. Request identifiers don’t have to be stored indefinitely, and they can be purged after some time.</p>
-<p>Now here comes the tricky part. Suppose the server adds the request identifier to the database and crashes before executing the request. In that case, any future retry won’t have any effect because the server will think it has already executed it. So what we really want is for the request to be handled atomically: either the server processes the request successfully and adds the request identifier to the database, or it fails to process it without storing the request identifier.</p>
-<p>If the request identifiers and the resources managed by the server are stored in the same database, we can guarantee atomicity with ACID transactions<a href="#fn19" class="footnote-ref" id="fnref19" epub:type="noteref">19</a>. In other words, we can wrap the product creation and request identifier log within the same database transaction in the POST handler. However, if the handler needs to make external calls to other services to handle the request, the implementation becomes a lot more challenging<a href="#fn20" class="footnote-ref" id="fnref20" epub:type="noteref">20</a>, since it requires some form of coordination. Later, in chapter <a href="#sagas">13.2</a>, we will learn how to do just that.</p>
-<p>Now, assuming the server can detect a duplicate request, how should it be handled? In our example, the server could respond to the client with a status code that signals that the product already exists. But then the client would have to deal with this case differently than if it had received a successful response for the first POST request (<em>201 Created</em>). So ideally, the server should return the same response that it would have returned for the very first request.</p>
-<p>So far, we have only considered a single client. Now, imagine the following scenario:</p>
+<section class="level2" data-number="5.7" id="idempotency">
+<h2 data-number="5.7"><span class="header-section-number">5.7</span> 幂等性</h2>
+<p>当API请求超时时，客户端无法得知服务器是否确实收到了该请求。例如，服务器可能已经处理了请求，却在将响应发送回客户端之前崩溃了。</p>
+<p>客户端处理此类瞬时故障的一种有效方法是重试请求一次或多次，直到收到响应为止。一些HTTP请求方法（例如，PUT、DELETE）被认为是天生具有幂等性的，因为执行多个相同请求的效果与仅执行一个请求的效果相同<a class="footnote-ref" epub:type="noteref" href="#fn17" id="fnref17">17</a>。例如，如果服务器连续两次处理针对同一资源的相同PUT请求，最终效果将与仅执行一次PUT请求相同。</p>
+<p>但是，对于那些天生不具备幂等性的请求呢？例如，假设客户端发出一个POST请求，向目录服务添加一个新商品。如果请求超时，客户端无法知道请求是否成功。如果请求成功了，重试它将会创建两个相同的商品，这并非客户端的本意。</p>
+<p>为了处理这种情况，客户端可能不得不实现某种协调逻辑，在重试请求时检查重复商品并将其删除。你可以看到这给客户端带来了多大的复杂性。与其将这种复杂性推给客户端，更好的解决方案是让服务器通过使POST请求具有幂等性来确保商品只被创建一次，这样无论该特定请求被重试多少次，其结果都如同只执行了一次。</p>
+<p>为了让服务器能够检测出重复请求，需要为请求添加一个幂等键——一个唯一的标识符（例如，UUID）。该标识符可以作为请求头的一部分，就像Stripe API中的<em>Idempotency-Key</em><a class="footnote-ref" epub:type="noteref" href="#fn18" id="fnref18">18</a>。服务器为了检测重复请求，需要通过将其存储在数据库中来记住所有见过的请求标识符。当请求到达时，服务器检查数据库以查看该请求ID是否已存在。如果不存在，则将请求标识符添加到数据库并执行请求。请求标识符无需永久存储，可以在一段时间后清除。</p>
+<p>现在，棘手的部分来了。假设服务器将请求标识符添加到数据库，但在执行请求之前崩溃了。在这种情况下，任何未来的重试都不会产生任何效果，因为服务器会认为它已经执行过了。因此，我们真正希望的是请求能够被原子性地处理：要么服务器成功处理请求并将请求标识符添加到数据库，要么处理失败且不存储请求标识符。</p>
+<p>如果请求标识符和服务器管理的资源存储在同一个数据库中，我们可以通过ACID事务来保证原子性<a class="footnote-ref" epub:type="noteref" href="#fn19" id="fnref19">19</a>。换句话说，我们可以在POST处理程序中，将商品创建和请求标识符记录包装在同一个数据库事务中。然而，如果处理程序需要调用其他外部服务来处理请求，实现就会变得更具挑战性<a class="footnote-ref" epub:type="noteref" href="#fn20" id="fnref20">20</a>，因为这需要某种形式的协调。稍后，在第<a href="#sagas">13.2</a>章中，我们将学习如何做到这一点。</p>
+<p>现在，假设服务器能够检测到重复请求，应该如何处理它呢？在我们的例子中，服务器可以用一个表示商品已存在的状态码来响应客户端。但这样一来，客户端就不得不以不同于收到第一个POST请求成功响应（<em>201 Created</em>）的方式来处理这种情况。因此，理想情况下，服务器应该返回与第一次请求完全相同的响应。</p>
+<p>到目前为止，我们只考虑了单个客户端。现在，想象以下场景：</p>
 <ol type="1">
-<li>Client A sends a request to create a new product. Although the request succeeds, the client doesn’t receive a timely response.</li>
-<li>Client B deletes the newly created product.</li>
-<li>Client A retries the original creation request.</li>
+<li>客户端A发送一个创建新商品的请求。虽然请求成功了，但客户端没有及时收到响应。</li>
+<li>客户端B删除了新创建的商品。</li>
+<li>客户端A重试最初的创建请求。</li>
 </ol>
-<p>How should the server deal with the request in step 3? From client’s A perspective, it would be less surprising<a href="#fn21" class="footnote-ref" id="fnref21" epub:type="noteref">21</a> to receive the original creation response than some strange error mentioning that the resource created with that specific request identifier has been deleted. When in doubt, it’s helpful to follow the principle of least astonishment.</p>
-<p>To summarize, an idempotent API makes it a lot easier to implement clients that are robust to failures, since they can assume that requests can be retried on failure without worrying about all the possible edge cases.</p>
+<p>服务器应如何处理第3步中的请求？从客户端A的角度来看，收到最初的创建响应，比收到一个提及“使用该特定请求标识符创建的资源已被删除”的奇怪错误信息，更不容易让人感到意外<a class="footnote-ref" epub:type="noteref" href="#fn21" id="fnref21">21</a>。当有疑问时，遵循最小意外原则是很有用的。</p>
+<p>总而言之，幂等性API使得实现能够健壮应对故障的客户端变得容易得多，因为它们可以假设请求在失败时可以重试，而无需担心所有可能的边界情况。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“ECMA-404: The JSON data interchange syntax,” <a href="https://www.ecma-international.org/publications-and-standards/standards/ecma-404/" class="uri">https://www.ecma-international.org/publications-and-standards/standards/ecma-404/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Protocol Buffers: a language-neutral, platform-neutral extensible mechanism for serializing structured data,” <a href="https://developers.google.com/protocol-buffers" class="uri">https://developers.google.com/protocol-buffers</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“Asynchronous programming with async and await,” <a href="https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/" class="uri">https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“gRPC: A high performance, open source universal RPC framework,” <a href="https://grpc.io/" class="uri">https://grpc.io/</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Representational State Transfer,” <a href="https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm" class="uri">https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“Hypertext Transfer Protocol,” <a href="https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol" class="uri">https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>“HTTP pipelining,” <a href="https://en.wikipedia.org/wiki/HTTP_pipelining" class="uri">https://en.wikipedia.org/wiki/HTTP_pipelining</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8" epub:type="footnote"><p>“RFC 7540: Hypertext Transfer Protocol Version 2 (HTTP/2),” <a href="https://tools.ietf.org/html/rfc7540" class="uri">https://tools.ietf.org/html/rfc7540</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9" epub:type="footnote"><p>“HTTP/3 is next Generation HTTP. Is it QUIC enough?,” <a href="https://www.youtube.com/watch?v=rlN4F1oyaRM" class="uri">https://www.youtube.com/watch?v=rlN4F1oyaRM</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn10" epub:type="footnote"><p>“Comparing HTTP/3 vs. HTTP/2 Performance,” <a href="https://blog.cloudflare.com/http-3-vs-http-2/" class="uri">https://blog.cloudflare.com/http-3-vs-http-2/</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn11" epub:type="footnote"><p>“HTTP Content negotiation,” <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation" class="uri">https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn12" epub:type="footnote"><p>“HTTP Status Codes,” <a href="https://httpstatuses.com/" class="uri">https://httpstatuses.com/</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn13" epub:type="footnote"><p>In this book, we will sometimes classify service dependencies as upstream or downstream depending on the direction of the dependency relationship. For example, if service A makes requests to service B, then service B is a downstream dependency of A, and A is an upstream dependency of B. Since there is no consensus in the industry for these terms, other texts might use a different convention.<a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn14" epub:type="footnote"><p>“OpenAPI Specification,” <a href="https://swagger.io/specification/" class="uri">https://swagger.io/specification/</a><a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn15" epub:type="footnote"><p>Or at least it should.<a href="#fnref15" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn16" epub:type="footnote"><p>“Schema evolution in Avro, Protocol Buffers and Thrift,” <a href="https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html" class="uri">https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html</a><a href="#fnref16" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn17" epub:type="footnote"><p>“Idempotent Methods,” <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-4.2.2" class="uri">https://datatracker.ietf.org/doc/html/rfc7231#section-4.2.2</a><a href="#fnref17" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn18" epub:type="footnote"><p>“Designing robust and predictable APIs with idempotency,” <a href="https://stripe.com/blog/idempotency" class="uri">https://stripe.com/blog/idempotency</a><a href="#fnref18" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn19" epub:type="footnote"><p>“Using Atomic Transactions to Power an Idempotent API,” <a href="https://brandur.org/http-transactions" class="uri">https://brandur.org/http-transactions</a><a href="#fnref19" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn20" epub:type="footnote"><p>“Implementing Stripe-like Idempotency Keys in Postgres,” <a href="https://brandur.org/idempotency-keys" class="uri">https://brandur.org/idempotency-keys</a><a href="#fnref20" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn21" epub:type="footnote"><p>“Making retries safe with idempotent APIs,” <a href="https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/" class="uri">https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/</a><a href="#fnref21" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>“ECMA-404：JSON数据交换语法，” <a class="uri" href="https://www.ecma-international.org/publications-and-standards/standards/ecma-404/">https://www.ecma-international.org/publications-and-standards/standards/ecma-404/</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>“Protocol Buffers：一种语言中立、平台中立、可扩展的结构化数据序列化机制，” <a class="uri" href="https://developers.google.com/protocol-buffers">https://developers.google.com/protocol-buffers</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>“使用async和await进行异步编程，” <a class="uri" href="https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/">https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>“gRPC：一个高性能、开源的通用RPC框架，” <a class="uri" href="https://grpc.io/">https://grpc.io/</a><a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>“表述性状态转移，” <a class="uri" href="https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm">https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>“超文本传输协议，” <a class="uri" href="https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol">https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol</a><a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn7"><p>“HTTP管道化，” <a class="uri" href="https://en.wikipedia.org/wiki/HTTP_pipelining">https://en.wikipedia.org/wiki/HTTP_pipelining</a><a class="footnote-back" href="#fnref7" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn8"><p>“RFC 7540：超文本传输协议版本2 (HTTP/2)，” <a class="uri" href="https://tools.ietf.org/html/rfc7540">https://tools.ietf.org/html/rfc7540</a><a class="footnote-back" href="#fnref8" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn9"><p>“HTTP/3是下一代HTTP。它充分利用了QUIC的优势吗？，” <a class="uri" href="https://www.youtube.com/watch?v=rlN4F1oyaRM">https://www.youtube.com/watch?v=rlN4F1oyaRM</a><a class="footnote-back" href="#fnref9" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn10"><p>“比较HTTP/3与HTTP/2性能，” <a class="uri" href="https://blog.cloudflare.com/http-3-vs-http-2/">https://blog.cloudflare.com/http-3-vs-http-2/</a><a class="footnote-back" href="#fnref10" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn11"><p>“HTTP内容协商，” <a class="uri" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation">https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation</a><a class="footnote-back" href="#fnref11" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn12"><p>“HTTP状态码，” <a class="uri" href="https://httpstatuses.com/">https://httpstatuses.com/</a><a class="footnote-back" href="#fnref12" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn13"><p>在本书中，我们有时会根据依赖关系的方向，将服务依赖分类为上游或下游。例如，如果服务A向服务B发出请求，那么服务B是A的下游依赖，而A是B的上游依赖。由于业界对这些术语没有共识，其他文献可能使用不同的约定。<a class="footnote-back" href="#fnref13" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn14"><p>“OpenAPI规范，” <a class="uri" href="https://swagger.io/specification/">https://swagger.io/specification/</a><a class="footnote-back" href="#fnref14" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn15"><p>或者至少应该是这样。<a class="footnote-back" href="#fnref15" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn16"><p>“Avro、Protocol Buffers和Thrift中的模式演化，” <a class="uri" href="https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html">https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html</a><a class="footnote-back" href="#fnref16" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn17"><p>“幂等方法，” <a class="uri" href="https://datatracker.ietf.org/doc/html/rfc7231#section-4.2.2">https://datatracker.ietf.org/doc/html/rfc7231#section-4.2.2</a><a class="footnote-back" href="#fnref17" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn18"><p>“使用幂等性设计健壮且可预测的API，” <a class="uri" href="https://stripe.com/blog/idempotency">https://stripe.com/blog/idempotency</a><a class="footnote-back" href="#fnref18" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn19"><p>“使用原子事务为幂等API提供支持，” <a class="uri" href="https://brandur.org/http-transactions">https://brandur.org/http-transactions</a><a class="footnote-back" href="#fnref19" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn20"><p>“在Postgres中实现类似Stripe的幂等键，” <a class="uri" href="https://brandur.org/idempotency-keys">https://brandur.org/idempotency-keys</a><a class="footnote-back" href="#fnref20" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn21"><p>“通过幂等API实现安全的重试，” <a class="uri" href="https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/">https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/</a><a class="footnote-back" href="#fnref21" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>
