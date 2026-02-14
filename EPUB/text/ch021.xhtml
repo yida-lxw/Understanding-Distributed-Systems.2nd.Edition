@@ -1,186 +1,187 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch021.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch021.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="solvingcap" class="level1" data-number="11">
-<h1 data-number="11"><span class="header-section-number">11</span> Coordination avoidance</h1>
-<p>Another way of looking at state machine replication is as a system that requires two main ingredients:</p>
+<section class="level1" data-number="11" id="solvingcap">
+<h1 data-number="11"><span class="header-section-number">11</span> 协调规避</h1>
+<p>审视状态机复制的另一种方式是将其视为一个需要两个主要组成部分的系统：</p>
 <ul>
-<li>a <em>broadcast protocol</em> that guarantees every replica receives the same updates in the same order even in the presence of faults (aka <em>fault-tolerant total order broadcast</em>),</li>
-<li>and a deterministic function that handles updates on each replica.</li>
+<li>一个<em>广播协议</em>，它保证即使在出现故障的情况下，每个副本也能以相同的顺序接收相同的更新（也称为<em>容错全序广播</em>），</li>
+<li>以及一个在每个副本上处理更新的确定性函数。</li>
 </ul>
-<p>Unsurprisingly, implementing a fault-tolerant total order broadcast protocol is what makes state machine replication hard to solve since it requires consensus<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>. More importantly, the need for a total order creates a scalability bottleneck since updates need to be processed sequentially by a single process (e.g., the leader in Raft). Also, total order broadcast isn’t available during network partitions as the CAP theorem applies<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> to it as well<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>.</p>
-<p>In this chapter, we will explore a form of replication that doesn’t require a total order but still comes with useful guarantees. But first, we need to talk about broadcast protocols.</p>
-<section id="broadcast-protocols" class="level2" data-number="11.1">
-<h2 data-number="11.1"><span class="header-section-number">11.1</span> Broadcast protocols</h2>
-<p>Network communication over wide area networks, like the internet, only offers point-to-point (unicast) communication protocols, like TCP. But to deliver a message to a group of processes, a broadcast protocol is needed (multicast). This means we have to somehow build a multicast protocol on top of a unicast one. The challenge here is that multicast needs to support multiple senders and receivers that can crash at any time.</p>
-<p>A broadcast protocol is characterized by the guarantees it provides. <em>Best-effort broadcast</em> guarantees that if the sender doesn’t crash, the message is delivered to all non-faulty processes in a group. A simple way to implement it is to send the message to all processes in a group one by one over reliable links (see Fig <a href="#fig:beb">11.1</a>). However, if, for example, the sender fails mid-way, some processes will never receive the message.</p>
+<p>不出所料，实现一个容错的全序广播协议正是状态机复制难以解决的原因，因为它需要共识<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>。更重要的是，对全序的需求造成了可扩展性瓶颈，因为更新需要由单个进程（例如，Raft中的领导者）顺序处理。此外，在网络分区期间，全序广播也不可用，因为CAP定理<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>同样适用于它<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>。</p>
+<p>在本章中，我们将探讨一种无需完全排序但仍能提供有用保证的复制形式。但首先，我们需要讨论一下广播协议。</p>
+<section class="level2" data-number="11.1" id="broadcast-protocols">
+<h2 data-number="11.1"><span class="header-section-number">11.1</span> 广播协议</h2>
+<p>在诸如互联网这样的广域网上进行网络通信，通常只提供点对点（单播）通信协议，例如TCP。但是，要向一组进程传递消息，则需要广播协议（组播）。这意味着我们必须在单播协议之上构建组播协议。这里的挑战在于，组播需要支持多个可能随时崩溃的发送方和接收方。</p>
+<p>广播协议的特性由其提供的保证来定义。<em>最大努力广播</em>保证，如果发送方没有崩溃，消息将被传递给组内所有无故障的进程。实现它的一个简单方法是，通过可靠的链路将消息逐一发送给组内的所有进程（参见图 <a href="#fig:beb">11.1</a>）。然而，例如，如果发送方中途失败，某些进程将永远不会收到消息。</p>
 <div class="figure" style="text-align: center">
-<img alt="Best-effort broadcast" width="80%" src="../media/file21.png" />
+<img alt="Best-effort broadcast" src="../media/file21.png" width="80%"/>
 <p class="caption">
-Figure 11.1: Best-effort broadcast
+图 11.1: 最大努力广播
 </p>
 </div>
-<p>Unlike best-effort broadcast, <em>reliable broadcast</em> guarantees that the message is eventually delivered to all non-faulty processes in the group, even if the sender crashes before the message has been fully delivered. One way to implement reliable broadcast is to have each process retransmit the message to the rest of the group the first time it is delivered (see Fig <a href="#fig:erb">11.2</a>). This approach is also known as <em>eager reliable broadcast</em>. Although it guarantees that all non-faulty processes eventually receive the message, it’s costly as it requires sending the message <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>N</mi><mn>2</mn></msup><annotation encoding="application/x-tex">N^2</annotation></semantics></math> times for a group of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math> processes.</p>
+<p>与最大努力广播不同，<em>可靠广播</em>保证消息最终会被传递给组内所有无故障的进程，即使发送方在消息完全传递之前崩溃。实现可靠广播的一种方法是，让每个进程在首次收到消息时，将其重新传输给组内的其他进程（参见图 <a href="#fig:erb">11.2</a>）。这种方法也被称为<em>急切可靠广播</em>。虽然它保证了所有无故障的进程最终都会收到消息，但代价高昂，因为它需要为一个包含 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math> 个进程的组发送 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>N</mi><mn>2</mn></msup><annotation encoding="application/x-tex">N^2</annotation></semantics></math> 次消息。</p>
 <div class="figure" style="text-align: center">
-<img alt="Eager reliable broadcast" width="80%" src="../media/file22.png" />
+<img alt="Eager reliable broadcast" src="../media/file22.png" width="80%"/>
 <p class="caption">
-Figure 11.2: Eager reliable broadcast
+图 11.2: 急切可靠广播
 </p>
 </div>
-<p>The number of messages can be reduced by retransmitting a message only to a random subset of processes (e.g., 2 as in Fig <a href="#fig:gossip">11.3</a>). This implementation is referred to as a <em>gossip broadcast protocol</em><a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a> as it resembles how rumors spread. Because it’s a probabilistic protocol, it doesn’t guarantee that a message will be delivered to all processes. That said, it’s possible to make that probability negligible by tuning the protocol’s parameters. Gossip protocols are particularly useful when broadcasting to a large number of processes where a deterministic protocol just wouldn’t scale.</p>
+<p>可以通过仅将消息重新传输给进程的随机子集（例如，如图 <a href="#fig:gossip">11.3</a> 中的2个）来减少消息数量。这种实现被称为<em>Gossip广播协议</em><a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>，因为它类似于谣言传播的方式。由于它是一种概率性协议，不能保证消息会被传递给所有进程。尽管如此，通过调整协议参数，可以使这种概率变得微乎其微。当需要向大量进程进行广播，而确定性协议无法扩展时，Gossip协议特别有用。</p>
 <div class="figure" style="text-align: center">
-<img alt="Gossip broadcast" width="100%" src="../media/file23.png" />
+<img alt="Gossip broadcast" src="../media/file23.png" width="100%"/>
 <p class="caption">
-Figure 11.3: Gossip broadcast
+图 11.3: Gossip广播
 </p>
 </div>
-<p>Although reliable broadcast protocols guarantee that messages are delivered to all non-faulty processes in a group, they don’t make any guarantees about their order. For example, two processes could receive the same messages but in a different order. <em>Total order broadcast</em> is a reliable broadcast abstraction that builds upon the guarantees offered by reliable broadcast and additionally ensures that messages are delivered in the same order to all processes. As discussed earlier, a fault-tolerant implementation requires consensus.</p>
+<p>尽管可靠广播协议保证消息会被传递给组内所有无故障的进程，但它们对消息的顺序没有任何保证。例如，两个进程可能以不同的顺序接收相同的消息。<em>全序广播</em>是一种可靠广播抽象，它建立在可靠广播提供的保证之上，并额外确保所有进程以相同的顺序接收消息。如前所述，一个容错的实现需要共识机制。</p>
 </section>
-<section id="crdt" class="level2" data-number="11.2">
-<h2 data-number="11.2"><span class="header-section-number">11.2</span> Conflict-free replicated data types</h2>
-<p>Now, here’s an idea: if we were to implement replication with a broadcast protocol that doesn’t guarantee total order, we wouldn’t need to serialize writes through a single leader, but instead could allow any replica to accept writes. But since replicas might receive messages in different orders, they will inevitably diverge. So, for the replication to be useful, the divergence can only be temporary, and replicas eventually have to converge to the same state. This is the essence of eventual consistency.</p>
-<p>More formally, eventual consistency requires:</p>
+<section class="level2" data-number="11.2" id="crdt">
+<h2 data-number="11.2"><span class="header-section-number">11.2</span> 无冲突复制数据类型</h2>
+<p>现在，有一个想法：如果我们使用不保证全序的广播协议来实现复制，我们就不需要通过单一领导者来序列化写入，而是允许任何副本接受写入。但由于副本可能以不同的顺序接收消息，它们不可避免地会产生分歧。因此，为了使复制有用，这种分歧只能是暂时的，副本最终必须收敛到相同的状态。这就是最终一致性的本质。</p>
+<p>更正式地说，最终一致性要求：</p>
 <ul>
-<li><em>eventual delivery</em> — the guarantee that every update applied at a replica is eventually applied at all replicas,</li>
-<li>and <em>convergence</em> — the guarantee that replicas that have applied the same updates <em>eventually</em> reach the same state.</li>
+<li><em>最终送达</em> —— 保证在某个副本应用的每个更新最终会在所有副本上应用，</li>
+<li>以及 <em>收敛性</em> —— 保证应用了相同更新的副本<em>最终</em>达到相同的状态。</li>
 </ul>
-<p>Using a broadcast protocol that doesn’t deliver messages in the same order across all replicas will inevitably lead to divergence (see Fig <a href="#fig:concurrentwrites">11.4</a>). One way to reconcile conflicting writes is to use consensus to make a decision that all replicas need to agree with.</p>
+<p>使用在所有副本间不以相同顺序传递消息的广播协议，将不可避免地导致分歧（见图 <a href="#fig:concurrentwrites">11.4</a>）。调和冲突写入的一种方法是使用共识来做出所有副本都需要同意的决定。</p>
 <div class="figure" style="text-align: center">
-<img alt="The same object is updated simultaneously by different clients at different replicas, leading to conflicts." width="80%" src="../media/file24.png" />
+<img alt="同一对象被不同客户端在不同副本上同时更新，导致冲突。" src="../media/file24.png" width="80%"/>
 <p class="caption">
-Figure 11.4: The same object is updated simultaneously by different clients at different replicas, leading to conflicts.
+图 11.4: 同一对象被不同客户端在不同副本上同时更新，导致冲突。
 </p>
 </div>
-<p>This solution has better availability and performance than the one using total order broadcast, since consensus is only required to reconcile conflicts and can happen off the critical path. But getting the reconciliation logic right isn’t trivial. So is there a way for replicas to solve conflicts without using consensus at all?</p>
-<p>Well, if we can define a deterministic outcome for any potential conflict (e.g., the write with the greatest timestamp always wins), there wouldn’t be any conflicts, by design. Therefore consensus wouldn’t be needed to reconcile replicas. Such a replication strategy offers stronger guarantees than plain eventual consistency, i.e.:</p>
+<p>与使用全序广播的方案相比，此解决方案具有更好的可用性和性能，因为共识仅用于调和冲突，并且可以在关键路径之外进行。但是，正确实现调和逻辑并非易事。那么，有没有办法让副本完全不用共识来解决冲突呢？</p>
+<p>嗯，如果我们能为任何潜在的冲突定义一个确定性的结果（例如，时间戳最大的写入总是获胜），那么根据设计，就不会有任何冲突。因此，调和副本就不需要共识。这种复制策略提供了比普通最终一致性更强的保证，即：</p>
 <ul>
-<li><em>eventual delivery</em> — the same guarantee as in eventual consistency,</li>
-<li>and <em>strong convergence</em> — the guarantee that replicas that have executed the same updates <em>have</em> the same state (i.e., every update is immediately persisted).</li>
+<li><em>最终送达</em> —— 与最终一致性中的保证相同，</li>
+<li>以及 <em>强收敛性</em> —— 保证执行了相同更新的副本<em>拥有</em>相同的状态（即，每个更新都立即持久化）。</li>
 </ul>
-<p>This variation of eventual consistency is also called <em>strong eventual consistency</em><a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>. With it, we can build systems that are available, (strongly eventual) consistent, and also partition tolerant.</p>
-<p>Which conditions are required to guarantee that replicas strongly converge? For example, suppose we replicate an object across N replicas, where the object is an instance of some data type that supports <em>query</em> and <em>update</em> operations (e.g., integer, string, set, etc.).</p>
-<p>A client can send an update or query operation to any replica, and:</p>
+<p>这种最终一致性的变体也称为<em>强最终一致性</em><a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>。有了它，我们可以构建可用、（强最终）一致且分区容忍的系统。</p>
+<p>保证副本强收敛需要哪些条件？例如，假设我们在 N 个副本之间复制一个对象，该对象是某种支持<em>查询</em>和<em>更新</em>操作的数据类型（例如，整数、字符串、集合等）的实例。</p>
+<p>客户端可以向任何副本发送更新或查询操作，并且：</p>
 <ul>
-<li>when a replica receives a query, it immediately replies using the local copy of the object;</li>
-<li>when a replica receives an update, it first applies it to the local copy of the object and then broadcasts the updated object to all replicas;</li>
-<li>and when a replica receives a broadcast message, it <em>merges</em> the object in the message with its own.</li>
+<li>当副本收到查询时，它立即使用对象的本地副本进行回复；</li>
+<li>当副本收到更新时，它首先将其应用到对象的本地副本，然后将更新后的对象广播给所有副本；</li>
+<li>当副本收到广播消息时，它将消息中的对象与其自身的对象<em>合并</em>。</li>
 </ul>
-<p>It can be shown that each replica will converge to the same state if:</p>
+<p>可以证明，如果满足以下条件，每个副本将收敛到相同的状态：</p>
 <ul>
-<li>the object’s possible states form a semilattice, i.e., a set that contains elements that can be partially ordered;</li>
-<li>and the merge operation returns the least upper bound between two objects’ states (and therefore is idempotent, commutative, and associative).</li>
+<li>对象的可能状态形成一个半格，即一个包含可以部分排序的元素的集合；</li>
+<li>并且合并操作返回两个对象状态之间的最小上界（因此是幂等的、可交换的和可结合的）。</li>
 </ul>
-<p>A data type that has these properties is also called a convergent replicated data type<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a>, which is part of the family of <em>conflict-free replicated data types</em> (CRDTs). This sounds a lot more complicated than it actually is.</p>
-<p>For example, suppose we are working with integer objects (which can be partially ordered), and the merge operation takes the maximum of two objects (least upper bound). It’s easy to see how replicas converge to the global maximum in this case, even if requests are delivered out of order and/or multiple times across replicas.</p>
+<p>具有这些属性的数据类型也称为收敛复制数据类型<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>，它是<em>无冲突复制数据类型</em>（CRDTs）家族的一部分。这听起来比实际情况复杂得多。</p>
+<p>例如，假设我们处理整数对象（可以部分排序），并且合并操作取两个对象的最大值（最小上界）。很容易看出，在这种情况下，即使请求在副本之间无序传递和/或多次传递，副本如何收敛到全局最大值。</p>
 <!-- TODO: Add picture to show semilattice? -->
-<p>Although we have assumed the use of a reliable broadcast protocol so far, replicas could even use an unreliable protocol to implement broadcast as long as they periodically exchange and merge their states to ensure that they eventually converge (aka an <em>anti-entropy mechanism</em>, we will see some examples in section <a href="#dynamo">11.3</a>). Of course, periodic state exchanges can be expensive if done naively.</p>
-<p>There are many data types that are designed to converge when replicated, like registers, counters, sets, dictionaries, and graphs. For example, a register is a memory cell storing some opaque sequence of bytes that supports an assignment operation to overwrite its state. To make a register convergent, we need to define a partial order over its values and a merge operation. There are two common register implementations that meet these requirements: last-writer-wins (LWW) and multi-value (MV).</p>
-<p>A <em>last-writer-wins</em> register associates a timestamp with every update to make updates totally orderable. The timestamp could be composed of a Lamport timestamp to preserve the <em>happened-before</em> relationship among updates and a replica identifier to ensure there are no ties. When a replica receives an update request from a client, it generates a new timestamp and updates the register’s state with that and the new value; finally, it broadcasts the state and timestamp to all replicas. When a replica receives a register state from a peer, it merges it with its local copy by taking the one with the greater timestamp and discarding the other (see Fig <a href="#fig:lww">11.5</a>).</p>
+<p>尽管到目前为止我们假设使用了可靠的广播协议，但只要副本定期交换和合并它们的状态以确保最终收敛（也称为<em>反熵机制</em>，我们将在 <a href="#dynamo">11.3</a> 节看到一些例子），它们甚至可以使用不可靠的协议来实现广播。当然，如果处理不当，定期的状态交换可能会代价高昂。</p>
+<p>有许多数据类型在设计时考虑了复制时的收敛性，例如寄存器、计数器、集合、字典和图。例如，寄存器是一个存储某些不透明字节序列的内存单元，支持赋值操作以覆盖其状态。为了使寄存器收敛，我们需要在其值上定义一个偏序和一个合并操作。有两种常见的寄存器实现满足这些要求：最后写入者获胜（LWW）和多值（MV）。</p>
+<p>一个<em>最后写入者获胜</em>寄存器为每次更新关联一个时间戳，使更新完全可排序。时间戳可以由一个Lamport时间戳（以保持更新之间的<em>先发生</em>关系）和一个副本标识符（以确保没有平局）组成。当副本收到来自客户端的更新请求时，它生成一个新的时间戳，并用该时间戳和新值更新寄存器的状态；最后，它将状态和时间戳广播给所有副本。当副本从对等方收到寄存器状态时，它通过取时间戳较大的那个并丢弃另一个来将其与本地副本合并（见图 <a href="#fig:lww">11.5</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="Last-writer wins register" width="90%" src="../media/file25.png" />
+<img alt="最后写入者获胜寄存器" src="../media/file25.png" width="90%"/>
 <p class="caption">
-Figure 11.5: Last-writer wins register
+图 11.5: 最后写入者获胜寄存器
 </p>
 </div>
-<p>The main issue with LWW registers is that conflicting updates that happen concurrently are handled by taking the one with the greater timestamp, which might not always make sense. An alternative way of handling conflicts is to keep track of all concurrent updates and return them to the client application, which can handle conflicts however it sees fit. This is the approach taken by the <em>multi-value</em> register. To detect concurrent updates, replicas tag each update with a vector clock timestamp<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a> and the merge operation returns the union of all concurrent updates (see Fig <a href="#fig:mv">11.6</a>).</p>
+<p>LWW寄存器的主要问题是，通过取时间戳较大的那个来处理同时发生的冲突更新，这可能并不总是合理的。处理冲突的另一种方法是跟踪所有并发更新并将其返回给客户端应用程序，客户端应用程序可以按其认为合适的方式处理冲突。这就是<em>多值</em>寄存器采用的方法。为了检测并发更新，副本使用向量时钟时间戳<a class="footnote-ref" epub:type="noteref" href="#fn7" id="fnref7">7</a>标记每个更新，合并操作返回所有并发更新的并集（见图 <a href="#fig:mv">11.6</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="Multi-value register" width="90%" src="../media/file26.png" />
+<img alt="多值寄存器" src="../media/file26.png" width="90%"/>
 <p class="caption">
-Figure 11.6: Multi-value register
+图 11.6: 多值寄存器
 </p>
 </div>
-<p>The beauty of CRDTs is that they compose. So, for example, you can build a convergent key-value store by using a dictionary of LWW or MV registers. This is the approach followed by <em>Dynamo-style</em> data stores.</p>
+<p>CRDTs的美妙之处在于它们可以组合。因此，例如，你可以通过使用LWW或MV寄存器的字典来构建一个收敛的键值存储。这就是<em>Dynamo风格</em>数据存储所采用的方法。</p>
 </section>
-<section id="dynamo" class="level2" data-number="11.3">
-<h2 data-number="11.3"><span class="header-section-number">11.3</span> Dynamo-style data stores</h2>
-<p>Dynamo<a href="#fn8" class="footnote-ref" id="fnref8" epub:type="noteref">8</a> is arguably the best-known design of an eventually consistent and highly available key-value store. Many other data stores have been inspired by it, like Cassandra<a href="#fn9" class="footnote-ref" id="fnref9" epub:type="noteref">9</a> and Riak KV<a href="#fn10" class="footnote-ref" id="fnref10" epub:type="noteref">10</a>.</p>
-<p>In Dynamo-style data stores, every replica can accept write and read requests. When a client wants to write an entry to the data store, it sends the request to all N replicas in parallel but waits for an acknowledgment from just W replicas (a write quorum). Similarly, when a client wants to read an entry from the data store, it sends the request to all replicas but waits just for R replies (a read quorum) and returns the most recent entry to the client. To resolve conflicts, entries behave like LWW or MV registers depending on the implementation flavor.</p>
-<p>When W + R &gt; N, the write quorum and the read quorum must intersect with each other, so at least one read will return the latest version (see Fig <a href="#fig:quorum">11.7</a>). This doesn’t guarantee linearizability on its own, though. For example, if a write succeeds on less than W replicas and fails on the others, replicas are left in an inconsistent state, and some clients might read the latest version while others don’t. To avoid this inconsistency, the writes need to be bundled into an atomic transaction. We will talk more about transactions in chapter <a href="#transactions">12</a>.</p>
+<section class="level2" data-number="11.3" id="dynamo">
+<h2 data-number="11.3"><span class="header-section-number">11.3</span> Dynamo风格的数据存储</h2>
+<p>Dynamo<a class="footnote-ref" epub:type="noteref" href="#fn8" id="fnref8">8</a>可以说是最终一致且高可用的键值存储中最知名的设计。许多其他数据存储都受到了它的启发，例如Cassandra<a class="footnote-ref" epub:type="noteref" href="#fn9" id="fnref9">9</a>和Riak KV<a class="footnote-ref" epub:type="noteref" href="#fn10" id="fnref10">10</a>。</p>
+<p>在Dynamo风格的数据存储中，每个副本都可以接受写入和读取请求。当客户端想要向数据存储写入一个条目时，它会并行地向所有N个副本发送请求，但只等待W个副本的确认（写入仲裁）。类似地，当客户端想要从数据存储读取一个条目时，它会向所有副本发送请求，但只等待R个回复（读取仲裁），并将最新的条目返回给客户端。为了解决冲突，条目的行为类似于LWW或MV寄存器，具体取决于实现方式。</p>
+<p>当W + R &gt; N时，写入仲裁和读取仲裁必须相互重叠，因此至少有一次读取会返回最新版本（见图<a href="#fig:quorum">11.7</a>）。但这本身并不能保证线性一致性。例如，如果一次写入在少于W个副本上成功而在其他副本上失败，副本就会处于不一致的状态，一些客户端可能读取到最新版本，而另一些则不能。为了避免这种不一致性，写入操作需要捆绑在一个原子事务中。我们将在第<a href="#transactions">12</a>章中更多地讨论事务。</p>
 <div class="figure" style="text-align: center">
-<img alt="Intersecting write and read quorums" width="60%" src="../media/file27.png" />
+<img alt="Intersecting write and read quorums" src="../media/file27.png" width="60%"/>
 <p class="caption">
-Figure 11.7: Intersecting write and read quorums
+图 11.7: 重叠的写入与读取仲裁
 </p>
 </div>
-<p>Typically W and R are configured to be majority quorums, i.e., quorums that contain more than half the number of replicas. That said, other combinations are possible, and the data store’s read and write throughput depend on how large or small R and W are. For example, a read-heavy workload benefits from a smaller R; however, this makes writes slower and less available (assuming W + R &gt; N). Alternatively, both W and R can be configured to be very small (e.g., W = R = 1) for maximum performance at the expense of consistency (W + R &lt; N).</p>
-<p>One problem with this approach is that a write request sent to a replica might never make it to the destination. In this case, the replica won’t converge, no matter how long it waits. To ensure that replicas converge, two anti-entropy mechanisms are used: read-repair and replica synchronization. So another way to think about quorum replication is as a best-effort broadcast combined with anti-entropy mechanisms to ensure that all changes propagate to all replicas.</p>
-<p><em>Read repair</em> is a mechanism that clients implement to help bring replicas back in sync whenever they perform a read. As mentioned earlier, when a client executes a read, it waits for R replies. Now, suppose some of these replies contain older entries. In that case, the client can issue a write request with the latest entry to the out-of-sync replicas. Although this approach works well for frequently read entries, it’s not enough to guarantee that all replicas will eventually converge.</p>
-<p><em>Replica synchronization</em> is a continuous background mechanism that runs on every replica and periodically communicates with others to identify and repair inconsistencies. For example, suppose replica X finds out that it has an older version of key K than replica Y. In that case, it will retrieve the latest version of K from Y. To detect inconsistencies and minimize the amount of data exchanged, replicas can exchange Merkle tree hashes<a href="#fn11" class="footnote-ref" id="fnref11" epub:type="noteref">11</a> with a gossip protocol.</p>
+<p>通常，W和R被配置为多数仲裁，即包含超过半数副本的仲裁。也就是说，其他组合也是可能的，数据存储的读取和写入吞吐量取决于R和W的大小。例如，读取密集型工作负载受益于较小的R；然而，这会使写入变慢且可用性降低（假设W + R &gt; N）。或者，为了在牺牲一致性（W + R &lt; N）的情况下获得最大性能，可以将W和R都配置得非常小（例如，W = R = 1）。</p>
+<p>这种方法的一个问题是，发送给副本的写入请求可能永远无法到达目的地。在这种情况下，无论等待多久，副本都无法收敛。为了确保副本收敛，使用了两种反熵机制：读取修复和副本同步。因此，思考仲裁复制的另一种方式是，它是一种最大努力广播，结合了反熵机制，以确保所有变更传播到所有副本。</p>
+<p><em>读取修复</em>是客户端实现的一种机制，用于在每次执行读取时帮助使副本恢复同步。如前所述，当客户端执行读取时，它会等待R个回复。现在，假设其中一些回复包含较旧的条目。在这种情况下，客户端可以向不同步的副本发出带有最新条目的写入请求。尽管这种方法对于频繁读取的条目效果很好，但不足以保证所有副本最终都会收敛。</p>
+<p><em>副本同步</em>是一种持续的后台机制，在每个副本上运行，并定期与其他副本通信以识别和修复不一致性。例如，假设副本X发现它拥有的键K的版本比副本Y的旧。在这种情况下，它将从Y检索K的最新版本。为了检测不一致性并最小化交换的数据量，副本可以通过八卦协议交换默克尔树哈希<a class="footnote-ref" epub:type="noteref" href="#fn11" id="fnref11">11</a>。</p>
 </section>
-<section id="the-calm-theorem" class="level2" data-number="11.4">
-<h2 data-number="11.4"><span class="header-section-number">11.4</span> The CALM theorem</h2>
-<p>At this point, you might be wondering how you can tell whether an application requires coordination, such as consensus, and when it doesn’t. The CALM theorem<a href="#fn12" class="footnote-ref" id="fnref12" epub:type="noteref">12</a> states that a program has a consistent, coordination-free distributed implementation if and only if it is <em>monotonic</em>.</p>
-<p>Intuitively, a program is monotonic if new inputs further refine the output and can’t take back any prior output. A program that computes the union of a set is a good example of that — once an element (input) is added to the set (output), it can’t be removed. Similarly, it can be shown that CRDTs are monotonic.</p>
-<p>In contrast, in a non-monotonic program, a new input can retract a prior output. For example, variable assignment is a non-monotonic operation since it overwrites the variable’s prior value.</p>
-<p>A monotonic program can be consistent, available, and partition tolerant all at once. However, consistency in CALM doesn’t refer to linearizability, the <em>C</em> in CAP. Linearizability is narrowly focused on the consistency of reads and writes. Instead, CALM focuses on the consistency of the program’s output<a href="#fn13" class="footnote-ref" id="fnref13" epub:type="noteref">13</a>. In CALM, a consistent program is one that produces the same output no matter in which order the inputs are processed and despite any conflicts; it doesn’t say anything about the consistency of reads and writes.</p>
-<p>For example, say you want to implement a counter. If all you have at your disposal are write and read operations, then the order of the operations matters:</p>
+<section class="level2" data-number="11.4" id="the-calm-theorem">
+<h2 data-number="11.4"><span class="header-section-number">11.4</span> CALM定理</h2>
+<p>此时，您可能想知道如何判断一个应用程序是否需要协调（例如共识），以及何时不需要。CALM定理<a class="footnote-ref" epub:type="noteref" href="#fn12" id="fnref12">12</a>指出，一个程序当且仅当它是<em>单调的</em>时，才具有一致、无需协调的分布式实现。</p>
+<p>直观地说，如果一个程序的新输入能进一步优化输出，并且不能撤回任何先前的输出，那么它就是单调的。计算集合并集的程序就是一个很好的例子——一旦一个元素（输入）被添加到集合（输出）中，它就无法被移除。类似地，可以证明CRDT是单调的。</p>
+<p>相反，在非单调程序中，新的输入可以撤销先前的输出。例如，变量赋值就是一个非单调操作，因为它会覆盖变量之前的值。</p>
+<p>单调程序可以同时实现一致性、可用性和分区容错性。然而，CALM中的一致性并非指线性一致性（即CAP定理中的<em>C</em>）。线性一致性狭义地关注读写的一致性。而CALM则关注程序输出的一致性<a class="footnote-ref" epub:type="noteref" href="#fn13" id="fnref13">13</a>。在CALM中，一致的程序是指无论输入以何种顺序处理，也无论存在任何冲突，都能产生相同输出的程序；它并不涉及读写的一致性。</p>
+<p>例如，假设您想实现一个计数器。如果您手头只有写入和读取操作，那么操作的顺序就至关重要：</p>
 <pre><code>write(1), write(2), write(3) =&gt; 3</code></pre>
-<p>but:</p>
+<p>但是：</p>
 <pre><code>write(3), write(1), write(2) =&gt; 2</code></pre>
-<p>In contrast, if the program has an abstraction for counters that supports an increment operation, you can reorder the operations any way you like without affecting the result:</p>
+<p>相反，如果程序有一个支持递增操作的计数器抽象，您可以任意重新排序操作而不影响结果：</p>
 <pre><code>increment(1), increment(1), increment(1) =&gt; 3</code></pre>
-<p>In other words, consistency based on reads and writes can limit the solution space<a href="#fn14" class="footnote-ref" id="fnref14" epub:type="noteref">14</a>, since it’s possible to build systems that are consistent at the application level, but not in terms of reads and writes at the storage level.</p>
-<p>CALM also identifies programs that can’t be consistent because they are not monotonic. For example, a vanilla register/variable assignment operation is not monotonic as it invalidates whatever value was stored there before. But, by combining the assignment operation with a logical clock, it’s possible to build a monotonic implementation, as we saw earlier when discussing LWW and MV registers.</p>
+<p>换句话说，基于读写的一致性可能会限制解决方案的空间<a class="footnote-ref" epub:type="noteref" href="#fn14" id="fnref14">14</a>，因为有可能构建在应用层面一致，但在存储层面的读写层面不一致的系统。</p>
+<p>CALM也识别出那些由于非单调性而无法实现一致性的程序。例如，普通的寄存器/变量赋值操作不是单调的，因为它会使之前存储的任何值失效。但是，通过将赋值操作与逻辑时钟结合，可以构建一个单调的实现，正如我们之前在讨论LWW和MV寄存器时所看到的。</p>
 </section>
-<section id="causal-consistency" class="level2" data-number="11.5">
-<h2 data-number="11.5"><span class="header-section-number">11.5</span> Causal consistency</h2>
-<p>So we understand now how eventual consistency can be used to implement monotonic applications that are consistent, available, and partition-tolerant. Unfortunately, there are many applications for which its guarantees are not sufficient. For example, eventual consistency doesn’t guarantee that an operation that <em>happened-before</em> another is observed in the correct order by replicas. Suppose you upload a picture to a social network and then add it to a gallery. With eventual consistency, the gallery may reference the image before it becomes available, causing a missing image placeholder to appear in its stead.</p>
-<p>One of the main benefits of strong consistency is that it preserves the <em>happened-before</em> order among operations, which guarantees that the cause happens before the effect. So, in the previous example, the reference to the newly added picture in the gallery is guaranteed to become visible only after the picture becomes available.</p>
-<p>Surprisingly, to preserve the <em>happened-before</em> order (causal order) among operations, we don’t need to reach for strong consistency, since we can use a weaker consistency model called <em>causal consistency</em><a href="#fn15" class="footnote-ref" id="fnref15" epub:type="noteref">15</a>. This model is weaker than strong consistency but stronger than eventual consistency, and it’s particularly attractive for two reasons:</p>
+<section class="level2" data-number="11.5" id="causal-consistency">
+<h2 data-number="11.5"><span class="header-section-number">11.5</span> 因果一致性</h2>
+<p>至此，我们理解了如何利用最终一致性来实现具备一致性、可用性和分区容错性的单调应用程序。遗憾的是，对于许多应用而言，其提供的保证并不充分。例如，最终一致性无法保证副本能以正确的顺序观察到那些存在<em>先后发生</em>关系的操作。假设你向社交网络上传了一张图片，然后将其添加到相册中。在最终一致性模型下，相册可能在图片可用之前就引用了它，从而导致显示一个缺失图片的占位符。</p>
+<p>强一致性的主要优势之一在于它保持了操作之间的<em>先后发生</em>顺序，这保证了原因先于结果发生。因此，在前面的例子中，只有当图片可用之后，相册中对新添加图片的引用才会变得可见。</p>
+<p>令人惊讶的是，为了保持操作之间的<em>先后发生</em>顺序（因果顺序），我们并不需要诉诸强一致性，因为我们可以使用一种称为<em>因果一致性</em><a class="footnote-ref" epub:type="noteref" href="#fn15" id="fnref15">15</a>的较弱一致性模型。该模型弱于强一致性但强于最终一致性，它特别吸引人有两个原因：</p>
 <ul>
-<li>For many applications, causal consistency is “consistent enough” and easier to work with than eventual consistency.</li>
-<li>Causal consistency is provably<a href="#fn16" class="footnote-ref" id="fnref16" epub:type="noteref">16</a> the strongest consistency model that enables building systems that are also available and partition tolerant.</li>
+<li>对于许多应用来说，因果一致性“足够一致”，并且比最终一致性更易于处理。</li>
+<li>因果一致性被证明<a class="footnote-ref" epub:type="noteref" href="#fn16" id="fnref16">16</a>是能够构建同时具备可用性和分区容错性系统的最强一致性模型。</li>
 </ul>
-<p>Causal consistency imposes a partial order on the operations. The simplest definition requires that processes agree on the order of causally related operations but can <em>disagree</em> on the order of unrelated ones. You can take any two operations, and either one <em>happened-before</em> the other, or they are concurrent and therefore can’t be ordered. This is the main difference from strong consistency, which imposes a <em>global</em> order that all processes agree with.</p>
-<p>For example, suppose a process updates an entry in a key-value store (operation A), which is later read by another process (operation B) that consequently updates another entry (operation C). In that case, all processes in the system have to agree that A <em>happened-before</em> C. In contrast, if two operations, X and Y, happen concurrently and neither <em>happened-before</em> the other, some processes may observe X before Y and others Y before X.</p>
-<p>Let’s see how we can use causal consistency to build a replicated data store that is available under network partitions. We will base our discussion on “Clusters of Order-Preserving Servers” (COPS<a href="#fn17" class="footnote-ref" id="fnref17" epub:type="noteref">17</a>), a key-value store that delivers causal consistency across geographically distributed clusters. In COPS, a cluster is set up as a strongly consistent partitioned data store, but for simplicity, we will treat it as a single logical node without partitions.<a href="#fn18" class="footnote-ref" id="fnref18" epub:type="noteref">18</a> Later, in chapter <a href="#partitioning">16</a>, we will discuss partitioning at length.</p>
-<p>First, let’s define a variant of causal consistency called <em>causal+</em> in which there is no disagreement (conflict) about the order of unrelated operations. Disagreements are problematic since they cause replicas to diverge forever. To avoid them, LWW registers can be used as values to ensure that all replicas converge to the same state in the presence of concurrent writes. An LWW register is composed of an object and a logical timestamp, which represents its version.</p>
-<p>In COPS, any replica can accept read and write requests, and clients send requests to their closest replica (local replica). When a client sends a read request for a key to its local replica, the latter replies with the most recent value available locally. When the client receives the response, it adds the version (logical timestamp) of the value it received to a local key-version dictionary used to keep track of <em>dependencies</em>.</p>
-<p>When a client sends a write to its local replica, it adds a copy of the dependency dictionary to the request. The replica assigns a version to the write, applies the change locally, and sends an acknowledgment back to the client with the version assigned to it. It can apply the change locally, even if other clients updated the key in the meantime, because values are represented with LWW registers. Finally, the update is broadcast asynchronously to the other replicas.</p>
-<p>When a replica receives a replication message for a write, it doesn’t apply it locally immediately. Instead, it first checks whether the write’s dependencies have been committed locally. If not, it waits until the required versions appear. Finally, once all dependencies have been committed, the replication message is applied locally. This behavior guarantees causal consistency (see Fig <a href="#fig:cops">11.8</a>).</p>
+<p>因果一致性对操作施加了偏序关系。最简单的定义要求进程对因果相关操作的顺序达成一致，但对于不相关操作的顺序可以<em>不一致</em>。你可以取任意两个操作，要么一个<em>先于</em>另一个发生，要么它们是并发的，因此无法排序。这是与强一致性的主要区别，强一致性施加了一个所有进程都同意的<em>全局</em>顺序。</p>
+<p>例如，假设一个进程更新了键值存储中的一个条目（操作A），随后另一个进程读取了该条目（操作B），并因此更新了另一个条目（操作C）。在这种情况下，系统中的所有进程都必须同意A<em>先于</em>C发生。相反，如果两个操作X和Y并发发生，且彼此没有<em>先后发生</em>关系，那么一些进程可能先观察到X后观察到Y，而另一些进程则可能先观察到Y后观察到X。</p>
+<p>让我们看看如何利用因果一致性来构建一个在网络分区下仍可用的复制数据存储。我们将基于“保持顺序的服务器集群”（COPS<a class="footnote-ref" epub:type="noteref" href="#fn17" id="fnref17">17</a>）展开讨论，这是一个在地理分布集群间提供因果一致性的键值存储。在COPS中，一个集群被设置为强一致性的分区数据存储，但为了简化，我们将其视为一个没有分区的单一逻辑节点。<a class="footnote-ref" epub:type="noteref" href="#fn18" id="fnref18">18</a> 稍后，在第<a href="#partitioning">16</a>章，我们将详细讨论分区。</p>
+<p>首先，让我们定义一种因果一致性的变体，称为<em>因果+</em>，其中对于不相关操作的顺序不存在不一致（冲突）。不一致是有问题的，因为它们会导致副本永远分叉。为了避免这种情况，可以使用LWW寄存器作为值，以确保在存在并发写入时所有副本都能收敛到相同的状态。LWW寄存器由一个对象和一个逻辑时间戳组成，该时间戳代表其版本。</p>
+<p>在COPS中，任何副本都可以接受读写请求，客户端将请求发送到离它们最近的副本（本地副本）。当客户端向其本地副本发送针对某个键的读取请求时，后者会回复本地可用的最新值。当客户端收到响应时，它会将接收到的值的版本（逻辑时间戳）添加到一个本地键-版本字典中，该字典用于跟踪<em>依赖关系</em>。</p>
+<p>当客户端向其本地副本发送写入请求时，它会将依赖关系字典的副本附加到请求中。副本为该写入分配一个版本，在本地应用更改，并向客户端返回一个确认，其中包含分配给该写入的版本。即使在此期间其他客户端更新了该键，它也可以在本地应用更改，因为值是用LWW寄存器表示的。最后，更新被异步广播到其他副本。</p>
+<p>当副本收到针对某个写入的复制消息时，它不会立即在本地应用。相反，它首先检查该写入的依赖项是否已在本地提交。如果没有，它会等待直到所需的版本出现。最后，一旦所有依赖项都已提交，复制消息才会在本地应用。这种行为保证了因果一致性（参见图<a href="#fig:cops">11.8</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="A causally consistent implementation of a key-value store" width="100%" src="../media/file28.png" />
+<img alt="A causally consistent implementation of a key-value store" src="../media/file28.png" width="100%"/>
 <p class="caption">
-Figure 11.8: A causally consistent implementation of a key-value store
+图 11.8：一个键值存储的因果一致性实现
 </p>
 </div>
-<p>If a replica fails, the data store continues to be available as any replica can accept writes. There is a possibility that a replica could fail after committing an update locally but before broadcasting it, resulting in data loss. In COPS’ case, this tradeoff is considered acceptable to avoid paying the price of waiting for one or more long-distance requests to remote replicas before acknowledging a client write.</p>
+<p>如果某个副本发生故障，数据存储仍然可用，因为任何副本都可以接受写入。存在一种可能性，即副本在本地提交更新后、但在广播之前发生故障，从而导致数据丢失。在COPS的情况下，为了避免在确认客户端写入之前等待一个或多个到远程副本的长距离请求所带来的代价，这种权衡被认为是可接受的。</p>
 </section>
-<section id="practical-considerations" class="level2" data-number="11.6">
-<h2 data-number="11.6"><span class="header-section-number">11.6</span> Practical considerations</h2>
-<p>To summarize, in the previous chapters we explored different ways to implement replication and learned that there is a tradeoff between consistency and availability/performance. In other words, to build scalable and available systems, coordination needs to be minimized.</p>
-<p>This tradeoff is present in any large-scale system, and some even have knobs that allow you to control it. For example, Azure Cosmos DB is a fully managed scalable NoSQL database that enables developers to choose among 5 different consistency models, ranging from eventual consistency to strong consistency<a href="#fn19" class="footnote-ref" id="fnref19" epub:type="noteref">19</a>, where weaker consistency models have higher throughputs than stronger ones.</p>
+<section class="level2" data-number="11.6" id="practical-considerations">
+<h2 data-number="11.6"><span class="header-section-number">11.6</span> 实战考量</h2>
+<p>总而言之，在前面的章节中，我们探讨了实现复制的不同方法，并了解到一致性与可用性/性能之间存在权衡。换句话说，要构建可扩展且可用的系统，需要尽量减少协调工作。</p>
+<p>这种权衡存在于任何大规模系统中，有些系统甚至提供了可调节的选项来让你控制它。例如，Azure Cosmos DB 是一个完全托管的可扩展 NoSQL 数据库，它允许开发人员在 5 种不同的一致性模型中进行选择，范围从最终一致性到强一致性<a class="footnote-ref" epub:type="noteref" href="#fn19" id="fnref19">19</a>，其中较弱的一致性模型比较强的一致性模型具有更高的吞吐量。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>Total order broadcast is equivalent to consensus, see “Unreliable Failure Detectors for Reliable Distributed Systems,” <a href="https://www.cs.utexas.edu/~lorenzo/corsi/cs380d/papers/p225-chandra.pdf" class="uri">https://www.cs.utexas.edu/~lorenzo/corsi/cs380d/papers/p225-chandra.pdf</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Perspectives on the CAP Theorem,” <a href="https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf" class="uri">https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>Consensus is harder to solve than implementing a linearizable read/write register, which is what the CAP theorem uses to define consistency.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“Gossip protocol,” <a href="https://en.wikipedia.org/wiki/Gossip_protocol" class="uri">https://en.wikipedia.org/wiki/Gossip_protocol</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Strong Eventual Consistency and Conflict-free Replicated Data Types,” <a href="https://www.microsoft.com/en-us/research/video/strong-eventual-consistency-and-conflict-free-replicated-data-types/" class="uri">https://www.microsoft.com/en-us/research/video/strong-eventual-consistency-and-conflict-free-replicated-data-types/</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“Conflict-free Replicated Data Types,” <a href="https://hal.inria.fr/inria-00609399v1/document" class="uri">https://hal.inria.fr/inria-00609399v1/document</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>In practice, <em>version vectors</em> are used to compare the state of different replicas that only keep track of events that change the state of replicas, see “Detection of Mutual Inconsistency in Distributed Systems,” <a href="https://pages.cs.wisc.edu/~remzi/Classes/739/Fall2017/Papers/parker83detection.pdf" class="uri">https://pages.cs.wisc.edu/~remzi/Classes/739/Fall2017/Papers/parker83detection.pdf</a>.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8" epub:type="footnote"><p>“Dynamo: Amazon’s Highly Available Key-value Store,” <a href="https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf" class="uri">https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9" epub:type="footnote"><p>“Cassandra: Open Source NoSQL Database,” <a href="https://cassandra.apache.org/" class="uri">https://cassandra.apache.org/</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn10" epub:type="footnote"><p>“Riak KV: A distributed NoSQL key-value database,” <a href="https://riak.com/products/riak-kv/" class="uri">https://riak.com/products/riak-kv/</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn11" epub:type="footnote"><p>“Merkle tree,” <a href="https://en.wikipedia.org/wiki/Merkle_tree" class="uri">https://en.wikipedia.org/wiki/Merkle_tree</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn12" epub:type="footnote"><p>“Keeping CALM: When Distributed Consistency is Easy,” <a href="https://arxiv.org/pdf/1901.01930.pdf" class="uri">https://arxiv.org/pdf/1901.01930.pdf</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn13" epub:type="footnote"><p>Consistency can have different meanings depending on the context; make sure you know precisely what it refers to when you encounter it.<a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn14" epub:type="footnote"><p>“Building on Quicksand,” <a href="https://dsf.berkeley.edu/cs286/papers/quicksand-cidr2009.pdf" class="uri">https://dsf.berkeley.edu/cs286/papers/quicksand-cidr2009.pdf</a><a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn15" epub:type="footnote"><p>“Causal Consistency,” <a href="https://jepsen.io/consistency/models/causal" class="uri">https://jepsen.io/consistency/models/causal</a><a href="#fnref15" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn16" epub:type="footnote"><p>“Consistency, Availability, and Convergence,” <a href="https://apps.cs.utexas.edu/tech_reports/reports/tr/TR-2036.pdf" class="uri">https://apps.cs.utexas.edu/tech_reports/reports/tr/TR-2036.pdf</a><a href="#fnref16" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn17" epub:type="footnote"><p>“Don’t Settle for Eventual: Scalable Causal Consistency for Wide-Area Storage with COPS,” <a href="https://www.cs.princeton.edu/~mfreed/docs/cops-sosp11.pdf" class="uri">https://www.cs.princeton.edu/~mfreed/docs/cops-sosp11.pdf</a><a href="#fnref17" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn18" epub:type="footnote"><p>COPS can track causal relationships between partitions (and therefore nodes), unlike simpler approaches using version vectors, which limit causality tracking to the set of keys that a single node can store (see “Session Guarantees for Weakly Consistent Replicated Data,” <a href="https://www.cs.utexas.edu/users/dahlin/Classes/GradOS/papers/SessionGuaranteesPDIS.pdf" class="uri">https://www.cs.utexas.edu/users/dahlin/Classes/GradOS/papers/SessionGuaranteesPDIS.pdf</a>).<a href="#fnref18" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn19" epub:type="footnote"><p>“Azure Cosmos DB: Pushing the frontier of globally distributed databases,” <a href="https://azure.microsoft.com/en-gb/blog/azure-cosmos-db-pushing-the-frontier-of-globally-distributed-databases/" class="uri">https://azure.microsoft.com/en-gb/blog/azure-cosmos-db-pushing-the-frontier-of-globally-distributed-databases/</a><a href="#fnref19" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>全序广播等价于共识，参见《不可靠故障检测器用于可靠分布式系统》，<a class="uri" href="https://www.cs.utexas.edu/~lorenzo/corsi/cs380d/papers/p225-chandra.pdf">https://www.cs.utexas.edu/~lorenzo/corsi/cs380d/papers/p225-chandra.pdf</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>《CAP定理的视角》，<a class="uri" href="https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf">https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>共识问题比实现一个可线性化的读写寄存器更难解决，而CAP定理正是用后者来定义一致性的。<a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>《Gossip协议》，<a class="uri" href="https://en.wikipedia.org/wiki/Gossip_protocol">https://en.wikipedia.org/wiki/Gossip_protocol</a><a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>《强最终一致性与无冲突复制数据类型》，<a class="uri" href="https://www.microsoft.com/en-us/research/video/strong-eventual-consistency-and-conflict-free-replicated-data-types/">https://www.microsoft.com/en-us/research/video/strong-eventual-consistency-and-conflict-free-replicated-data-types/</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>《无冲突复制数据类型》，<a class="uri" href="https://hal.inria.fr/inria-00609399v1/document">https://hal.inria.fr/inria-00609399v1/document</a><a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn7"><p style="text-align:left;">在实践中，使用<em>版本向量</em>来比较不同副本的状态，它只跟踪改变副本状态的事件，参见《分布式系统中互不一致性的检测》，<a class="uri" href="https://pages.cs.wisc.edu/~remzi/Classes/739/Fall2017/Papers/parker83detection.pdf">https://pages.cs.wisc.edu/~remzi/Classes/739/Fall2017/Papers/parker83detection.pdf</a>。<a class="footnote-back" href="#fnref7" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn8"><p>《Dynamo：亚马逊的高可用键值存储》，<a class="uri" href="https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf">https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf</a><a class="footnote-back" href="#fnref8" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn9"><p>《Cassandra：开源NoSQL数据库》，<a class="uri" href="https://cassandra.apache.org/">https://cassandra.apache.org/</a><a class="footnote-back" href="#fnref9" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn10"><p>《Riak KV：分布式NoSQL键值数据库》，<a class="uri" href="https://riak.com/products/riak-kv/">https://riak.com/products/riak-kv/</a><a class="footnote-back" href="#fnref10" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn11"><p>《默克尔树》，<a class="uri" href="https://en.wikipedia.org/wiki/Merkle_tree">https://en.wikipedia.org/wiki/Merkle_tree</a><a class="footnote-back" href="#fnref11" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn12"><p>《保持CALM：当分布式一致性变得容易时》，<a class="uri" href="https://arxiv.org/pdf/1901.01930.pdf">https://arxiv.org/pdf/1901.01930.pdf</a><a class="footnote-back" href="#fnref12" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn13"><p>一致性的含义可能因上下文而异；当你遇到它时，请务必确切知道它指的是什么。<a class="footnote-back" href="#fnref13" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn14"><p>《在Quicksand上构建》，<a class="uri" href="https://dsf.berkeley.edu/cs286/papers/quicksand-cidr2009.pdf">https://dsf.berkeley.edu/cs286/papers/quicksand-cidr2009.pdf</a><a class="footnote-back" href="#fnref14" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn15"><p>《因果一致性》，<a class="uri" href="https://jepsen.io/consistency/models/causal">https://jepsen.io/consistency/models/causal</a><a class="footnote-back" href="#fnref15" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn16"><p>《一致性、可用性与收敛性》，<a class="uri" href="https://apps.cs.utexas.edu/tech_reports/reports/tr/TR-2036.pdf">https://apps.cs.utexas.edu/tech_reports/reports/tr/TR-2036.pdf</a><a class="footnote-back" href="#fnref16" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn17"><p>《不要满足于最终一致性：使用COPS为广域存储提供可扩展的因果一致性》，<a class="uri" href="https://www.cs.princeton.edu/~mfreed/docs/cops-sosp11.pdf">https://www.cs.princeton.edu/~mfreed/docs/cops-sosp11.pdf</a><a class="footnote-back" href="#fnref17" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn18"><p>与使用版本向量的更简单方法不同，COPS可以跟踪分区（以及节点）之间的因果关系，而版本向量方法将因果跟踪限制在单个节点可以存储的键集合内（参见《弱一致性复制数据的会话保证》，<a class="uri" href="https://www.cs.utexas.edu/users/dahlin/Classes/GradOS/papers/SessionGuaranteesPDIS.pdf">https://www.cs.utexas.edu/users/dahlin/Classes/GradOS/papers/SessionGuaranteesPDIS.pdf</a>）。<a class="footnote-back" href="#fnref18" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn19"><p>《Azure Cosmos DB：推动全球分布式数据库的前沿》，<a class="uri" href="https://azure.microsoft.com/en-gb/blog/azure-cosmos-db-pushing-the-frontier-of-globally-distributed-databases/">https://azure.microsoft.com/en-gb/blog/azure-cosmos-db-pushing-the-frontier-of-globally-distributed-databases/</a><a class="footnote-back" href="#fnref19" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

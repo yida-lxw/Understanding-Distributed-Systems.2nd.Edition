@@ -1,180 +1,181 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch020.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch020.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="replication" class="level1" data-number="10">
-<h1 data-number="10"><span class="header-section-number">10</span> Replication</h1>
-<p>Data replication is a fundamental building block of distributed systems. One reason for replicating data is to increase availability. If some data is stored exclusively on a single process, and that process goes down, the data won’t be accessible anymore. However, if the data is replicated, clients can seamlessly switch to a copy. Another reason for replication is to increase scalability and performance; the more replicas there are, the more clients can access the data concurrently.</p>
-<p>Implementing replication is challenging because it requires keeping replicas consistent with one another even in the face of failures. In this chapter, we will explore Raft’s replication algorithm<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>, a replication protocol that provides the strongest consistency guarantee possible — the guarantee that to the clients, the data appears to be stored on a single process, even if it’s actually replicated. Arguably, the most popular protocol that offers this guarantee is Paxos<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>, but we will discuss Raft as it’s more understandable.</p>
-<p>Raft is based on a mechanism known as <em>state machine replication</em>. The main idea is that a single process, the leader, <em>broadcasts</em> operations that change its state to other processes, the followers (or replicas). If the followers execute the same sequence of operations as the leader, then each follower will end up in the same state as the leader. Unfortunately, the leader can’t simply broadcast operations to the followers and call it a day, as any process can fail at any time, and the network can lose messages. This is why a large part of the algorithm is dedicated to fault tolerance.</p>
-<p>The reason why this this mechanism is called stated machine replication is that each process is modeled as a <em>state machine</em><a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> that transitions from one state to another in response to some input (an operation). If the state machines are <em>deterministic</em> and get exactly the same input in the same order, their states are consistent. That way, if one of them fails, a redundant copy is available from any of the other state machines. State machine replication is a very powerful tool to make a service fault-tolerant as long it can be modeled as a state machine.</p>
-<p>For example, consider the problem of implementing a fault-tolerant key-value store. In this case, each state machine represents a storage node that accepts <em>put(k, v)</em> and <em>get(k)</em> operations. The actual state is represented with a dictionary. When a <em>put</em> operation is executed, the key-value pair is added to the dictionary. When a <em>get</em> operation is executed, the value corresponding to the requested key is returned. You can see how if every node executes the same sequence of <em>puts</em>, all nodes will end up having the same state.</p>
-<p>In the next section, we will take a deeper look at Raft’s replication protocol. It’s a challenging read that requires to pause and think, but I can assure you it’s well worth the effort, especially if you haven’t seen a replication protocol before.</p>
-<section id="stm" class="level2" data-number="10.1">
-<h2 data-number="10.1"><span class="header-section-number">10.1</span> State machine replication</h2>
-<p>When the system starts up, a leader is elected using Raft’s leader election algorithm discussed in chapter <a href="#leader">9</a>, which doesn’t require any external dependencies. The leader is the only process that can change the replicated state. It does so by storing the sequence of operations that alter the state into a local <em>log</em>, which it replicates to the followers. Replicating the log is what allows the state to be kept in sync across processes.</p>
-<p>As shown in Figure <a href="#fig:raft-log">10.1</a>, a log is an ordered list of entries where each entry includes:</p>
+<section class="level1" data-number="10" id="replication">
+<h1 data-number="10"><span class="header-section-number">10</span> 复制</h1>
+<p>数据复制是分布式系统的基本构建模块。复制数据的一个原因是为了提高可用性。如果某些数据仅存储在单个进程中，并且该进程发生故障，那么数据将无法再被访问。然而，如果数据被复制，客户端可以无缝切换到副本。复制的另一个原因是为了提高可扩展性和性能；副本越多，可以并发访问数据的客户端就越多。</p>
+<p>实现复制机制具有挑战性，因为它要求即使在面对故障时，副本之间也能保持一致。在本章中，我们将探讨Raft的复制算法<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>，这是一种提供最强一致性保证的复制协议——保证对客户端而言，数据看起来像是存储在单个进程中，即使它实际上是复制的。可以说，提供这种保证的最流行协议是Paxos<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>，但我们将讨论Raft，因为它更容易理解。</p>
+<p>Raft基于一种被称为<em>状态机复制</em>的机制。其核心思想是，一个称为领导者的单一进程，向其他进程（即追随者或副本）<em>广播</em>那些会改变其状态的操作。如果追随者执行与领导者相同的操作序列，那么每个追随者最终将达到与领导者相同的状态。遗憾的是，领导者不能仅仅向追随者广播操作就认为万事大吉，因为任何进程都可能在任何时刻发生故障，并且网络也可能丢失消息。这就是为什么该算法的大部分内容都致力于实现容错性。</p>
+<p>这种机制之所以被称为状态机复制，是因为每个进程都被建模为一个<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a><em>状态机</em>，它会响应某些输入（操作）从一个状态转换到另一个状态。如果这些状态机是<em>确定性的</em>，并且以完全相同的顺序接收到完全相同的输入，那么它们的状态就是一致的。这样一来，如果其中一台发生故障，可以从任何其他状态机获得冗余副本。只要一个服务可以被建模为状态机，状态机复制就是一种使其具备容错能力的非常强大的工具。</p>
+<p>例如，考虑实现一个容错的键值存储系统的问题。在这种情况下，每个状态机代表一个存储节点，它接受<em>put(k, v)</em>和<em>get(k)</em>操作。实际状态由一个字典表示。当执行<em>put</em>操作时，键值对会被添加到字典中。当执行<em>get</em>操作时，会返回所请求键对应的值。你可以看到，如果每个节点都执行相同的<em>put</em>操作序列，所有节点最终将拥有相同的状态。</p>
+<p>在下一节中，我们将更深入地探讨Raft的复制协议。这部分内容阅读起来颇具挑战性，需要你停下来思考，但我可以向你保证，付出的努力是值得的，特别是如果你之前从未接触过复制协议的话。</p>
+<section class="level2" data-number="10.1" id="stm">
+<h2 data-number="10.1"><span class="header-section-number">10.1</span> 状态机复制</h2>
+<p>当系统启动时，会使用第 <a href="#leader">9</a> 章讨论的 Raft 领导者选举算法选举出一个领导者，该算法不需要任何外部依赖。领导者是唯一可以更改复制状态的进程。它通过将改变状态的操作序列存储到本地的<em>日志</em>中来实现这一点，并将该日志复制给跟随者。复制日志使得状态能够在各个进程之间保持同步。</p>
+<p>如图 <a href="#fig:raft-log">10.1</a> 所示，日志是一个有序的条目列表，每个条目包含：</p>
 <ul>
-<li>the operation to be applied to the state, like the assignment of 3 to x. The operation needs to be deterministic so that all followers end up in the same state, but it can be arbitrarily complex as long as that requirement is respected (e.g., compare-and-swap or a transaction with multiple operations);</li>
-<li>the index of the entry’s position in the log;</li>
-<li>and the leader’s election term (the number in each box).</li>
+<li>要应用于状态的操作，例如将 3 赋值给 x。该操作必须是确定性的，以便所有跟随者最终达到相同的状态，但只要满足该要求，操作可以任意复杂（例如，比较并交换或包含多个操作的事务）；</li>
+<li>条目在日志中的位置索引；</li>
+<li>以及领导者的选举任期（每个方框中的数字）。</li>
 </ul>
 <div class="figure" style="text-align: center">
-<img alt="The leader&#39;s log is replicated to its followers." width="100%" src="../media/file14.png" />
+<img alt="领导者的日志被复制到其跟随者。" src="../media/file14.png" width="100%"/>
 <p class="caption">
-Figure 10.1: The leader’s log is replicated to its followers.
+图 10.1: 领导者的日志被复制到其跟随者。
 </p>
 </div>
-<p>When the leader wants to apply an operation to its local state, it first appends a new entry for the operation to its log. At this point, the operation hasn’t been applied to the local state just yet; it has only been logged.</p>
-<p>The leader then sends an <em>AppendEntries</em> request to each follower with the new entry to be added. This message is also sent out periodically, even in the absence of new entries, as it acts as a <em>heartbeat</em> for the leader.</p>
-<p>When a follower receives an <em>AppendEntries</em> request, it appends the entry it received to its own log (without actually executing the operation yet) and sends back a response to the leader to acknowledge that the request was successful. When the leader hears back successfully from a majority of followers, it considers the entry to be committed and executes the operation on its local state. The leader keeps track of the highest committed index in the log, which is sent in all future <em>AppendEntries</em> requests. A follower only applies a log entry to its local state when it finds out that the leader has committed the entry.</p>
-<p>Because the leader needs to wait for <em>only</em> a majority (quorum) of followers, it can make progress even if some are down, i.e., if there are <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mi>f</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">2f + 1</annotation></semantics></math> followers, the system can tolerate up to <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>f</mi><annotation encoding="application/x-tex">f</annotation></semantics></math> failures. The algorithm guarantees that an entry that is committed is durable and will eventually be executed by all the processes in the system, not just those that were part of the original majority.</p>
-<p>So far, we have assumed there are no failures, and the network is reliable. Let’s relax those assumptions. If the leader fails, a follower is elected as the new leader. But, there is a caveat: because the replication algorithm only needs a majority of processes to make progress, it’s possible that some processes are not up to date when a leader fails. To avoid an out-of-date process becoming the leader, a process can’t vote for one with a less up-to-date log. In other words, a process can’t win an election if it doesn’t contain all committed entries.</p>
-<p>To determine which of two processes’ logs is more up-to-date, the election term and index of their last entries are compared. If the logs end with different terms, the log with the higher term is more up to date. If the logs end with the same term, whichever log is longer is more up to date. Since the election requires a majority vote, and a candidate’s log must be at least as up to date as any other process in that majority to win the election, the elected process will contain all committed entries.</p>
-<p>If an <em>AppendEntries</em> request can’t be delivered to one or more followers, the leader will retry sending it indefinitely until a majority of the followers have successfully appended it to their logs. Retries are harmless as <em>AppendEntries</em> requests are idempotent, and followers ignore log entries that have already been appended to their logs.</p>
-<p>If a follower that was temporarily unavailable comes back online, it will eventually receive an <em>AppendEntries</em> message with a log entry from the leader. The <em>AppendEntries</em> message includes the index and term number of the entry in the log that immediately precedes the one to be appended. If the follower can’t find a log entry with that index and term number, it rejects the message to prevent creating a gap in its log.</p>
-<p>When the <em>AppendEntries</em> request is rejected, the leader retries the request, this time including the last two log entries — this is why we referred to the request as <em>AppendEntries</em> and not as <em>AppendEntry</em>. If that fails, the leader retries sending the last three log entries and so forth.<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a> The goal is for the leader to find the latest log entry where the two logs agree, delete any entries in the follower’s log after that point, and append to the follower’s log all of the leader’s entries after it.</p>
+<p>当领导者想要将一个操作应用到其本地状态时，它首先为该操作在日志中追加一个新条目。此时，该操作尚未应用到本地状态；它只是被记录了下来。</p>
+<p>然后，领导者向每个跟随者发送一个<em>追加条目</em>请求，其中包含要添加的新条目。即使没有新条目，此消息也会定期发送，因为它充当领导者的<em>心跳</em>。</p>
+<p>当跟随者收到<em>追加条目</em>请求时，它会将接收到的条目追加到自己的日志中（尚未实际执行操作），并向领导者发送响应以确认请求成功。当领导者成功收到大多数跟随者的回复时，它认为该条目已提交，并在其本地状态上执行该操作。领导者会跟踪日志中已提交的最高索引，该索引会在所有后续的<em>追加条目</em>请求中发送。只有当跟随者发现领导者已提交某个日志条目时，它才会将该日志条目应用到其本地状态。</p>
+<p>因为领导者只需要等待<em>大多数</em>（法定人数）跟随者，所以即使部分跟随者宕机，它也能取得进展，也就是说，如果有 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mi>f</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">2f + 1</annotation></semantics></math> 个跟随者，系统最多可以容忍 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>f</mi><annotation encoding="application/x-tex">f</annotation></semantics></math> 个故障。该算法保证已提交的条目是持久的，并且最终会被系统中的所有进程执行，而不仅仅是原始多数派中的那些进程。</p>
+<p>到目前为止，我们假设没有故障，并且网络是可靠的。现在让我们放宽这些假设。如果领导者发生故障，一个跟随者会被选举为新的领导者。但是，有一个注意事项：因为复制算法只需要大多数进程就能取得进展，所以当领导者故障时，某些进程可能不是最新的。为了避免过时的进程成为领导者，一个进程不能投票给日志不够新的进程。换句话说，如果一个进程不包含所有已提交的条目，它就不能赢得选举。</p>
+<p>为了确定两个进程中哪个日志更新，会比较它们最后条目的选举任期和索引。如果日志以不同的任期结束，则任期更高的日志更新。如果日志以相同的任期结束，则更长的日志更新。由于选举需要多数票，并且候选人的日志必须至少与该多数派中的任何其他进程一样新才能赢得选举，因此当选的进程将包含所有已提交的条目。</p>
+<p>如果<em>追加条目</em>请求无法传递给一个或多个跟随者，领导者将无限期地重试发送，直到大多数跟随者成功将其追加到它们的日志中。重试是无害的，因为<em>追加条目</em>请求是幂等的，并且跟随者会忽略已经追加到其日志中的日志条目。</p>
+<p>如果一个暂时不可用的跟随者重新上线，它最终会收到来自领导者的包含日志条目的<em>追加条目</em>消息。<em>追加条目</em>消息包含要追加条目之前紧邻的日志条目的索引和任期编号。如果跟随者找不到具有该索引和任期编号的日志条目，它会拒绝该消息，以防止在其日志中产生间隙。</p>
+<p>当<em>追加条目</em>请求被拒绝时，领导者会重试该请求，这次包含最后两个日志条目——这就是为什么我们将该请求称为<em>追加条目</em>而不是<em>追加单个条目</em>。如果失败，领导者会重试发送最后三个日志条目，依此类推。<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a> 目标是让领导者找到两个日志一致的最新日志条目，删除跟随者日志中该点之后的任何条目，并将领导者在该点之后的所有条目追加到跟随者的日志中。</p>
 </section>
-<section id="consensus" class="level2" data-number="10.2">
-<h2 data-number="10.2"><span class="header-section-number">10.2</span> Consensus</h2>
-<p>By solving state machine replication, we actually found a solution to <em>consensus</em><a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> — a fundamental problem studied in distributed systems research in which a group of processes has to decide a value so that:</p>
+<section class="level2" data-number="10.2" id="consensus">
+<h2 data-number="10.2"><span class="header-section-number">10.2</span> 共识</h2>
+<p>通过解决状态机复制问题，我们实际上找到了<em>共识</em><a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>问题的解决方案——这是分布式系统研究中一个基础性问题，即一组进程必须就某个值达成一致，使得：</p>
 <ul>
-<li>every non-faulty process eventually agrees on a value;</li>
-<li>the final decision of every non-faulty process is the same everywhere;</li>
-<li>and the value that has been agreed on has been proposed by a process.</li>
+<li>每个无故障进程最终都同意某个值；</li>
+<li>每个无故障进程的最终决定在所有地方都相同；</li>
+<li>并且达成一致的值是由某个进程提出的。</li>
 </ul>
-<p>This may sound a little bit abstract. Another way to think about consensus is as the API of a write-once register<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> (WOR): a thread-safe and linearizable<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a> register that can only be written once but can be read many times.</p>
-<p>There are plenty of practical applications of consensus. For example, agreeing on which process in a group can acquire a lease requires consensus. And, as mentioned earlier, state machine replication also requires it. If you squint a little, you should be able to see how the replicated log in Raft is a sequence of WORs, and so Raft really is just a sequence of consensus instances.</p>
-<p>While it’s important to understand what consensus is and how it can be solved, you will likely never need to implement it from scratch<a href="#fn8" class="footnote-ref" id="fnref8" epub:type="noteref">8</a>. Instead, you can use one of the many off-the-shelf solutions available.</p>
-<p>For example, one of the most common uses of consensus is for coordination purposes, like the election of a leader. As discussed in <a href="#lease">9.2</a>, leader election can be implemented by acquiring a lease. The lease ensures that at most one process can be the leader at any time and if the process dies, another one can take its place. However, this mechanism requires the lease manager, or coordination service, to be fault-tolerant. Etcd<a href="#fn9" class="footnote-ref" id="fnref9" epub:type="noteref">9</a> and ZooKeeper<a href="#fn10" class="footnote-ref" id="fnref10" epub:type="noteref">10</a> are two widely used coordination services that replicate their state for fault-tolerance using consensus. A coordination service exposes a hierarchical, key-value store through its API, and also allows clients to watch for changes to keys. So, for example, acquiring a lease can be implemented by having a client attempt to create a key with a specific TTL. If the key already exists, the operation fails guaranteeing that only one client can acquire the lease.</p>
+<p>这听起来可能有点抽象。另一种理解共识的方式是将其视为一次性写入寄存器<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>（WOR）的API：一个线程安全且可线性化<a class="footnote-ref" epub:type="noteref" href="#fn7" id="fnref7">7</a>的寄存器，它只能被写入一次，但可以被读取多次。</p>
+<p>共识有许多实际应用。例如，确定组中哪个进程可以获得租约就需要共识。而且，如前所述，状态机复制也需要它。如果你仔细思考一下，应该能看出Raft中的复制日志实际上就是一系列WOR，因此Raft本质上只是一系列共识实例的序列。</p>
+<p>虽然理解共识是什么以及如何解决它很重要，但你很可能永远不需要从头开始<a class="footnote-ref" epub:type="noteref" href="#fn8" id="fnref8">8</a>实现它。相反，你可以使用众多现成的解决方案之一。</p>
+<p>例如，共识最常见的用途之一是用于协调目的，比如选举领导者。正如<a href="#lease">9.2</a>节所讨论的，领导者选举可以通过获取租约来实现。租约确保在任何时候最多只有一个进程可以成为领导者，并且如果该进程死亡，另一个进程可以取代它。然而，这种机制要求租约管理器或协调服务具备容错能力。Etcd<a class="footnote-ref" epub:type="noteref" href="#fn9" id="fnref9">9</a>和ZooKeeper<a class="footnote-ref" epub:type="noteref" href="#fn10" id="fnref10">10</a>是两个广泛使用的协调服务，它们通过共识来复制其状态以实现容错。协调服务通过其API暴露一个分层的键值存储，并允许客户端监视键的变更。因此，例如，获取租约可以通过让客户端尝试创建一个具有特定TTL的键来实现。如果该键已经存在，则操作失败，从而保证只有一个客户端可以获得租约。</p>
 </section>
-<section id="consistency-models" class="level2" data-number="10.3">
-<h2 data-number="10.3"><span class="header-section-number">10.3</span> Consistency models</h2>
-<p>We discussed state machine replication with the goal of implementing a data store that can withstand failures and scale out to serve a larger number of requests. Now that we know how to build a replicated data store in principle, let’s take a closer look at what happens when a client sends a request to it. In an ideal world, the request executes instantaneously, as shown in Figure <a href="#fig:ideal">10.2</a>.</p>
+<section class="level2" data-number="10.3" id="consistency-models">
+<h2 data-number="10.3"><span class="header-section-number">10.3</span> 一致性模型</h2>
+<p>我们讨论了状态机复制，目标是实现一个能够承受故障并横向扩展以服务更多请求的数据存储。既然我们原则上知道了如何构建一个复制的数据存储，现在让我们更仔细地看看当客户端向其发送请求时会发生什么。在理想情况下，请求会瞬时执行，如图 <a href="#fig:ideal">10.2</a> 所示。</p>
 <div class="figure" style="text-align: center">
-<img alt="A write request executing instantaneously" width="100%" src="../media/file15.png" />
+<img alt="一个瞬时执行的写请求" src="../media/file15.png" width="100%"/>
 <p class="caption">
-Figure 10.2: A write request executing instantaneously
+图 10.2: 一个瞬时执行的写请求
 </p>
 </div>
-<p>But in reality, things are quite different — the request needs to reach the leader, which has to process it and send back a response to the client. As shown in Figure <a href="#fig:cones">10.3</a>, these actions take time and are not instantaneous.</p>
+<p>但在现实中，情况大不相同——请求需要到达领导者，领导者必须处理它并将响应发送回客户端。如图 <a href="#fig:cones">10.3</a> 所示，这些动作需要时间，并非瞬时完成。</p>
 <div class="figure" style="text-align: center">
-<img alt="A write request can&#39;t execute instantaneously because it takes time to reach the leader and be executed." width="100%" src="../media/file16.png" />
+<img alt="写请求无法瞬时执行，因为它需要时间到达领导者并被处理。" src="../media/file16.png" width="100%"/>
 <p class="caption">
-Figure 10.3: A write request can’t execute instantaneously because it takes time to reach the leader and be executed.
+图 10.3: 写请求无法瞬时执行，因为它需要时间到达领导者并被处理。
 </p>
 </div>
-<p>The best guarantee the system can provide is that the request executes somewhere between its invocation and completion time. You might think that this doesn’t look like a big deal; after all, it’s what you are used to when writing single-threaded applications. For example, if you assign 42 to x and read its value immediately afterward, you expect to find 42 in there, assuming there is no other thread writing to the same variable. But when you deal with replicated systems, all bets are off. Let’s see why that’s the case.</p>
-<p>In section <a href="#stm">10.1</a>, we looked at how Raft replicates the leader’s state to its followers. Since only the leader can make changes to the state, any operation that modifies it needs to necessarily go through the leader. But what about reads? They don’t necessarily have to go through the leader as they don’t affect the system’s state. Reads can be served by the leader, a follower, or a combination of leader and followers. If all reads have to go through the leader, the read throughput would be limited to that of a single process. But, if any follower can serve reads instead, then two clients, or observers, can have a different view of the system’s state since followers can lag behind the leader.</p>
-<p>Intuitively, there is a tradeoff between how consistent the observers’ views of the system are and the system’s performance and availability. To understand this relationship, we need to define precisely what we mean by consistency. We will do so with the help of <em>consistency models</em><a href="#fn11" class="footnote-ref" id="fnref11" epub:type="noteref">11</a>, which formally define the possible views the observers can have of the system’s state.</p>
-<section id="linearizability" class="level3" data-number="10.3.1">
-<h3 data-number="10.3.1"><span class="header-section-number">10.3.1</span> Strong consistency</h3>
-<p>If clients send writes and reads exclusively to the leader, then every request appears to take place atomically at a very specific point in time as if there were a single copy of the data. No matter how many replicas there are or how far behind they are lagging, as long as the clients always query the leader directly, there is a single copy of the data from their point of view.</p>
-<p>Because a request is not served instantaneously, and there is a single process that can serve it, the request executes somewhere between its invocation and completion time. By the time it completes, its side-effects are visible to all observers, as shown in Figure <a href="#fig:linearizability">10.4</a>.</p>
+<p>系统能提供的最佳保证是，请求在其调用时间和完成时间之间的某个时刻执行。你可能会觉得这没什么大不了的；毕竟，在编写单线程应用程序时你已经习惯了这种情况。例如，如果你将 42 赋值给 x 并立即读取其值，你期望在那里找到 42，前提是没有其他线程写入同一个变量。但是当你处理复制系统时，情况就完全不同了。让我们看看为什么会这样。</p>
+<p>在 <a href="#stm">10.1</a> 节中，我们了解了 Raft 如何将领导者的状态复制到其追随者。由于只有领导者可以更改状态，任何修改状态的操作都必须经过领导者。但是读取操作呢？它们不一定非要经过领导者，因为它们不影响系统的状态。读取可以由领导者、追随者或领导者和追随者的组合来服务。如果所有读取都必须经过领导者，读取吞吐量将限制在单个进程的水平。但是，如果任何追随者都可以服务读取，那么两个客户端或观察者可能会对系统状态有不同的视图，因为追随者可能落后于领导者。</p>
+<p>直观地说，观察者对系统状态的一致性程度与系统的性能和可用性之间存在权衡。为了理解这种关系，我们需要精确定义我们所说的一致性是什么意思。我们将借助<em>一致性模型</em><a class="footnote-ref" epub:type="noteref" href="#fn11" id="fnref11">11</a>来做到这一点，它们形式化地定义了观察者可能拥有的系统状态视图。</p>
+<section class="level3" data-number="10.3.1" id="linearizability">
+<h3 data-number="10.3.1"><span class="header-section-number">10.3.1</span> 强一致性</h3>
+<p>如果客户端只向领导者发送写和读请求，那么每个请求看起来都在一个非常特定的时间点原子性地发生，就好像数据只有一个副本一样。无论有多少副本或者它们落后多远，只要客户端总是直接查询领导者，从他们的角度来看，数据就只有一个副本。</p>
+<p>因为请求不是瞬时服务的，并且只有一个进程可以服务它，所以请求在其调用时间和完成时间之间的某个时刻执行。当它完成时，其副作用对所有观察者都是可见的，如图 <a href="#fig:linearizability">10.4</a> 所示。</p>
 <div class="figure" style="text-align: center">
-<img alt="The side-effects of a strongly consistent operation are visible to all observers once it completes." width="100%" src="../media/file17.png" />
+<img alt="强一致性操作的副作用一旦完成，对所有观察者都是可见的。" src="../media/file17.png" width="100%"/>
 <p class="caption">
-Figure 10.4: The side-effects of a strongly consistent operation are visible to all observers once it completes.
+图 10.4: 强一致性操作的副作用一旦完成，对所有观察者都是可见的。
 </p>
 </div>
-<p>Since a request becomes visible to all other participants between its invocation and completion time, a real-time guarantee must be enforced; this guarantee is formalized by a consistency model called <em>linearizability</em><a href="#fn12" class="footnote-ref" id="fnref12" epub:type="noteref">12</a>, or <em>strong consistency</em>. Linearizability is the strongest consistency guarantee a system can provide for single-object requests.<a href="#fn13" class="footnote-ref" id="fnref13" epub:type="noteref">13</a></p>
-<p>Unfortunately, the leader can’t serve reads directly from its local state because by the time it receives a request from a client, it might no longer be the leader; so, if it were to serve the request, the system wouldn’t be strongly consistent. The presumed leader first needs to contact a majority of replicas to confirm whether it still is the leader. Only then is it allowed to execute the request and send back a response to the client. Otherwise, it transitions to the follower state and fails the request. This confirmation step considerably increases the time required to serve a read.</p>
+<p>由于一个请求在其调用时间和完成时间之间变得对所有其他参与者可见，因此必须强制执行实时保证；这种保证由一个称为<em>线性一致性</em><a class="footnote-ref" epub:type="noteref" href="#fn12" id="fnref12">12</a>或<em>强一致性</em>的一致性模型形式化。线性一致性是系统可以为单对象请求提供的最强一致性保证。<a class="footnote-ref" epub:type="noteref" href="#fn13" id="fnref13">13</a></p>
+<p>不幸的是，领导者不能直接从其本地状态服务读取，因为当它从客户端收到请求时，它可能不再是领导者了；所以，如果它要服务该请求，系统将不是强一致的。假定的领导者首先需要联系大多数副本以确认它是否仍然是领导者。只有这样，它才被允许执行请求并将响应发送回客户端。否则，它将转换到追随者状态并使请求失败。这个确认步骤大大增加了服务读取所需的时间。</p>
 </section>
-<section id="sequential-consistency" class="level3" data-number="10.3.2">
-<h3 data-number="10.3.2"><span class="header-section-number">10.3.2</span> Sequential consistency</h3>
-<p>So far, we have discussed serializing all reads through the leader. But doing so creates a single chokepoint, limiting the system’s throughput. On top of that, the leader needs to contact a majority of followers to handle a read, which increases the time it takes to process a request. To increase the read performance, we could also allow the followers to handle requests.</p>
-<p>Even though a follower can lag behind the leader, it will always receive new updates in the same order as the leader. For example, suppose one client only ever queries follower 1, and another only ever queries follower 2. In that case, the two clients will see the state evolving at different times, as followers are not perfectly in sync (see Figure <a href="#fig:sequential">10.5</a>).</p>
+<section class="level3" data-number="10.3.2" id="sequential-consistency">
+<h3 data-number="10.3.2"><span class="header-section-number">10.3.2</span> 顺序一致性</h3>
+<p>到目前为止，我们讨论了通过领导者序列化所有读取。但这样做会创建一个单一的瓶颈点，限制了系统的吞吐量。除此之外，领导者需要联系大多数追随者来处理读取，这增加了处理请求所需的时间。为了提高读取性能，我们也可以允许追随者处理请求。</p>
+<p>即使追随者可能落后于领导者，它总是会以与领导者相同的顺序接收新的更新。例如，假设一个客户端只查询追随者 1，另一个只查询追随者 2。在这种情况下，两个客户端将看到状态在不同时间演进，因为追随者并非完美同步（见图 <a href="#fig:sequential">10.5</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="Although followers have a different view of the system’s state, they process updates in the same order." width="100%" src="../media/file18.png" />
+<img alt="尽管追随者对系统状态有不同的视图，但它们以相同的顺序处理更新。" src="../media/file18.png" width="100%"/>
 <p class="caption">
-Figure 10.5: Although followers have a different view of the system’s state, they process updates in the same order.
+图 10.5: 尽管追随者对系统状态有不同的视图，但它们以相同的顺序处理更新。
 </p>
 </div>
-<p>The consistency model that ensures operations occur in the same order for all observers, but doesn’t provide any real-time guarantee about when an operation’s side-effect becomes visible to them, is called <em>sequential consistency</em><a href="#fn14" class="footnote-ref" id="fnref14" epub:type="noteref">14</a>. The lack of real-time guarantees is what differentiates sequential consistency from linearizability.</p>
-<p>A producer/consumer system synchronized with a queue is an example of this model; a producer writes items to the queue, which a consumer reads. The producer and the consumer see the items in the same order, but the consumer lags behind the producer.</p>
+<p>确保所有观察者的操作以相同顺序发生，但不提供关于操作副作用何时对他们可见的任何实时保证的一致性模型，称为<em>顺序一致性</em><a class="footnote-ref" epub:type="noteref" href="#fn14" id="fnref14">14</a>。缺乏实时保证是顺序一致性与线性一致性的区别所在。</p>
+<p>通过队列同步的生产者/消费者系统就是这种模型的一个例子；生产者将项目写入队列，消费者从中读取。生产者和消费者以相同的顺序看到项目，但消费者落后于生产者。</p>
 </section>
-<section id="eventual-consistency" class="level3" data-number="10.3.3">
-<h3 data-number="10.3.3"><span class="header-section-number">10.3.3</span> Eventual consistency</h3>
-<p>Although we managed to increase the read throughput, we had to pin clients to followers — if a follower becomes unavailable, the client loses access to the store. We could increase the availability by allowing the client to query any follower. But this comes at a steep price in terms of consistency. For example, say there are two followers, 1 and 2, where follower 2 lags behind follower 1. If a client queries follower 1 and then follower 2, it will see an earlier state, which can be very confusing. The only guarantee the client has is that eventually all followers will converge to the final state if writes to the system stop. This consistency model is called <em>eventual consistency</em>.</p>
-<p>It’s challenging to build applications on top of an eventually consistent data store because the behavior is different from what we are used to when writing single-threaded applications. As a result, subtle bugs can creep up that are hard to debug and reproduce. Yet, in eventual consistency’s defense, not all applications require linearizability. For example, an eventually consistent store is perfectly fine if we want to keep track of the number of users visiting a website, since it doesn’t really matter if a read returns a number that is slightly out of date.</p>
+<section class="level3" data-number="10.3.3" id="eventual-consistency">
+<h3 data-number="10.3.3"><span class="header-section-number">10.3.3</span> 最终一致性</h3>
+<p>尽管我们设法提高了读取吞吐量，但我们不得不将客户端固定到追随者——如果一个追随者变得不可用，客户端就会失去对存储的访问。我们可以通过允许客户端查询任何追随者来提高可用性。但这在一致性方面付出了高昂的代价。例如，假设有两个追随者 1 和 2，其中追随者 2 落后于追随者 1。如果一个客户端先查询追随者 1，然后查询追随者 2，它将看到一个更早的状态，这可能会非常令人困惑。客户端唯一的保证是，如果对系统的写入停止，最终所有追随者都将收敛到最终状态。这种一致性模型称为<em>最终一致性</em>。</p>
+<p>在最终一致性的数据存储之上构建应用程序是具有挑战性的，因为其行为与我们编写单线程应用程序时所习惯的不同。因此，可能会出现难以调试和重现的微妙错误。然而，为最终一致性辩护的是，并非所有应用程序都需要线性一致性。例如，如果我们想跟踪访问网站的用户数量，最终一致性的存储是完全没问题的，因为读取返回一个稍微过时的数字并不重要。</p>
 </section>
-<section id="the-cap-theorem" class="level3" data-number="10.3.4">
-<h3 data-number="10.3.4"><span class="header-section-number">10.3.4</span> The CAP theorem</h3>
-<p>When a network partition happens, parts of the system become disconnected from each other. For example, some clients might no longer be able to reach the leader. The system has two choices when this happens; it can either:</p>
+<section class="level3" data-number="10.3.4" id="the-cap-theorem">
+<h3 data-number="10.3.4"><span class="header-section-number">10.3.4</span> CAP 定理</h3>
+<p>当发生网络分区时，系统的各个部分会彼此断开连接。例如，一些客户端可能无法再到达领导者。当这种情况发生时，系统有两种选择；它可以：</p>
 <ul>
-<li>remain available by allowing clients to query followers that are reachable, sacrificing strong consistency;</li>
-<li>or guarantee strong consistency by failing reads that can’t reach the leader.</li>
+<li>通过允许客户端查询可达的追随者来保持可用性，牺牲强一致性；</li>
+<li>或者通过使无法到达领导者的读取失败来保证强一致性。</li>
 </ul>
-<p>This concept is expressed by the <em>CAP theorem</em><a href="#fn15" class="footnote-ref" id="fnref15" epub:type="noteref">15</a>, which can be summarized as: “strong consistency, availability and partition tolerance: pick two out of three.” In reality, the choice really is only between strong consistency and availability, as network faults are a given and can’t be avoided.</p>
-<p>Confusingly enough, the CAP theorem’s definition of availability requires that every request <em>eventually</em> receives a response. But in real systems, achieving perfect availability is impossible. Moreover, a very slow response is just as bad as one that never occurs. So, in other words, many highly-available systems can’t be considered available as defined by the CAP theorem. Similarly, the theorem’s definition of consistency and partition tolerance is very precise, limiting its practical applications.<a href="#fn16" class="footnote-ref" id="fnref16" epub:type="noteref">16</a> A more useful way to think about the relationship between availability and consistency is as a spectrum. And so, for example, a strongly consistent and partition-tolerant system as defined by the CAP theorem occupies just one point in that spectrum.<a href="#fn17" class="footnote-ref" id="fnref17" epub:type="noteref">17</a></p>
-<p>Also, even though network partitions can happen, they are usually rare within a data center. But, even in the absence of a network partition, there is a tradeoff between consistency and <em>latency</em> (or performance). The stronger the consistency guarantee is, the higher the latency of individual operations must be. This relationship is expressed by the <em>PACELC theorem</em><a href="#fn18" class="footnote-ref" id="fnref18" epub:type="noteref">18</a>, an extension to the CAP theorem. It states that in case of network partitioning (P), one has to choose between availability (A) and consistency (C), but else (E), even when the system is running normally in the absence of partitions, one has to choose between latency (L) and consistency (C). In practice, the choice between latency and consistency is not binary but rather a spectrum.</p>
-<p>This is why some off-the-shelf distributed data stores come with counter-intuitive consistency guarantees in order to provide high availability and performance. Others have knobs that allow you to choose whether you want better performance or stronger consistency guarantees, like Azure’s Cosmos DB<a href="#fn19" class="footnote-ref" id="fnref19" epub:type="noteref">19</a> and Cassandra<a href="#fn20" class="footnote-ref" id="fnref20" epub:type="noteref">20</a>.</p>
-<p>Another way to interpret the PACELC theorem is that there is a tradeoff between the amount of coordination required and performance. One way to design around this fundamental limitation is to move coordination away from the critical path. For example, earlier we discussed that for a read to be strongly consistent, the leader has to contact a majority of followers. That coordination tax is paid for each read! In the next section, we will explore a different replication protocol that moves this cost away from the critical path.</p>
+<p>这个概念由<em>CAP 定理</em><a class="footnote-ref" epub:type="noteref" href="#fn15" id="fnref15">15</a>表达，可以概括为：“强一致性、可用性和分区容错性：三者选其二。”实际上，选择真的只在强一致性和可用性之间，因为网络故障是给定的，无法避免。</p>
+<p>令人困惑的是，CAP 定理对可用性的定义要求每个请求<em>最终</em>都能收到响应。但在实际系统中，实现完美的可用性是不可能的。此外，一个非常慢的响应与一个从未发生的响应一样糟糕。所以，换句话说，许多高可用系统不能被 CAP 定理定义的可用性所涵盖。同样，该定理对一致性和分区容错性的定义非常精确，限制了其实际应用。<a class="footnote-ref" epub:type="noteref" href="#fn16" id="fnref16">16</a> 思考可用性和一致性之间关系的一个更有用的方式是将其视为一个谱系。因此，例如，CAP 定理定义的强一致性和分区容错性系统只是该谱系中的一个点。<a class="footnote-ref" epub:type="noteref" href="#fn17" id="fnref17">17</a></p>
+<p>此外，即使可能发生网络分区，它们在数据中心内通常也很少见。但是，即使在没有网络分区的情况下，一致性和<em>延迟</em>（或性能）之间也存在权衡。一致性保证越强，单个操作的延迟就必须越高。这种关系由<em>PACELC 定理</em><a class="footnote-ref" epub:type="noteref" href="#fn18" id="fnref18">18</a>表达，它是 CAP 定理的扩展。它指出，在网络分区（P）的情况下，必须在可用性（A）和一致性（C）之间做出选择，但在其他情况下（E），即使系统在没有分区的情况下正常运行，也必须在延迟（L）和一致性（C）之间做出选择。在实践中，延迟和一致性之间的选择不是二元的，而是一个谱系。</p>
+<p>这就是为什么一些现成的分布式数据存储提供了反直觉的一致性保证，以提供高可用性和性能。其他的则提供了旋钮，允许你选择是想要更好的性能还是更强的一致性保证，比如 Azure 的 Cosmos DB<a class="footnote-ref" epub:type="noteref" href="#fn19" id="fnref19">19</a> 和 Cassandra<a class="footnote-ref" epub:type="noteref" href="#fn20" id="fnref20">20</a>。</p>
+<p>解释 PACELC 定理的另一种方式是，所需的协调量与性能之间存在权衡。围绕这一根本限制进行设计的一种方法是将协调移出关键路径。例如，之前我们讨论过，为了使读取具有强一致性，领导者必须联系大多数追随者。这种协调开销是为每次读取支付的！在下一节中，我们将探索一种不同的复制协议，它将这种成本移出关键路径。</p>
 </section>
 </section>
-<section id="chain-replication" class="level2" data-number="10.4">
-<h2 data-number="10.4"><span class="header-section-number">10.4</span> Chain replication</h2>
-<p>Chain replication<a href="#fn21" class="footnote-ref" id="fnref21" epub:type="noteref">21</a> is a widely used replication protocol that uses a very different topology from leader-based replication protocols like Raft. In chain replication, processes are arranged in a chain. The leftmost process is referred to as the chain’s <em>head</em>, while the rightmost one is the chain’s <em>tail</em>.</p>
-<p>Clients send writes exclusively to the head, which updates its local state and forwards the update to the next process in the chain. Similarly, that process updates its state and forwards the change to its successor until it eventually reaches the tail.</p>
-<p>When the tail receives an update, it applies it locally and sends an acknowledgment to its predecessor to signal that the change has been committed. The acknowledgment flows back to the head, which can then reply to the client that the write succeeded<a href="#fn22" class="footnote-ref" id="fnref22" epub:type="noteref">22</a>.</p>
-<p>Client reads are served exclusively by the tail, as shown in Fig <a href="#fig:CR">10.6</a>. In the absence of failures, the protocol is strongly consistent as all writes and reads are processed one at a time by the tail. But what happens if a process in the chain fails?</p>
+<section class="level2" data-number="10.4" id="chain-replication">
+<h2 data-number="10.4"><span class="header-section-number">10.4</span> 链式复制</h2>
+<p>链式复制<a class="footnote-ref" epub:type="noteref" href="#fn21" id="fnref21">21</a>是一种广泛使用的复制协议，它采用的拓扑结构与基于领导者的复制协议（如Raft）截然不同。在链式复制中，进程被排列成一条链。最左边的进程被称为链的<em>头节点</em>，而最右边的进程则是链的<em>尾节点</em>。</p>
+<p>客户端将写请求专门发送给头节点，头节点更新其本地状态，然后将更新转发给链中的下一个进程。类似地，该进程更新其状态，并将更改转发给其后继者，直到最终到达尾节点。</p>
+<p>当尾节点收到更新时，它会在本地应用该更新，并向其前驱节点发送确认，以表明更改已提交。确认信息流回头节点，然后头节点可以回复客户端写操作成功<a class="footnote-ref" epub:type="noteref" href="#fn22" id="fnref22">22</a>。</p>
+<p>客户端的读请求专门由尾节点提供服务，如图<a href="#fig:CR">10.6</a>所示。在没有故障的情况下，该协议是强一致的，因为所有写操作和读操作都由尾节点逐一处理。但是，如果链中的某个进程发生故障会怎样？</p>
 <div class="figure" style="text-align: center">
-<img alt="Writes propagate through all processes in the chain, while reads are served exclusively by the tail." width="90%" src="../media/file19.png" />
+<img alt="写操作通过链中的所有进程传播，而读操作专门由尾节点提供服务。" src="../media/file19.png" width="90%"/>
 <p class="caption">
-Figure 10.6: Writes propagate through all processes in the chain, while reads are served exclusively by the tail.
+图 10.6: 写操作通过链中的所有进程传播，而读操作专门由尾节点提供服务。
 </p>
 </div>
-<p>Fault tolerance is delegated to a dedicated component, the configuration manager or <em>control plane</em>. At a high level, the control plane monitors the chain’s health, and when it detects a faulty process, it removes it from the chain. The control plane ensures that there is a single view of the chain’s topology that every process agrees with. For this to work, the control plane needs to be fault-tolerant, which requires state machine replication (e.g., Raft). So while the chain can tolerate up to N − 1 processes failing, where N is the chain’s length, the control plane can only tolerate <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mfrac><mi>C</mi><mn>2</mn></mfrac><annotation encoding="application/x-tex">\frac{C}{2}</annotation></semantics></math> failures, where C is the number of replicas that make up the control plane.</p>
-<p>There are three failure modes in chain replication: the head can fail, the tail can fail, or an intermediate process can fail. If the head fails, the control plane removes it by reconfiguring its successor to be the new head and notifying clients of the change. If the head committed a write to its local state but crashed before forwarding it downstream, no harm is done. Since the write didn’t reach the tail, the client that issued it hasn’t received an acknowledgment for it yet. From the client’s perspective, it’s just a request that timed out and needs to be retried. Similarly, no other client will have seen the write’s side effects since it never reached the tail.</p>
-<p>If the tail fails, the control plane removes it and makes its predecessor the chain’s new tail. Because all updates that the tail has received must necessarily have been received by the predecessor as well, everything works as expected.</p>
-<p>If an intermediate process <em>X</em> fails, the control plane has to link <em>X</em>’s predecessor with <em>X</em>’s successor. This case is a bit trickier to handle since <em>X</em> might have applied some updates locally but failed before forwarding them to its successor. Therefore, <em>X</em>’s successor needs to communicate to the control plane the sequence number of the last committed update it has seen, which is then passed to <em>X</em>’s predecessor to send the missing updates downstream.</p>
-<p>Chain replication can tolerate up to N − 1 failures. So, as more processes in the chain fail, it can tolerate fewer failures. This is why it’s important to replace a failing process with a new one. This can be accomplished by making the new process the tail of the chain after syncing it with its predecessor.</p>
-<p>The beauty of chain replication is that there are only a handful of simple failure modes to consider. That’s because for a write to commit, it needs to reach the tail, and consequently, it must have been processed by every process in the chain. This is very different from a quorum-based replication protocol like Raft, where only a subset of replicas may have seen a committed write.</p>
-<p>Chain replication is simpler to understand and more performant than leader-based replication since the leader’s job of serving client requests is split among the head and the tail. The head sequences writes by updating its local state and forwarding updates to its successor. Reads, however, are served by the tail, and are interleaved with updates received from its predecessor. Unlike in Raft, a read request from a client can be served immediately from the tail’s local state without contacting the other replicas first, which allows for higher throughputs and lower response times.</p>
-<p>However, there is a price to pay in terms of write latency. Since an update needs to go through all the processes in the chain before it can be considered committed, a single slow replica can slow down all writes. In contrast, in Raft, the leader only has to wait for a majority of processes to reply and therefore is more resilient to transient degradations. Additionally, if a process isn’t available, chain replication can’t commit writes until the control plane detects the problem and takes the failing process out of the chain. In Raft instead, a single process failing doesn’t stop writes from being committed since only a quorum of processes is needed to make progress.</p>
-<p>That said, chain replication allows write requests to be pipelined, which can significantly improve throughput. Moreover, read throughput can be further increased by distributing reads across replicas while still guaranteeing linearizability. The idea is for replicas to store multiple versions of an object, each including a version number and a dirty flag. Replicas mark an update as dirty as it propagates from the head to the tail. Once the tail receives it, it’s considered committed, and the tail sends an acknowledgment back along the chain. When a replica receives an acknowledgment, it marks the corresponding version as clean. Now, when a replica receives a read request for an object, it will immediately serve it if the latest version is clean. If not, it first contacts the tail to request the latest committed version (see Fig <a href="#fig:CRAQ">10.7</a>).</p>
+<p>容错性被委托给一个专用组件，即配置管理器或<em>控制平面</em>。概括地说，控制平面监控链的健康状况，当它检测到故障进程时，会将其从链中移除。控制平面确保链的拓扑结构有一个统一的视图，每个进程都认同这个视图。为此，控制平面本身需要具备容错性，这需要状态机复制（例如Raft）。因此，虽然链本身最多可以容忍 N − 1 个进程故障（其中 N 是链的长度），但控制平面只能容忍 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mfrac><mi>C</mi><mn>2</mn></mfrac><annotation encoding="application/x-tex">\frac{C}{2}</annotation></semantics></math> 个故障，其中 C 是构成控制平面的副本数量。</p>
+<p>链式复制中有三种故障模式：头节点故障、尾节点故障或中间进程故障。如果头节点故障，控制平面会通过将其后继者重新配置为新的头节点并通知客户端此变更来移除它。如果头节点已将写操作提交到其本地状态，但在向下游转发之前崩溃，这不会造成损害。由于写操作没有到达尾节点，发起该写操作的客户端尚未收到确认。从客户端的角度来看，这只是一个超时的请求，需要重试。同样，其他客户端也不会看到该写操作的副作用，因为它从未到达尾节点。</p>
+<p>如果尾节点故障，控制平面会移除它，并将其前驱者设为链的新尾节点。因为尾节点收到的所有更新必然也已被其前驱者收到，所以一切都能按预期工作。</p>
+<p>如果中间进程 <em>X</em> 故障，控制平面必须将 <em>X</em> 的前驱者与 <em>X</em> 的后继者连接起来。这种情况处理起来稍微棘手一些，因为 <em>X</em> 可能已经在本地应用了一些更新，但在将其转发给其后继者之前发生了故障。因此，<em>X</em> 的后继者需要向控制平面报告它所见到的最后一个已提交更新的序列号，然后控制平面将此序列号传递给 <em>X</em> 的前驱者，以便向下游发送缺失的更新。</p>
+<p>链式复制最多可以容忍 N − 1 个故障。因此，随着链中更多的进程发生故障，它能容忍的故障数量会减少。这就是为什么用新进程替换故障进程非常重要。这可以通过在将新进程与其前驱者同步后，使其成为链的尾节点来实现。</p>
+<p>链式复制的妙处在于，只需要考虑少数几种简单的故障模式。这是因为一个写操作要提交，必须到达尾节点，因此它必须被链中的每个进程处理过。这与基于法定人数的复制协议（如Raft）非常不同，在后者中，可能只有一部分副本看到了已提交的写操作。</p>
+<p>链式复制比基于领导者的复制更容易理解，性能也更高，因为领导者服务客户端请求的工作被拆分给了头节点和尾节点。头节点通过更新其本地状态并将更新转发给其后继者来对写操作进行排序。然而，读操作由尾节点提供服务，并与从其前驱者接收到的更新交错进行。与Raft不同，来自客户端的读请求可以立即从尾节点的本地状态提供服务，而无需先联系其他副本，这允许更高的吞吐量和更低的响应时间。</p>
+<p>然而，在写延迟方面需要付出代价。由于一个更新需要经过链中的所有进程才能被视为已提交，单个缓慢的副本会拖慢所有写操作。相比之下，在Raft中，领导者只需要等待大多数进程回复，因此对暂时的性能下降更具弹性。此外，如果一个进程不可用，链式复制将无法提交写操作，直到控制平面检测到问题并将故障进程移出链。而在Raft中，单个进程故障不会阻止写操作被提交，因为只需要法定人数的进程就能取得进展。</p>
+<p>话虽如此，链式复制允许写请求流水线化，这可以显著提高吞吐量。此外，通过将读请求分布到各个副本，同时仍然保证线性一致性，可以进一步提高读吞吐量。其思想是让副本存储对象的多个版本，每个版本包含一个版本号和一个脏标志。当更新从头节点传播到尾节点时，副本将其标记为脏。一旦尾节点收到它，它就被视为已提交，尾节点沿着链发送确认。当副本收到确认时，它将相应的版本标记为干净。现在，当副本收到对某个对象的读请求时，如果最新版本是干净的，它将立即提供服务。如果不是，它首先联系尾节点以请求最新的已提交版本（见图<a href="#fig:CRAQ">10.7</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="A dirty read can be served by any replica with an additional request to the tail to guarantee strong consistency." width="90%" src="../media/file20.png" />
+<img alt="脏读可以由任何副本提供服务，但需要向尾节点发送额外请求以保证强一致性。" src="../media/file20.png" width="90%"/>
 <p class="caption">
-Figure 10.7: A dirty read can be served by any replica with an additional request to the tail to guarantee strong consistency.
+图 10.7: 脏读可以由任何副本提供服务，但需要向尾节点发送额外请求以保证强一致性。
 </p>
 </div>
-<p>As discussed in chapter <a href="#leader">9</a>, a leader introduces a scalability bottleneck. But in chain replication, the data plane (i.e., the part of the system that handles individual client requests on the critical path) doesn’t need a leader to do its job since it’s not concerned with failures — its sole focus is throughput and efficiency. On the contrary, the control plane needs a leader to implement state machine replication, but that’s required exclusively to handle the occasional failure and doesn’t affect client requests on the critical path. Another way to think about this is that chain replication reduces the amount of coordination needed for each client request. In turn, this increases the data plane’s capacity to handle load. For this reason, splitting the data plane from the control plane (i.e., the configuration management part) is a common pattern in distributed systems. We will talk in more detail about this in chapter <a href="#controlplane">22</a>.</p>
-<p>You might be wondering at this point whether it’s possible to replicate data without needing consensus<a href="#fn23" class="footnote-ref" id="fnref23" epub:type="noteref">23</a> at all to improve performance further. In the next chapter, we will try to do just that.</p>
+<p>如<a href="#leader">第9章</a>所述，领导者会引入可扩展性瓶颈。但在链式复制中，数据平面（即系统中在关键路径上处理单个客户端请求的部分）不需要领导者来完成其工作，因为它不关心故障——它唯一关注的是吞吐量和效率。相反，控制平面需要一个领导者来实现状态机复制，但这仅仅是为了处理偶尔发生的故障，并不影响关键路径上的客户端请求。另一种理解方式是，链式复制减少了每个客户端请求所需的协调量。反过来，这增加了数据平面处理负载的能力。因此，将数据平面与控制平面（即配置管理部分）分离是分布式系统中的一种常见模式。我们将在<a href="#controlplane">第22章</a>更详细地讨论这一点。</p>
+<p>此时，您可能想知道是否有可能完全不需要共识<a class="footnote-ref" epub:type="noteref" href="#fn23" id="fnref23">23</a>来复制数据，以进一步提高性能。在下一章中，我们将尝试做到这一点。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“In Search of an Understandable Consensus Algorithm,” <a href="https://raft.github.io/raft.pdf" class="uri">https://raft.github.io/raft.pdf</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Paxos Made Simple,” <a href="https://lamport.azurewebsites.net/pubs/paxos-simple.pdf" class="uri">https://lamport.azurewebsites.net/pubs/paxos-simple.pdf</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“Finite-state machine,” <a href="https://en.wikipedia.org/wiki/Finite-state_machine" class="uri">https://en.wikipedia.org/wiki/Finite-state_machine</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>In practice, there are ways to reduce the number of messages required for this step.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Consensus,” <a href="https://en.wikipedia.org/wiki/Consensus_(computer_science)" class="uri">https://en.wikipedia.org/wiki/Consensus_(computer_science)</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“Paxos made Abstract,” <a href="https://maheshba.bitbucket.io/blog/2021/11/15/Paxos.html" class="uri">https://maheshba.bitbucket.io/blog/2021/11/15/Paxos.html</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>We will define what linearizability means in the next section.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8" epub:type="footnote"><p>nor want to, since it’s very challenging to get right; see “Paxos Made Live - An Engineering Perspective,” <a href="https://static.googleusercontent.com/media/research.google.com/en//archive/paxos_made_live.pdf" class="uri">https://static.googleusercontent.com/media/research.google.com/en//archive/paxos_made_live.pdf</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9" epub:type="footnote"><p>“etcd: A distributed, reliable key-value store for the most critical data of a distributed system,” <a href="https://etcd.io/" class="uri">https://etcd.io/</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn10" epub:type="footnote"><p>“Apache ZooKeeper: An open-source server which enables highly reliable distributed coordination,” <a href="https://zookeeper.apache.org/" class="uri">https://zookeeper.apache.org/</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn11" epub:type="footnote"><p>“Consistency Models,” <a href="https://jepsen.io/consistency" class="uri">https://jepsen.io/consistency</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn12" epub:type="footnote"><p>“Linearizability,” <a href="https://jepsen.io/consistency/models/linearizable" class="uri">https://jepsen.io/consistency/models/linearizable</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn13" epub:type="footnote"><p>For example, this is the guarantee you would expect from a coordination service that manages leases.<a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn14" epub:type="footnote"><p>“Sequential Consistency,” <a href="https://jepsen.io/consistency/models/sequential" class="uri">https://jepsen.io/consistency/models/sequential</a><a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn15" epub:type="footnote"><p>“Perspectives on the CAP Theorem,” <a href="https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf" class="uri">https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf</a><a href="#fnref15" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn16" epub:type="footnote"><p>“A Critique of the CAP Theorem,” <a href="https://www.cl.cam.ac.uk/research/dtg/www/files/publications/public/mk428/cap-critique.pdf" class="uri">https://www.cl.cam.ac.uk/research/dtg/www/files/publications/public/mk428/cap-critique.pdf</a><a href="#fnref16" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn17" epub:type="footnote"><p>“CAP Theorem: You don’t need CP, you don’t want AP, and you can’t have CA,” <a href="https://www.youtube.com/watch?v=hUd_9FENShA" class="uri">https://www.youtube.com/watch?v=hUd_9FENShA</a><a href="#fnref17" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn18" epub:type="footnote"><p>“Consistency Tradeoffs in Modern Distributed Database System Design,” <a href="https://en.wikipedia.org/wiki/PACELC_theorem" class="uri">https://en.wikipedia.org/wiki/PACELC_theorem</a><a href="#fnref18" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn19" epub:type="footnote"><p>“Consistency levels in Azure Cosmos DB,” <a href="https://docs.microsoft.com/en-us/azure/cosmos-db/consistency-levels" class="uri">https://docs.microsoft.com/en-us/azure/cosmos-db/consistency-levels</a><a href="#fnref19" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn20" epub:type="footnote"><p>“Apache Cassandra: How is the consistency level configured?,” <a href="https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/dml/dmlConfigConsistency.html" class="uri">https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/dml/dmlConfigConsistency.html</a><a href="#fnref20" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn21" epub:type="footnote"><p>“Chain Replication for Supporting High Throughput and Availability,” <a href="https://www.cs.cornell.edu/home/rvr/papers/OSDI04.pdf" class="uri">https://www.cs.cornell.edu/home/rvr/papers/OSDI04.pdf</a><a href="#fnref21" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn22" epub:type="footnote"><p>This is slightly different from the original chain replication paper since it’s based on CRAQ, an extension of the original protocol; see “Object Storage on CRAQ,” <a href="https://www.usenix.org/legacy/event/usenix09/tech/full_papers/terrace/terrace.pdf" class="uri">https://www.usenix.org/legacy/event/usenix09/tech/full_papers/terrace/terrace.pdf</a>.<a href="#fnref22" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn23" epub:type="footnote"><p>required for state machine replication<a href="#fnref23" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>《寻找一种易于理解的共识算法》，<a class="uri" href="https://raft.github.io/raft.pdf">https://raft.github.io/raft.pdf</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>《Paxos简化版》，<a class="uri" href="https://lamport.azurewebsites.net/pubs/paxos-simple.pdf">https://lamport.azurewebsites.net/pubs/paxos-simple.pdf</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>《有限状态机》，<a class="uri" href="https://en.wikipedia.org/wiki/Finite-state_machine">https://en.wikipedia.org/wiki/Finite-state_machine</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>在实践中，有多种方法可以减少此步骤所需的消息数量。<a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>《共识》，<a class="uri" href="https://en.wikipedia.org/wiki/Consensus_(computer_science)">https://en.wikipedia.org/wiki/Consensus_(computer_science)</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>《Paxos抽象化》，<a class="uri" href="https://maheshba.bitbucket.io/blog/2021/11/15/Paxos.html">https://maheshba.bitbucket.io/blog/2021/11/15/Paxos.html</a><a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn7"><p>我们将在下一节定义线性化的含义。<a class="footnote-back" href="#fnref7" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn8"><p style="text-align:left;">也不想这样做，因为要正确实现它非常具有挑战性；参见《Paxos实现 - 工程视角》，<a class="uri" href="https://static.googleusercontent.com/media/research.google.com/en//archive/paxos_made_live.pdf">https://static.googleusercontent.com/media/research.google.com/en//archive/paxos_made_live.pdf</a><a class="footnote-back" href="#fnref8" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn9"><p>《etcd：一个用于分布式系统最关键数据的分布式、可靠的键值存储》，<a class="uri" href="https://etcd.io/">https://etcd.io/</a><a class="footnote-back" href="#fnref9" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn10"><p>《Apache ZooKeeper：一个实现高可靠性分布式协调的开源服务器》，<a class="uri" href="https://zookeeper.apache.org/">https://zookeeper.apache.org/</a><a class="footnote-back" href="#fnref10" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn11"><p>《一致性模型》，<a class="uri" href="https://jepsen.io/consistency">https://jepsen.io/consistency</a><a class="footnote-back" href="#fnref11" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn12"><p>《线性化》，<a class="uri" href="https://jepsen.io/consistency/models/linearizable">https://jepsen.io/consistency/models/linearizable</a><a class="footnote-back" href="#fnref12" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn13"><p>例如，这是您期望从管理租约的协调服务中获得的保证。<a class="footnote-back" href="#fnref13" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn14"><p>《顺序一致性》，<a class="uri" href="https://jepsen.io/consistency/models/sequential">https://jepsen.io/consistency/models/sequential</a><a class="footnote-back" href="#fnref14" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn15"><p>《CAP定理的视角》，<a class="uri" href="https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf">https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf</a><a class="footnote-back" href="#fnref15" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn16"><p>《CAP定理批判》，<a class="uri" href="https://www.cl.cam.ac.uk/research/dtg/www/files/publications/public/mk428/cap-critique.pdf">https://www.cl.cam.ac.uk/research/dtg/www/files/publications/public/mk428/cap-critique.pdf</a><a class="footnote-back" href="#fnref16" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn17"><p>《CAP定理：你不需要CP，你不想要AP，你也不能拥有CA》，<a class="uri" href="https://www.youtube.com/watch?v=hUd_9FENShA">https://www.youtube.com/watch?v=hUd_9FENShA</a><a class="footnote-back" href="#fnref17" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn18"><p>《现代分布式数据库系统设计中的一致性权衡》，<a class="uri" href="https://en.wikipedia.org/wiki/PACELC_theorem">https://en.wikipedia.org/wiki/PACELC_theorem</a><a class="footnote-back" href="#fnref18" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn19"><p>《Azure Cosmos DB中的一致性级别》，<a class="uri" href="https://docs.microsoft.com/en-us/azure/cosmos-db/consistency-levels">https://docs.microsoft.com/en-us/azure/cosmos-db/consistency-levels</a><a class="footnote-back" href="#fnref19" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn20"><p>《Apache Cassandra：如何配置一致性级别？》，<a class="uri" href="https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/dml/dmlConfigConsistency.html">https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/dml/dmlConfigConsistency.html</a><a class="footnote-back" href="#fnref20" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn21"><p>《支持高吞吐量和高可用性的链式复制》，<a class="uri" href="https://www.cs.cornell.edu/home/rvr/papers/OSDI04.pdf">https://www.cs.cornell.edu/home/rvr/papers/OSDI04.pdf</a><a class="footnote-back" href="#fnref21" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn22"><p>这与原始的链式复制论文略有不同，因为它基于CRAQ，即原始协议的扩展；参见《CRAQ上的对象存储》，<a class="uri" href="https://www.usenix.org/legacy/event/usenix09/tech/full_papers/terrace/terrace.pdf">https://www.usenix.org/legacy/event/usenix09/tech/full_papers/terrace/terrace.pdf</a>。<a class="footnote-back" href="#fnref22" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn23"><p>状态机复制所需<a class="footnote-back" href="#fnref23" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

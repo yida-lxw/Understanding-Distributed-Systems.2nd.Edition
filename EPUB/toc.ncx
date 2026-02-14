@@ -282,116 +282,116 @@
       <content src="text/ch019.xhtml#leader" />
       <navPoint id="navPoint-45">
         <navLabel>
-          <text>9.1 Raft leader election</text>
+          <text>9.1 Raft 领导者选举</text>
         </navLabel>
         <content src="text/ch019.xhtml#raft-leader-election" />
       </navPoint>
       <navPoint id="navPoint-46">
         <navLabel>
-          <text>9.2 Practical considerations</text>
+          <text>9.2 实战考量</text>
         </navLabel>
         <content src="text/ch019.xhtml#lease" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-47">
       <navLabel>
-        <text>10 Replication</text>
+        <text>10 复制</text>
       </navLabel>
       <content src="text/ch020.xhtml#replication" />
       <navPoint id="navPoint-48">
         <navLabel>
-          <text>10.1 State machine replication</text>
+          <text>10.1 状态机复制</text>
         </navLabel>
         <content src="text/ch020.xhtml#stm" />
       </navPoint>
       <navPoint id="navPoint-49">
         <navLabel>
-          <text>10.2 Consensus</text>
+          <text>10.2 共识</text>
         </navLabel>
         <content src="text/ch020.xhtml#consensus" />
       </navPoint>
       <navPoint id="navPoint-50">
         <navLabel>
-          <text>10.3 Consistency models</text>
+          <text>10.3 一致性模型</text>
         </navLabel>
         <content src="text/ch020.xhtml#consistency-models" />
         <navPoint id="navPoint-51">
           <navLabel>
-            <text>10.3.1 Strong consistency</text>
+            <text>10.3.1 强一致性</text>
           </navLabel>
           <content src="text/ch020.xhtml#linearizability" />
         </navPoint>
         <navPoint id="navPoint-52">
           <navLabel>
-            <text>10.3.2 Sequential consistency</text>
+            <text>10.3.2 顺序一致性</text>
           </navLabel>
           <content src="text/ch020.xhtml#sequential-consistency" />
         </navPoint>
         <navPoint id="navPoint-53">
           <navLabel>
-            <text>10.3.3 Eventual consistency</text>
+            <text>10.3.3 最终一致性</text>
           </navLabel>
           <content src="text/ch020.xhtml#eventual-consistency" />
         </navPoint>
         <navPoint id="navPoint-54">
           <navLabel>
-            <text>10.3.4 The CAP theorem</text>
+            <text>10.3.4 CAP定理</text>
           </navLabel>
           <content src="text/ch020.xhtml#the-cap-theorem" />
         </navPoint>
       </navPoint>
       <navPoint id="navPoint-55">
         <navLabel>
-          <text>10.4 Chain replication</text>
+          <text>10.4 链式复制</text>
         </navLabel>
         <content src="text/ch020.xhtml#chain-replication" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-56">
       <navLabel>
-        <text>11 Coordination avoidance</text>
+        <text>11 协调规避</text>
       </navLabel>
       <content src="text/ch021.xhtml#solvingcap" />
       <navPoint id="navPoint-57">
         <navLabel>
-          <text>11.1 Broadcast protocols</text>
+          <text>11.1 广播协议</text>
         </navLabel>
         <content src="text/ch021.xhtml#broadcast-protocols" />
       </navPoint>
       <navPoint id="navPoint-58">
         <navLabel>
-          <text>11.2 Conflict-free replicated data types</text>
+          <text>11.2 无冲突复制数据类型</text>
         </navLabel>
         <content src="text/ch021.xhtml#crdt" />
       </navPoint>
       <navPoint id="navPoint-59">
         <navLabel>
-          <text>11.3 Dynamo-style data stores</text>
+          <text>11.3 Dynamo风格的数据存储</text>
         </navLabel>
         <content src="text/ch021.xhtml#dynamo" />
       </navPoint>
       <navPoint id="navPoint-60">
         <navLabel>
-          <text>11.4 The CALM theorem</text>
+          <text>11.4 CALM定理</text>
         </navLabel>
         <content src="text/ch021.xhtml#the-calm-theorem" />
       </navPoint>
       <navPoint id="navPoint-61">
         <navLabel>
-          <text>11.5 Causal consistency</text>
+          <text>11.5 因果一致性</text>
         </navLabel>
         <content src="text/ch021.xhtml#causal-consistency" />
       </navPoint>
       <navPoint id="navPoint-62">
         <navLabel>
-          <text>11.6 Practical considerations</text>
+          <text>11.6 实战考量</text>
         </navLabel>
         <content src="text/ch021.xhtml#practical-considerations" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-63">
       <navLabel>
-        <text>12 Transactions</text>
+        <text>12 事务</text>
       </navLabel>
       <content src="text/ch022.xhtml#transactions" />
       <navPoint id="navPoint-64">
@@ -402,24 +402,24 @@
       </navPoint>
       <navPoint id="navPoint-65">
         <navLabel>
-          <text>12.2 Isolation</text>
+          <text>12.2 隔离性</text>
         </navLabel>
         <content src="text/ch022.xhtml#isolation" />
         <navPoint id="navPoint-66">
           <navLabel>
-            <text>12.2.1 Concurrency control</text>
+            <text>12.2.1 并发控制</text>
           </navLabel>
           <content src="text/ch022.xhtml#concurrency-control" />
         </navPoint>
       </navPoint>
       <navPoint id="navPoint-67">
         <navLabel>
-          <text>12.3 Atomicity</text>
+          <text>12.3 原子性</text>
         </navLabel>
         <content src="text/ch022.xhtml#atomicity" />
         <navPoint id="navPoint-68">
           <navLabel>
-            <text>12.3.1 Two-phase commit</text>
+            <text>12.3.1 两阶段提交</text>
           </navLabel>
           <content src="text/ch022.xhtml#two-phase-commit" />
         </navPoint>
@@ -433,7 +433,7 @@
     </navPoint>
     <navPoint id="navPoint-70">
       <navLabel>
-        <text>13 Asynchronous transactions</text>
+        <text>13 异步事务</text>
       </navLabel>
       <content src="text/ch023.xhtml#asynctransactions" />
       <navPoint id="navPoint-71">

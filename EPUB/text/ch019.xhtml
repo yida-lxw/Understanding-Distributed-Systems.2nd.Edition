@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch019.xhtml</title>
-  <style>
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch019.xhtml</title>
+<style>
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
@@ -70,68 +71,68 @@ code span.va { color: #19177c; } /* Variable */
 code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="leader" class="level1" data-number="9">
-<h1 data-number="9"><span class="header-section-number">9</span> Leader election</h1>
-<p>There are times when a single process in the system needs to have special powers, like accessing a shared resource or assigning work to others. To grant a process these powers, the system needs to elect a <em>leader</em> among a set of <em>candidate processes</em>, which remains in charge until it relinquishes its role or becomes otherwise unavailable. When that happens, the remaining processes can elect a new leader among themselves.</p>
-<p>A leader election algorithm needs to guarantee that there is at most one leader at any given time and that an election eventually completes even in the presence of failures. These two properties are also referred to as <em>safety</em> and <em>liveness</em>, respectively, and they are general properties of distributed algorithms. Informally, safety guarantees that nothing bad happens and liveness that something good eventually does happen. In this chapter, we will explore how a specific algorithm, the <em>Raft</em> leader election algorithm, guarantees these properties.</p>
-<section id="raft-leader-election" class="level2" data-number="9.1">
-<h2 data-number="9.1"><span class="header-section-number">9.1</span> Raft leader election</h2>
-<p>Raft<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>’s leader election algorithm is implemented as a state machine in which any process is in one of three states (see Figure <a href="#fig:raft-election">9.1</a>):</p>
+<section class="level1" data-number="9" id="leader">
+<h1 data-number="9"><span class="header-section-number">9</span> 领导者选举</h1>
+<p>有时，系统中的单个进程需要拥有特殊权限，例如访问共享资源或向其他进程分配任务。为了赋予进程这些权限，系统需要在一组<em>候选进程</em>中选举出一位<em>领导者</em>，该领导者将一直负责，直到其主动放弃角色或因其他原因变得不可用。当这种情况发生时，剩余的进程可以在它们之中选举出一位新的领导者。</p>
+<p>领导者选举算法需要保证在任何给定时间最多只有一个领导者，并且即使在出现故障的情况下，选举最终也能完成。这两个属性分别也被称为<em>安全性</em>和<em>活性</em>，它们是分布式算法的通用属性。非正式地说，安全性保证不会发生坏事，而活性则保证好事最终会发生。在本章中，我们将探讨一个特定的算法——<em>Raft</em>领导者选举算法——是如何保证这些属性的。</p>
+<section class="level2" data-number="9.1" id="raft-leader-election">
+<h2 data-number="9.1"><span class="header-section-number">9.1</span> Raft 领导者选举</h2>
+<p>Raft<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a> 的领导者选举算法被实现为一个状态机，其中任何进程都处于三种状态之一（参见图 <a href="#fig:raft-election">9.1</a>）：</p>
 <ul>
-<li>the <em>follower state</em>, where the process recognizes another one as the leader;</li>
-<li>the <em>candidate state</em>, where the process starts a new election proposing itself as a leader;</li>
-<li>or the <em>leader state</em>, where the process is the leader.</li>
+<li><em>跟随者状态</em>：进程承认另一个进程为领导者；</li>
+<li><em>候选人状态</em>：进程发起一次新的选举，提议自己成为领导者；</li>
+<li>或者 <em>领导者状态</em>：进程就是领导者。</li>
 </ul>
-<p>In Raft, time is divided into <em>election terms</em> of arbitrary length that are numbered with consecutive integers (i.e., logical timestamps). A term begins with a new election, during which one or more candidates attempt to become the leader. The algorithm guarantees that there is at most one leader for any term. But what triggers an election in the first place?</p>
-<p>When the system starts up, all processes begin their journey as followers. A follower expects to receive a periodic heartbeat from the leader containing the election term the leader was elected in. If the follower doesn’t receive a heartbeat within a certain period of time, a timeout fires and the leader is presumed dead. At that point, the follower starts a new election by incrementing the current term and transitioning to the candidate state. It then votes for itself and sends a request to all the processes in the system to vote for it, stamping the request with the current election term.</p>
-<p>The process remains in the candidate state until one of three things happens: it wins the election, another process wins the election, or some time goes by with no winner:</p>
+<p>在 Raft 中，时间被划分为任意长度的<em>选举任期</em>，这些任期用连续的整数编号（即逻辑时间戳）。一个任期以一次新的选举开始，在此期间，一个或多个候选人试图成为领导者。该算法保证在任何任期内最多只有一个领导者。但是，究竟是什么触发了选举呢？</p>
+<p>当系统启动时，所有进程都以跟随者的身份开始它们的旅程。跟随者期望定期收到来自领导者的心跳，心跳中包含领导者当选时的选举任期。如果跟随者在特定时间段内没有收到心跳，就会触发超时，并假定领导者已失效。此时，跟随者通过递增当前任期并转换到候选人状态来发起一次新的选举。然后它为自己投票，并向系统中的所有进程发送请求，要求它们为自己投票，并在请求上标记当前的选举任期。</p>
+<p>进程保持在候选人状态，直到发生以下三件事之一：它赢得选举、另一个进程赢得选举，或者一段时间过去没有产生获胜者：</p>
 <ul>
-<li><strong>The candidate wins the election</strong> — The candidate wins the election if the majority of processes in the system vote for it. Each process can vote for at most one candidate in a term on a first-come-first-served basis. This majority rule enforces that at most one candidate can win a term. If the candidate wins the election, it transitions to the leader state and starts sending heartbeats to the other processes.</li>
-<li><strong>Another process wins the election</strong> — If the candidate receives a heartbeat from a process that claims to be the leader with a term greater than or equal to the candidate’s term, it accepts the new leader and returns to the follower state.<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> If not, it continues in the candidate state. You might be wondering how that could happen; for example, if the candidate process was to stop for any reason, like for a long garbage collection pause, by the time it resumes another process could have won the election.</li>
-<li><strong>A period of time goes by with no winner</strong> — It’s unlikely but possible that multiple followers become candidates simultaneously, and none manages to receive a majority of votes; this is referred to as a split vote. The candidate will eventually time out and start a new election when that happens. The election timeout is picked randomly from a fixed interval to reduce the likelihood of another split vote in the next election.</li>
+<li><strong>候选人赢得选举</strong> —— 如果系统中的大多数进程投票给该候选人，则该候选人赢得选举。每个进程在一个任期内最多只能为一个候选人投票，遵循先到先得的原则。这个多数原则确保了最多只有一个候选人能赢得一个任期。如果候选人赢得选举，它将转换到领导者状态，并开始向其他进程发送心跳。</li>
+<li><strong>另一个进程赢得选举</strong> —— 如果候选人收到来自一个进程的心跳，该进程声称自己是领导者，并且其任期大于或等于候选人的任期，那么候选人就接受这个新领导者并返回到跟随者状态。<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a> 否则，它将继续保持在候选人状态。你可能想知道这种情况怎么会发生；例如，如果候选人进程因任何原因（如长时间的垃圾收集暂停）而停止，当它恢复时，另一个进程可能已经赢得了选举。</li>
+<li><strong>一段时间过去没有产生获胜者</strong> —— 虽然不太可能，但有可能多个跟随者同时成为候选人，并且没有一个能获得多数票；这被称为<em>票数分裂</em>。当这种情况发生时，候选人最终会超时并开始一次新的选举。选举超时时间从一个固定的区间内随机选取，以减少下一次选举中再次出现票数分裂的可能性。</li>
 </ul>
 <div class="figure" style="text-align: center">
-<img alt="Raft&#39;s leader election algorithm represented as a state machine." width="100%" src="../media/file13.png" />
+<img alt="Raft's leader election algorithm represented as a state machine." src="../media/file13.png" width="100%"/>
 <p class="caption">
-Figure 9.1: Raft’s leader election algorithm represented as a state machine.
+图 9.1: Raft 领导者选举算法表示为状态机。
 </p>
 </div>
 </section>
-<section id="lease" class="level2" data-number="9.2">
-<h2 data-number="9.2"><span class="header-section-number">9.2</span> Practical considerations</h2>
-<p>There are other leader election algorithms out there, but Raft’s implementation is simple to understand and also widely used in practice, which is why I chose it for this book. In practice, you will rarely, if ever, need to implement leader election from scratch. A good reason for doing that would be if you needed a solution with zero external dependencies<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>. Instead, you can use any <em>fault-tolerant</em> key-value store that offers a linearizable<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a> <em>compare-and-swap</em><a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> operation with an expiration time (TTL).</p>
-<p>The compare-and-swap operation atomically updates the value of a key if and only if the process attempting to update the value correctly identifies the current value. The operation takes three parameters: <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>o</mi></msub><annotation encoding="application/x-tex">V_o</annotation></semantics></math>, and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>n</mi></msub><annotation encoding="application/x-tex">V_n</annotation></semantics></math>, where <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math> is a key, and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>o</mi></msub><annotation encoding="application/x-tex">V_o</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>n</mi></msub><annotation encoding="application/x-tex">V_n</annotation></semantics></math> are values referred to as the old and new value, respectively. The operation atomically compares the current value of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math> with <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>o</mi></msub><annotation encoding="application/x-tex">V_o</annotation></semantics></math>, and if they match, it updates the value of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math> to <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>n</mi></msub><annotation encoding="application/x-tex">V_n</annotation></semantics></math>. If the values don’t match, then <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math> is not modified, and the operation fails.</p>
-<p>The expiration time defines the time to live for a key, after which the key expires and is removed from the store unless the expiration time is extended. The idea is that each competing process tries to acquire a <em>lease</em> by creating a new key with compare-and-swap. The first process to succeed becomes the leader and remains such until it stops renewing the lease, after which another process can become the leader.</p>
-<p>The expiration logic can also be implemented on the client side, like this locking library<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> for DynamoDB does, but the implementation is more complex, and it still requires the data store to offer a compare-and-swap operation.</p>
-<p>You might think that’s enough to guarantee there can’t be more than one leader at any given time. But, unfortunately, that’s not the case. To see why suppose multiple processes need to update a file on a shared file store, and we want to guarantee that only one at a time can access it to avoid race conditions. Now, suppose we use a lease to lock the critical section. Each process tries to acquire the lease, and the one that does so successfully reads the file, updates it in memory, and writes it back to the store:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> lease.acquire():</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>        content <span class="op">=</span> store.read(filename)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        new_content <span class="op">=</span> update(content)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        store.write(filename, new_content)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span>:</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        lease.release()</span></code></pre></div>
-<p>The issue is that by the time the process gets to write to the file, it might no longer hold the lease. For example, the operating system might have preempted and stopped the process for long enough for the lease to expire. The process could try to detect that by comparing the lease expiration time to its local clock before writing to the store, assuming clocks are synchronized.</p>
-<p>However, clock synchronization isn’t perfectly accurate. On top of that, the lease could expire while the request to the store is in-flight because of a network delay. To account for these problems, the process could check that the lease expiration is far enough in the future before writing to the file. Unfortunately, this workaround isn’t foolproof, and the lease can’t guarantee mutual exclusion by itself.</p>
-<p>To solve this problem, we can assign a version number to each file that is incremented every time the file is updated. The process holding the lease can then read the file and its version number from the file store, do some local computation, and finally update the file (and increment the version number) conditional on the version number not having changed. The process can perform this validation atomically using a compare-and-swap operation, which many file stores support.</p>
-<p>If the file store doesn’t support conditional writes, we have to design around the fact that occasionally there will be a race condition. Sometimes, that’s acceptable; for example, if there are momentarily two leaders and they both perform the same idempotent update, no harm is done.</p>
-<p>Although having a leader can simplify the design of a system as it eliminates concurrency, it can also become a scalability bottleneck if the number of operations performed by it increases to the point where it can no longer keep up. Also, a leader is a single point of failure with a large blast radius; if the election process stops working or the leader isn’t working as expected, it can bring down the entire system with it. We can mitigate some of these downsides by introducing partitions and assigning a different leader per partition, but that comes with additional complexity. This is the solution many distributed data stores use since they need to use partitioning anyway to store data that doesn’t fit in a single node.</p>
-<p>As a rule of thumb, if we must have a leader, we have to minimize the work it performs and be prepared to occasionally have more than one.</p>
-<p>Taking a step back, a crucial assumption we made earlier is that the data store that holds leases is fault-tolerant, i.e., it can tolerate the loss of a node. Otherwise, if the data store ran on a single node and that node were to fail, we wouldn’t be able to acquire leases. For the data store to withstand a node failing, it needs to replicate its state over multiple nodes. In the next chapter, we will take a closer look at how this can be accomplished.</p>
+<section class="level2" data-number="9.2" id="lease">
+<h2 data-number="9.2"><span class="header-section-number">9.2</span> 实战考量</h2>
+<p>市面上还有其他领导者选举算法，但Raft的实现易于理解且在实践中广泛应用，这就是我选择在本书中介绍它的原因。实际上，你很少需要从头开始实现领导者选举。一个合理的理由可能是你需要一个零外部依赖的解决方案<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>。相反，你可以使用任何提供具有过期时间（TTL）的线性化<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a> <em>比较并交换</em><a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>操作的<em>容错</em>键值存储。</p>
+<p>比较并交换操作仅在尝试更新值的进程正确识别当前值时，才会原子性地更新键的值。该操作接受三个参数：<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>、<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>o</mi></msub><annotation encoding="application/x-tex">V_o</annotation></semantics></math>和<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>n</mi></msub><annotation encoding="application/x-tex">V_n</annotation></semantics></math>，其中<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>是键，<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>o</mi></msub><annotation encoding="application/x-tex">V_o</annotation></semantics></math>和<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>n</mi></msub><annotation encoding="application/x-tex">V_n</annotation></semantics></math>是分别被称为旧值和新值的值。该操作原子性地比较<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>的当前值与<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>o</mi></msub><annotation encoding="application/x-tex">V_o</annotation></semantics></math>，如果匹配，则将<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>的值更新为<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>n</mi></msub><annotation encoding="application/x-tex">V_n</annotation></semantics></math>。如果值不匹配，则<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>K</mi><annotation encoding="application/x-tex">K</annotation></semantics></math>不会被修改，并且操作失败。</p>
+<p>过期时间定义了键的存活时间，在此之后，除非延长过期时间，否则键将过期并从存储中移除。其思路是，每个竞争进程都尝试通过使用比较并交换创建一个新键来获取<em>租约</em>。第一个成功的进程成为领导者，并保持该状态直到它停止续租，之后另一个进程可以成为领导者。</p>
+<p>过期逻辑也可以在客户端实现，就像这个为DynamoDB设计的锁库<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>所做的那样，但实现更为复杂，并且仍然要求数据存储提供比较并交换操作。</p>
+<p>你可能会认为这足以保证在任何给定时间都不会有超过一个领导者。但不幸的是，情况并非如此。为了理解原因，假设多个进程需要更新共享文件存储上的一个文件，并且我们希望保证一次只有一个进程可以访问它，以避免竞态条件。现在，假设我们使用租约来锁定临界区。每个进程都尝试获取租约，成功获取的进程读取文件，在内存中更新它，然后将其写回存储：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a><span class="cf">if</span> lease.acquire():</span>
+<span id="cb1-2"><a aria-hidden="true" href="#cb1-2" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb1-3"><a aria-hidden="true" href="#cb1-3" tabindex="-1"></a>        content <span class="op">=</span> store.read(filename)</span>
+<span id="cb1-4"><a aria-hidden="true" href="#cb1-4" tabindex="-1"></a>        new_content <span class="op">=</span> update(content)</span>
+<span id="cb1-5"><a aria-hidden="true" href="#cb1-5" tabindex="-1"></a>        store.write(filename, new_content)</span>
+<span id="cb1-6"><a aria-hidden="true" href="#cb1-6" tabindex="-1"></a>    <span class="cf">except</span>:</span>
+<span id="cb1-7"><a aria-hidden="true" href="#cb1-7" tabindex="-1"></a>        lease.release()</span></code></pre></div>
+<p>问题在于，当进程开始写入文件时，它可能已经不再持有租约。例如，操作系统可能已经抢占并停止了该进程足够长的时间，导致租约过期。假设时钟是同步的，进程可以尝试在写入存储之前，通过比较租约过期时间和其本地时钟来检测这一点。</p>
+<p>然而，时钟同步并不完全准确。除此之外，由于网络延迟，租约可能在向存储发送请求的过程中过期。为了解决这些问题，进程可以在写入文件之前检查租约过期时间是否足够远。不幸的是，这种解决方法并非万无一失，租约本身无法保证互斥。</p>
+<p>为了解决这个问题，我们可以为每个文件分配一个版本号，每次文件更新时递增。持有租约的进程可以从文件存储中读取文件及其版本号，进行一些本地计算，最后在版本号未发生变化的条件下更新文件（并递增版本号）。进程可以使用比较并交换操作原子性地执行此验证，许多文件存储都支持此操作。</p>
+<p>如果文件存储不支持条件写入，我们就必须设计应对偶尔出现竞态条件的方案。有时这是可以接受的；例如，如果短暂地出现两个领导者，并且它们都执行相同的幂等更新，则不会造成损害。</p>
+<p>虽然拥有领导者可以通过消除并发来简化系统设计，但如果领导者执行的操作数量增加到其无法跟上的程度，它也可能成为可扩展性的瓶颈。此外，领导者是具有较大爆炸半径的单点故障；如果选举过程停止工作或领导者未按预期工作，它可能导致整个系统崩溃。我们可以通过引入分区并为每个分区分配不同的领导者来减轻其中一些缺点，但这会带来额外的复杂性。这是许多分布式数据存储使用的解决方案，因为它们无论如何都需要使用分区来存储无法容纳在单个节点中的数据。</p>
+<p>根据经验法则，如果我们必须有一个领导者，我们必须最小化其执行的工作，并准备好偶尔出现多个领导者的情况。</p>
+<p>退一步讲，我们之前做出的一个关键假设是，持有租约的数据存储是可以容错的，即它可以容忍节点的丢失。否则，如果数据存储运行在单个节点上并且该节点发生故障，我们将无法获取租约。为了使数据存储能够承受节点故障，它需要在多个节点上复制其状态。在下一章中，我们将更详细地探讨如何实现这一点。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“In Search of an Understandable Consensus Algorithm,” <a href="https://raft.github.io/raft.pdf" class="uri">https://raft.github.io/raft.pdf</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>The same happens if the leader receives a heartbeat with a greater term.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>We will encounter one such case when discussing replication in the next chapter.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>We will define what linearizability means exactly later in section <a href="#linearizability">10.3.1</a>.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Compare-and-swap,” <a href="https://en.wikipedia.org/wiki/Compare-and-swap" class="uri">https://en.wikipedia.org/wiki/Compare-and-swap</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“Building Distributed Locks with the DynamoDB Lock Client,” <a href="https://aws.amazon.com/blogs/database/building-distributed-locks-with-the-dynamodb-lock-client/" class="uri">https://aws.amazon.com/blogs/database/building-distributed-locks-with-the-dynamodb-lock-client/</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>《寻找一种易于理解的共识算法》，<a class="uri" href="https://raft.github.io/raft.pdf">https://raft.github.io/raft.pdf</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>如果领导者收到任期号更大的心跳信号，同样的情况也会发生。<a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>在下一章讨论复制时，我们会遇到一个这样的案例。<a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>我们将在后面的<a href="#linearizability">10.3.1节</a>准确定义线性一致性的含义。<a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>“比较并交换”，<a class="uri" href="https://en.wikipedia.org/wiki/Compare-and-swap">https://en.wikipedia.org/wiki/Compare-and-swap</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>“使用DynamoDB锁客户端构建分布式锁”，<a class="uri" href="https://aws.amazon.com/blogs/database/building-distributed-locks-with-the-dynamodb-lock-client/">https://aws.amazon.com/blogs/database/building-distributed-locks-with-the-dynamodb-lock-client/</a><a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

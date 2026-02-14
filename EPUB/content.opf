@@ -7,7 +7,6 @@
     <dc:language>zh</dc:language>
     <dc:creator id="epub-creator-1">[英国]罗伯特·维蒂略</dc:creator>
     <meta refines="#epub-creator-1" property="role" scheme="marc:relators">aut</meta>
-    <dc:description>关于大型分布式应用,每个开发者都应该了解的知识</dc:description>
     <meta name="cover" content="cover_jpg" />
     <meta property="dcterms:modified">2022-03-11T13:02:15Z</meta>
   </metadata>
