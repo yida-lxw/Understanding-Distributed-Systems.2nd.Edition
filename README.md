@@ -23,7 +23,7 @@ Understanding Distributed Systems.2nd.Edition 一书的中文翻译
 - [x] 第10章
 - [x] 第11章
 - [x] 第12章
-- [ ] 第13章
+- [x] 第13章
 - [ ] 第14章
 - [ ] 第15章
 - [ ] 第16章
