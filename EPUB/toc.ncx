@@ -438,38 +438,38 @@
       <content src="text/ch023.xhtml#asynctransactions" />
       <navPoint id="navPoint-71">
         <navLabel>
-          <text>13.1 Outbox pattern</text>
+          <text>13.1 发件箱模式</text>
         </navLabel>
         <content src="text/ch023.xhtml#log-based-transactions" />
       </navPoint>
       <navPoint id="navPoint-72">
         <navLabel>
-          <text>13.2 Sagas</text>
+          <text>13.2 Saga模式</text>
         </navLabel>
         <content src="text/ch023.xhtml#sagas" />
       </navPoint>
       <navPoint id="navPoint-73">
         <navLabel>
-          <text>13.3 Isolation</text>
+          <text>13.3 隔离性</text>
         </navLabel>
         <content src="text/ch023.xhtml#isolation-1" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-74">
       <navLabel>
-        <text>Summary</text>
+        <text>本章总结</text>
       </navLabel>
       <content src="text/ch024.xhtml#coordination-outro" />
     </navPoint>
     <navPoint id="navPoint-75">
       <navLabel>
-        <text>(PART) Scalability</text>
+        <text>第三部分 可扩展性</text>
       </navLabel>
       <content src="text/ch025.xhtml#part-scalability" />
     </navPoint>
     <navPoint id="navPoint-76">
       <navLabel>
-        <text>Introduction</text>
+        <text>引言</text>
       </navLabel>
       <content src="text/ch026.xhtml#scalability-intro" />
     </navPoint>

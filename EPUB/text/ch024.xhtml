@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch024.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch024.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="coordination-outro" class="level1 unnumbered unlisted">
-<h1 class="unnumbered unlisted">Summary</h1>
-<p>If you pick any textbook about distributed systems or database systems, I guarantee you will find entire chapters dedicated to the topics discussed in this part. In fact, you can find entire books written about them! Although you could argue that it’s unlikely you will ever have to implement core distributed algorithms such as state machine replication from scratch, I feel it’s important to have seen these at least once as it will make you a better “user” of the abstractions they provide.</p>
-<p>There are two crucial insights I would like you to take away from this part. One is that failures are unavoidable in distributed systems, and the other is that coordination is expensive.</p>
-<p>By now, you should have realized that what makes the coordination algorithms we discussed so complex is that they must tolerate failures. Take Raft, for example. Imagine how much simpler the implementation would be if the network were reliable and processes couldn’t crash. If you were surprised by one or more edge cases in the design of Raft or chain replication, you are not alone. This stuff is hard! Fault tolerance plays a big role at any level of the stack, which is why I dedicated Part IV to it.</p>
-<p>The other important takeaway is that coordination adds complexity and impacts scalability and performance. Hence, you should strive to reduce coordination when possible by:</p>
+<section class="level1 unnumbered unlisted" id="coordination-outro">
+<h1 class="unnumbered unlisted">本章总结</h1>
+<p>如果你挑选任何一本关于分布式系统或数据库系统的教科书，我保证你会发现整章的内容都专门讨论这一部分所涉及的主题。事实上，你可以找到整本专门论述它们的书！尽管你可能会辩称，你不太可能需要从头开始实现诸如状态机复制这样的核心分布式算法，但我认为至少见过一次这些内容是很重要的，因为这会使你成为它们所提供的抽象概念的更出色的“使用者”。</p>
+<p>我希望你从这部分中领悟到两个关键见解。其一是故障在分布式系统中是不可避免的，其二是协调的代价是高昂的。</p>
+<p>到目前为止，你应该已经意识到，我们所讨论的协调算法之所以如此复杂，是因为它们必须容忍故障。以Raft为例，想象一下如果网络可靠且进程不会崩溃，实现会变得多么简单。如果你对Raft或链式复制设计中的一个或多个边界情况感到惊讶，你并不孤单。这些东西确实很难！容错在堆栈的任何层级都扮演着重要角色，这也是为什么我将第四部分专门用于讨论它。</p>
+<p>另一个重要的启示是，协调会增加复杂性并影响可扩展性和性能。因此，你应该尽可能通过以下方式减少协调：</p>
 <ul>
-<li>keeping coordination off the critical path, as chain replication does;</li>
-<li>proceeding without coordination and “apologize” when an inconsistency is detected, as sagas do;</li>
-<li>using protocols that guarantee some form of consistency without coordination, like CRDTs.</li>
+<li>像链式复制那样，将协调工作移出关键路径；</li>
+<li>像sagas那样，无需协调即可进行，并在检测到不一致时“道歉(即补偿机制，这里是一个隐喻)”；</li>
+<li>使用无需协调即可保证某种形式一致性的协议，例如CRDTs。</li>
 </ul>
 <!--chapter:end:markdown/Coordination.Rmd-->
 </section>
