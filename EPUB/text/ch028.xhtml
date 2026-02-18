@@ -1,49 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch028.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch028.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="cdn" class="level1" data-number="15">
-<h1 data-number="15"><span class="header-section-number">15</span> Content delivery networks</h1>
-<p>A CDN is an overlay network of geographically distributed caching servers (reverse proxies) architected around the design limitations of the network protocols that run the internet.</p>
-<p>When using a CDN, clients hit URLs that resolve to caching servers that belong to the CDN. When a CDN server receives a request, it checks whether the requested resource is cached locally. If not, the CDN server transparently fetches it from the <em>origin server</em> (i.e., our application server) using the original URL, caches the response locally, and returns it to the client. AWS CloudFront<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> and Akamai<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> are examples of well-known CDN services.</p>
-<section id="overlay-network" class="level2" data-number="15.1">
-<h2 data-number="15.1"><span class="header-section-number">15.1</span> Overlay network</h2>
-<p>You would think that the main benefit of a CDN is caching, but it’s actually the underlying network substrate. The public internet is composed of thousands of networks, and its core routing protocol, BGP, was not designed with performance in mind. It primarily uses the number of hops to cost how expensive a path is with respect to another, without considering their latencies or congestion.</p>
-<p>As the name implies, a CDN is a network. More specifically, an overlay network<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> built on top of the internet that exploits a variety of techniques to reduce the response time of network requests and increase the bandwidth of data transfers.</p>
-<p>When we first discussed TCP in chapter <a href="#tcp">2</a>, we talked about the importance of minimizing the latency between a client and a server. No matter how fast the server is, if the client is located on the other side of the world from it, the response time is going to be over 100 ms just because of the network latency, which is physically limited by the speed of light. Not to mention the increased error rate when sending data across the public internet over long distances.</p>
-<p>This is why CDN clusters are placed in multiple geographical locations to be closer to clients. But how do clients know which cluster is closest to them? One way is via <em>global DNS load balancing</em><a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>: an extension to DNS that considers the location of the client inferred from its IP, and returns a list of the geographically closest clusters taking into account also the network congestion and the clusters’ health.</p>
-<p>CDN servers are also placed at <em>internet exchange points</em>, where ISPs connect to each other. That way, virtually the entire communication from the origin server to the clients flows over network links that are part of the CDN, and the brief hops on either end have low latencies due to their short distance.</p>
-<p>The routing algorithms of the overlay network are optimized to select paths with reduced latencies and congestion, based on continuously updated data about the health of the network. Additionally, TCP optimizations are exploited where possible, such as using pools of persistent connections between servers to avoid the overhead of setting up new connections and using optimal TCP window sizes to maximize the effective bandwidth (see Figure <a href="#fig:cdn">15.1</a>).</p>
+<section class="level1" data-number="15" id="cdn">
+<h1 data-number="15"><span class="header-section-number">15</span> 内容分发网络</h1>
+<p>CDN是一种地理分布的缓存服务器（反向代理）覆盖网络，其架构设计旨在规避运行互联网的网络协议的限制。</p>
+<p>在使用CDN时，客户端访问的URL会解析至属于CDN的缓存服务器。当CDN服务器收到请求时，它会检查请求的资源是否已在本地缓存。若未缓存，CDN服务器会使用原始URL透明地从<em>源服务器</em>（即我们的应用服务器）获取资源，在本地缓存响应，并将其返回给客户端。AWS CloudFront<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>和Akamai<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>就是知名CDN服务的典型代表。</p>
+<section class="level2" data-number="15.1" id="overlay-network">
+<h2 data-number="15.1"><span class="header-section-number">15.1</span> 覆盖网络</h2>
+<p>你可能会认为CDN的主要好处是缓存，但实际上其核心在于底层的网络基础设施。公共互联网由成千上万个网络组成，其核心路由协议BGP在设计之初并未将性能作为首要考虑因素。它主要通过跳数来衡量一条路径相对于另一条路径的“成本”，而不考虑它们的延迟或拥塞情况。</p>
+<p>顾名思义，CDN是一个网络。更具体地说，它是一个建立在互联网之上的覆盖网络<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>，它利用多种技术来减少网络请求的响应时间并增加数据传输的带宽。</p>
+<p>当我们在第<a href="#tcp">2</a>章首次讨论TCP时，我们谈到了最小化客户端与服务器之间延迟的重要性。无论服务器速度多快，如果客户端位于世界的另一端，仅网络延迟就会使响应时间超过100毫秒，这是受光速限制的物理极限。更不用说在长距离公共互联网上发送数据时增加的错误率了。</p>
+<p>这就是为什么CDN集群被部署在多个地理位置，以更靠近客户端。但客户端如何知道哪个集群离他们最近呢？一种方法是通过<em>全局DNS负载均衡</em><a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>：这是DNS的一个扩展，它会考虑从客户端IP推断出的位置，并返回一个地理上最近的集群列表，同时也会考虑网络拥塞情况和集群的健康状况。</p>
+<p>CDN服务器也被放置在<em>互联网交换点</em>，即互联网服务提供商（ISP）相互连接的地方。这样一来，从源服务器到客户端的几乎整个通信都流经属于CDN的网络链路，而两端短暂的跳数由于距离短而具有低延迟。</p>
+<p>覆盖网络的路由算法经过优化，可以根据持续更新的网络健康状况数据，选择延迟更低、拥塞更少的路径。此外，在可能的情况下会利用TCP优化技术，例如在服务器之间使用持久连接池以避免建立新连接的开销，以及使用最优的TCP窗口大小来最大化有效带宽（参见图<a href="#fig:cdn">15.1</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="A CDN reduces the round trip time of network calls for clients and the load for the origin server." width="100%" src="../media/file38.png" />
+<img alt="CDN减少了客户端网络调用的往返时间，并减轻了源服务器的负载。" src="../media/file38.png" width="100%"/>
 <p class="caption">
-Figure 15.1: A CDN reduces the round trip time of network calls for clients and the load for the origin server.
+图 15.1: CDN减少了客户端网络调用的往返时间，并减轻了源服务器的负载。
 </p>
 </div>
-<p>The overlay network can also be used to speed up the delivery of dynamic resources that cannot be cached. In this capacity, the CDN becomes the frontend for the application, shielding it against distributed denial-of-service (DDoS) attacks<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>.</p>
+<p>覆盖网络还可用于加速无法缓存的动态资源的交付。在这种能力下，CDN成为应用程序的前端，保护其免受分布式拒绝服务（DDoS）攻击<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>。</p>
 </section>
-<section id="caching" class="level2" data-number="15.2">
-<h2 data-number="15.2"><span class="header-section-number">15.2</span> Caching</h2>
-<p>A CDN can have multiple content caching layers. The top layer is made of edge clusters deployed at different geographical locations, as mentioned earlier. But infrequently accessed content might not be available at the edge, in which case the edge servers must fetch it from the origin server. Thanks to the overlay network, the content can be fetched more efficiently and reliably than what the public internet would allow.</p>
-<p>There is a tradeoff between the number of edge clusters and the cache <em>hit ratio</em><a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a>, i.e., the likelihood of finding an object in the cache. The higher the number of edge clusters, the more geographically dispersed clients they can serve, but the lower the cache hit ratio will be, and consequently, the higher the load on the origin server. To alleviate this issue, the CDN can have one or more intermediary caching clusters deployed in a smaller number of geographical locations, which cache a larger fraction of the original content.</p>
-<p>Within a CDN cluster, the content is partitioned among multiple servers so that each one serves only a specific subset of it; this is necessary as no single server would be able to hold all the data. Because data partitioning is a core scalability pattern, we will take a closer look at it in the next chapter.</p>
+<section class="level2" data-number="15.2" id="caching">
+<h2 data-number="15.2"><span class="header-section-number">15.2</span> 缓存</h2>
+<p>一个CDN可以拥有多个内容缓存层。顶层由部署在不同地理位置的边缘集群组成，如前所述。但访问频率较低的内容可能无法在边缘获取，在这种情况下，边缘服务器必须从源服务器获取它。得益于覆盖网络，内容的获取可以比公共互联网允许的方式更高效、更可靠。</p>
+<p>在边缘集群的数量和缓存<em>命中率</em><a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>（即在缓存中找到对象的可能性）之间存在权衡。边缘集群的数量越多，它们能够服务的地理上分散的客户端就越多，但缓存命中率就会越低，从而源服务器的负载就越高。为了缓解这个问题，CDN可以在较少的地理位置部署一个或多个中间缓存集群，这些集群缓存更大比例的原始内容。</p>
+<p>在一个CDN集群内部，内容被分区存储在多个服务器之间，因此每个服务器只服务于特定的内容子集；这是必要的，因为没有任何单个服务器能够容纳所有数据。由于数据分区是一种核心的可扩展性模式，我们将在下一章中更详细地探讨它。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“Amazon CloudFront,” <a href="https://aws.amazon.com/cloudfront/" class="uri">https://aws.amazon.com/cloudfront/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Akamai,” <a href="https://www.akamai.com/" class="uri">https://www.akamai.com/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“The Akamai Network: A Platform for HighPerformance Internet Applications,” <a href="https://groups.cs.umass.edu/ramesh/wp-content/uploads/sites/3/2019/12/The-akamai-network-a-platform-for-high-performance-internet-applications.pdf" class="uri">https://groups.cs.umass.edu/ramesh/wp-content/uploads/sites/3/2019/12/The-akamai-network-a-platform-for-high-performance-internet-applications.pdf</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“Load Balancing at the Frontend,” <a href="https://landing.google.com/sre/sre-book/chapters/load-balancing-frontend/" class="uri">https://landing.google.com/sre/sre-book/chapters/load-balancing-frontend/</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Denial-of-service attack,” <a href="https://en.wikipedia.org/wiki/Denial-of-service_attack" class="uri">https://en.wikipedia.org/wiki/Denial-of-service_attack</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>A cache hit occurs when the requested data can be found in the cache, while a cache miss occurs when it cannot.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>“Amazon CloudFront,” <a class="uri" href="https://aws.amazon.com/cloudfront/">https://aws.amazon.com/cloudfront/</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>“Akamai,” <a class="uri" href="https://www.akamai.com/">https://www.akamai.com/</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>“Akamai网络：高性能互联网应用平台,” <a class="uri" href="https://groups.cs.umass.edu/ramesh/wp-content/uploads/sites/3/2019/12/The-akamai-network-a-platform-for-high-performance-internet-applications.pdf">https://groups.cs.umass.edu/ramesh/wp-content/uploads/sites/3/2019/12/The-akamai-network-a-platform-for-high-performance-internet-applications.pdf</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>“前端负载均衡,” <a class="uri" href="https://landing.google.com/sre/sre-book/chapters/load-balancing-frontend/">https://landing.google.com/sre/sre-book/chapters/load-balancing-frontend/</a><a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>“拒绝服务攻击,” <a class="uri" href="https://en.wikipedia.org/wiki/Denial-of-service_attack">https://en.wikipedia.org/wiki/Denial-of-service_attack</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>当请求的数据能在缓存中找到时，称为缓存命中；反之，当数据无法在缓存中找到时，则称为缓存未命中。<a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

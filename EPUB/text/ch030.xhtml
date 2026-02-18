@@ -1,62 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch030.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch030.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="filestorage" class="level1" data-number="17">
-<h1 data-number="17"><span class="header-section-number">17</span> File storage</h1>
-<p>Using a CDN has significantly reduced the number of requests hitting <em>Cruder</em>’s application server. But there are only so many images, videos, etc., the server can store on its local disk(s) before running out of space. To work around this limit, we can use a managed file store, like AWS S3<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> or Azure Blob Storage<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>, to store large static files. Managed file stores are scalable, highly available, and offer strong durability guarantees. A file uploaded to a managed store can be configured to allow access to anyone who knows its URL, which means we can point the CDN straight at it. This allows us to completely offload the storage and serving of static resources to managed services.</p>
-<section id="blob-storage-architecture" class="level2" data-number="17.1">
-<h2 data-number="17.1"><span class="header-section-number">17.1</span> Blob storage architecture</h2>
-<p>Because distributed file stores are such a crucial component of modern applications, it’s useful to have an idea of how they work underneath. In this chapter, we will dive into the architecture of Azure Storage<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> (AS), a scalable cloud storage system that provides strong consistency. AS supports file, queue, and table abstractions, but for simplicity, our discussion will focus exclusively on the file abstraction, also referred to as the blob store.</p>
-<p>AS is composed of storage clusters distributed across multiple regions worldwide. A <em>storage cluster</em> is composed of multiple racks of nodes, where each rack is built out as a separate unit with redundant networking and power.</p>
-<p>At a high level, AS exposes a global namespace based on domain names that are composed of two parts: an account name and a file name. The two names together form a unique URL that points to a specific file, e.g., <em><a href="https://ACCOUNT_NAME.blob.core.windows.net/FILE_NAME" class="uri">https://ACCOUNT_NAME.blob.core.windows.net/FILE_NAME</a></em>. The customer configures the account name, and the AS DNS server uses it to identify the storage cluster where the data is stored. The cluster uses the file name to locate the node responsible for the data.</p>
-<p>A central <em>location service</em> acts as the global <em>control plane</em> in charge of creating new accounts and allocating them to clusters, and also moving them from one cluster to another for better load distribution. For example, when a customer wants to create a new account in a specific region, the location service:</p>
+<section class="level1" data-number="17" id="filestorage">
+<h1 data-number="17"><span class="header-section-number">17</span> 文件存储</h1>
+<p>使用CDN显著减少了访问<em>Cruder</em>应用服务器的请求数量。但服务器本地磁盘能存储的图像、视频等文件数量有限，空间总会耗尽。为了突破这一限制，我们可以使用托管文件存储服务，例如AWS S3<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>或Azure Blob Storage<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>，来存储大型静态文件。托管文件存储服务具备可扩展性、高可用性，并提供强大的持久性保证。上传到托管存储的文件可以配置为允许任何知晓其URL的人访问，这意味着我们可以让CDN直接指向它。这使得我们能够将静态资源的存储和分发完全卸载给托管服务。</p>
+<section class="level2" data-number="17.1" id="blob-storage-architecture">
+<h2 data-number="17.1"><span class="header-section-number">17.1</span> Blob存储架构</h2>
+<p>由于分布式文件存储是现代应用程序的关键组成部分，了解其底层工作原理非常有益。本章我们将深入探讨Azure Storage<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>（AS）的架构，这是一个提供强一致性的可扩展云存储系统。AS支持文件、队列和表抽象，但为简化起见，我们的讨论将仅聚焦于文件抽象，也称为Blob存储。</p>
+<p>AS由分布在全球多个区域的存储集群组成。一个<em>存储集群</em>由多个机架的节点构成，每个机架作为一个独立单元构建，具备冗余的网络和电源。</p>
+<p>从宏观层面来看，AS暴露了一个基于域名的全局命名空间，该域名由两部分组成：账户名和文件名。这两个名称共同构成指向特定文件的唯一URL，例如<em><a class="uri" href="https://ACCOUNT_NAME.blob.core.windows.net/FILE_NAME">https://ACCOUNT_NAME.blob.core.windows.net/FILE_NAME</a></em>。客户配置账户名，AS DNS服务器使用它来识别存储数据的存储集群。集群则使用文件名来定位负责该数据的节点。</p>
+<p>一个中央<em>位置服务</em>充当全局<em>控制平面</em>，负责创建新账户并将其分配到集群，同时也为了更好的负载分布而将它们从一个集群迁移到另一个集群。例如，当客户希望在特定区域创建新账户时，位置服务会：</p>
 <ul>
-<li>chooses a suitable cluster to which to allocate the account based on load information;</li>
-<li>updates the configuration of the cluster to start accepting requests for the new account;</li>
-<li>and creates a new DNS record that maps the account name to the cluster’s public IP address.</li>
+<li>根据负载信息选择合适的集群来分配该账户；</li>
+<li>更新集群配置以开始接受新账户的请求；</li>
+<li>并创建一条新的DNS记录，将账户名映射到集群的公共IP地址。</li>
 </ul>
-<p>From an architectural point of view, a storage cluster is composed of three layers: a stream layer, a partition layer, and a front-end layer (see Figure <a href="#fig:aslayers">17.1</a>).</p>
+<p>从架构角度看，一个存储集群由三层组成：流层、分区层和前端层（见图<a href="#fig:aslayers">17.1</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="A high-level view of Azure Storage&#39;s architecture" width="80%" src="../media/file44.png" />
+<img alt="Azure Storage架构的高层视图" src="../media/file44.png" width="80%"/>
 <p class="caption">
-Figure 17.1: A high-level view of Azure Storage’s architecture
+图 17.1: Azure Storage架构的高层视图
 </p>
 </div>
-<p>The <em>stream layer</em> implements a distributed append-only file system in which the data is stored in so-called streams. Internally, a <em>stream</em> is represented as a sequence of <em>extents</em>, where the extent is the unit of replication. Writes to extents are replicated synchronously using chain replication<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>.</p>
-<p>The <em>stream manager</em> is the control plane responsible for assigning an extent to a chain of storage servers in the cluster. When the manager is asked to allocate a new extent, it replies with the list of storage servers that hold a copy of the newly created extent (see Figure <a href="#fig:astream">17.2</a>). The client caches this information and uses it to send future writes to the primary server. The stream manager is also responsible for handling unavailable or faulty extent replicas by creating new ones and reconfiguring the replication chains they are part of.</p>
+<p><em>流层</em>实现了一个分布式仅追加文件系统，其中数据存储在所谓的流中。在内部，一个<em>流</em>被表示为一序列的<em>区段</em>，其中区段是复制的单位。对区段的写入使用链式复制<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>进行同步复制。</p>
+<p><em>流管理器</em>是控制平面，负责将区段分配给集群中的存储服务器链。当管理器被请求分配一个新区段时，它会回复持有新创建区段副本的存储服务器列表（见图<a href="#fig:astream">17.2</a>）。客户端缓存此信息，并利用它将未来的写入发送到主服务器。流管理器还负责通过创建新的副本并重新配置它们所属的复制链来处理不可用或故障的区段副本。</p>
 <div class="figure" style="text-align: center">
-<img alt="The stream layer uses chain replication to replicate extents across storage servers." width="100%" src="../media/file45.png" />
+<img alt="流层使用链式复制在存储服务器之间复制区段。" src="../media/file45.png" width="100%"/>
 <p class="caption">
-Figure 17.2: The stream layer uses chain replication to replicate extents across storage servers.
+图 17.2: 流层使用链式复制在存储服务器之间复制区段。
 </p>
 </div>
-<p>The <em>partition layer</em> is where high-level file operations are translated to low-level stream operations. Within this layer, the <em>partition manager</em> (yet another control plane) manages a large index of all files stored in the cluster. Each entry in the index contains metadata such as account and file name and a pointer to the actual data in the stream service (list of extent plus offset and length). The partition manager range-partitions the index and maps each partition to a partition server. The partition manager is also responsible for load-balancing partitions across servers, splitting partitions when they become too hot, and merging cold ones (see Figure <a href="#fig:aspartition">17.3</a>).</p>
-<p>The partition layer also asynchronously replicates accounts across clusters in the background. This functionality is used to migrate accounts from one cluster to another for load-balancing purposes and disaster recovery.</p>
+<p><em>分区层</em>是将高级文件操作转换为低级流操作的地方。在该层内，<em>分区管理器</em>（另一个控制平面）管理着存储在集群中所有文件的大型索引。索引中的每个条目都包含元数据，如账户和文件名，以及指向流服务中实际数据的指针（区段列表加上偏移量和长度）。分区管理器对索引进行范围分区，并将每个分区映射到一个分区服务器。分区管理器还负责跨服务器的分区负载均衡，在分区变得过热时进行拆分，并合并冷分区（见图<a href="#fig:aspartition">17.3</a>）。</p>
+<p>分区层还在后台异步地在集群之间复制账户。此功能用于负载均衡和灾难恢复目的，将账户从一个集群迁移到另一个集群。</p>
 <div class="figure" style="text-align: center">
-<img alt="The partition manager range-partitions files across partition servers and rebalances the partitions when necessary." width="100%" src="../media/file46.png" />
+<img alt="分区管理器跨分区服务器对文件进行范围分区，并在必要时重新平衡分区。" src="../media/file46.png" width="100%"/>
 <p class="caption">
-Figure 17.3: The partition manager range-partitions files across partition servers and rebalances the partitions when necessary.
+图 17.3: 分区管理器跨分区服务器对文件进行范围分区，并在必要时重新平衡分区。
 </p>
 </div>
-<p>Finally, the <em>front-end service</em> (a reverse proxy) is a stateless service that authenticates requests and routes them to the appropriate partition server using the mapping managed by the partition manager.</p>
-<p>Although we have only coarsely described the architecture of AS, it’s a great showcase of the scalability patterns applied to a concrete system. As an interesting historical note, AS was built from the ground up to be strongly consistent, while AWS S3 started offering the same guarantee in 2021<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>.</p>
+<p>最后，<em>前端服务</em>（一个反向代理）是一个无状态服务，负责验证请求并使用分区管理器管理的映射将它们路由到适当的分区服务器。</p>
+<p>尽管我们只是粗略地描述了AS的架构，但它很好地展示了应用于具体系统的可扩展性模式。顺便提一段有趣的历史背景，AS从一开始就是为强一致性而构建的，而AWS S3在2021年才开始提供相同的保证<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“Amazon Simple Storage Service,” <a href="https://aws.amazon.com/s3/" class="uri">https://aws.amazon.com/s3/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Azure Blob Storage,” <a href="https://azure.microsoft.com/en-us/services/storage/blobs/#overview" class="uri">https://azure.microsoft.com/en-us/services/storage/blobs/#overview</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“Windows Azure Storage: A Highly Available Cloud Storage Service with Strong Consistency,” <a href="https://sigops.org/s/conferences/sosp/2011/current/2011-Cascais/printable/11-calder.pdf" class="uri">https://sigops.org/s/conferences/sosp/2011/current/2011-Cascais/printable/11-calder.pdf</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>we discussed chain replication in section <a href="#chain-replication">10.4</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Diving Deep on S3 Consistency,” <a href="https://www.allthingsdistributed.com/2021/04/s3-strong-consistency.html" class="uri">https://www.allthingsdistributed.com/2021/04/s3-strong-consistency.html</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>“亚马逊简单存储服务,” <a class="uri" href="https://aws.amazon.com/s3/">https://aws.amazon.com/s3/</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>“Azure Blob 存储,” <a class="uri" href="https://azure.microsoft.com/en-us/services/storage/blobs/#overview">https://azure.microsoft.com/en-us/services/storage/blobs/#overview</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>“Windows Azure 存储服务：一个具有强一致性的高可用云存储服务,” <a class="uri" href="https://sigops.org/s/conferences/sosp/2011/current/2011-Cascais/printable/11-calder.pdf">https://sigops.org/s/conferences/sosp/2011/current/2011-Cascais/printable/11-calder.pdf</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>我们在<a href="#chain-replication">10.4节</a>讨论了链式复制<a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>“深入探讨S3一致性,” <a class="uri" href="https://www.allthingsdistributed.com/2021/04/s3-strong-consistency.html">https://www.allthingsdistributed.com/2021/04/s3-strong-consistency.html</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

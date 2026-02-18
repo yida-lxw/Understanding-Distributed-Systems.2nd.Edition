@@ -475,72 +475,72 @@
     </navPoint>
     <navPoint id="navPoint-77">
       <navLabel>
-        <text>14 HTTP caching</text>
+        <text>14 HTTP缓存</text>
       </navLabel>
       <content src="text/ch027.xhtml#httpcaching" />
       <navPoint id="navPoint-78">
         <navLabel>
-          <text>14.1 Reverse proxies</text>
+          <text>14.1 反向代理</text>
         </navLabel>
         <content src="text/ch027.xhtml#reverse-proxies" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-79">
       <navLabel>
-        <text>15 Content delivery networks</text>
+        <text>15 内容分发网络(CDN)</text>
       </navLabel>
       <content src="text/ch028.xhtml#cdn" />
       <navPoint id="navPoint-80">
         <navLabel>
-          <text>15.1 Overlay network</text>
+          <text>15.1 覆盖网络</text>
         </navLabel>
         <content src="text/ch028.xhtml#overlay-network" />
       </navPoint>
       <navPoint id="navPoint-81">
         <navLabel>
-          <text>15.2 Caching</text>
+          <text>15.2 缓存</text>
         </navLabel>
         <content src="text/ch028.xhtml#caching" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-82">
       <navLabel>
-        <text>16 Partitioning</text>
+        <text>16 分区</text>
       </navLabel>
       <content src="text/ch029.xhtml#partitioning" />
       <navPoint id="navPoint-83">
         <navLabel>
-          <text>16.1 Range partitioning</text>
+          <text>16.1 范围分区</text>
         </navLabel>
         <content src="text/ch029.xhtml#range-partitioning" />
       </navPoint>
       <navPoint id="navPoint-84">
         <navLabel>
-          <text>16.2 Hash partitioning</text>
+          <text>16.2 哈希分区</text>
         </navLabel>
         <content src="text/ch029.xhtml#hash-partitioning" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-85">
       <navLabel>
-        <text>17 File storage</text>
+        <text>17 文件存储</text>
       </navLabel>
       <content src="text/ch030.xhtml#filestorage" />
       <navPoint id="navPoint-86">
         <navLabel>
-          <text>17.1 Blob storage architecture</text>
+          <text>17.1 Blob存储架构</text>
         </navLabel>
         <content src="text/ch030.xhtml#blob-storage-architecture" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-87">
       <navLabel>
-        <text>18 Network load balancing</text>
+        <text>18 网络负载均衡</text>
       </navLabel>
       <content src="text/ch031.xhtml#load-balancing" />
       <navPoint id="navPoint-88">
         <navLabel>
-          <text>18.1 DNS load balancing</text>
+          <text>18.1 DNS负载均衡</text>
         </navLabel>
         <content src="text/ch031.xhtml#dns-load-balancing" />
       </navPoint>
