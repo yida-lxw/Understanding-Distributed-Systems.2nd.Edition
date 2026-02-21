@@ -1,118 +1,119 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch036.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch036.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="messaging" class="level1" data-number="23">
-<h1 data-number="23"><span class="header-section-number">23</span> Messaging</h1>
-<p>Suppose <em>Cruder</em> has an endpoint that allows users to upload a video and encode it in different formats and resolutions tailored to specific devices (TVs, mobile phones, tablets, etc.). When the API gateway receives a request from a client, it uploads the video to a file store, like S3, and sends a request to an encoding service to process the file.</p>
-<p>Since the encoding can take minutes to complete, we would like the API gateway to send the request to the encoding service without waiting for the response. But the naive implementation (fire-and-forget) would cause the request to be lost if the encoding service instance handling it on the other side crashes or fails for any reason.</p>
-<p>A more robust solution is to introduce a message channel between the API gateway and the encoding service. Messaging was first introduced in chapter <a href="#api">5</a> when discussing APIs. It’s a form of indirect communication in which a producer writes a message to a channel — or message broker — that delivers the message to a consumer on the other end.</p>
-<p>A message channel acts as a temporary buffer for the receiver. Unlike the direct request-response communication style we have been using so far, messaging is inherently asynchronous, as sending a message doesn’t require the receiving service to be online. The messages themselves have a well-defined format, consisting of a header and a body. The message header contains metadata, such as a unique message ID, while the body contains the actual content.</p>
-<p>Typically, a message can either be a command, which specifies an operation to be invoked by the receiver, or an event, which signals the receiver that something of interest happened to the sender. A service can use inbound adapters to receive messages from channels and outbound adapters to send messages to channels, as shown in Figure <a href="#fig:messaging-service">23.1</a>.</p>
+<section class="level1" data-number="23" id="messaging">
+<h1 data-number="23"><span class="header-section-number">23</span> 消息传递</h1>
+<p>假设<em>Cruder</em>有一个端点，允许用户上传视频，并将其编码为针对特定设备（电视、手机、平板电脑等）定制的不同格式和分辨率。当API网关收到来自客户端的请求时，它会将视频上传到文件存储（如S3），并向编码服务发送请求以处理该文件。</p>
+<p>由于编码过程可能需要数分钟才能完成，我们希望API网关将请求发送至编码服务时无需等待响应。但简单的实现方式（即发即弃）会导致请求丢失，如果处理该请求的编码服务实例因任何原因崩溃或失败。</p>
+<p>一个更健壮的解决方案是在API网关和编码服务之间引入一个消息通道。消息传递最初在<a href="#api">第5章</a>讨论API时引入。这是一种间接通信形式，生产者将消息写入一个通道（或称消息代理），该通道将消息传递到另一端的消费者。</p>
+<p>消息通道充当接收者的临时缓冲区。与我们迄今为止一直使用的直接请求-响应通信风格不同，消息传递本质上是异步的，因为发送消息不需要接收服务在线。消息本身具有明确定义的格式，由头部和正文组成。消息头部包含元数据，例如唯一的消息ID，而正文则包含实际内容。</p>
+<p>通常，一条消息可以是一个命令，它指定了接收方要调用的操作；也可以是一个事件，它向接收方表明发送方发生了某些值得关注的事情。服务可以使用入站适配器从通道接收消息，并使用出站适配器向通道发送消息，如图<a href="#fig:messaging-service">23.1</a>所示。</p>
 <div class="figure" style="text-align: center">
-<img alt="The message consumer (an inbound adapter) is part of the API surface of the service." width="100%" src="../media/file57.png" />
+<img alt="消息消费者（一个入站适配器）是服务API表面的一部分。" src="../media/file57.png" width="100%"/>
 <p class="caption">
-Figure 23.1: The message consumer (an inbound adapter) is part of the API surface of the service.
+图 23.1：消息消费者（一个入站适配器）是服务API表面的一部分。
 </p>
 </div>
-<p>After the API gateway has uploaded the video to the file store, it writes a message to the channel with a link to the uploaded file and responds with <em>202 Accepted</em>, signaling to the client that the request has been accepted for processing but hasn’t completed yet. Eventually, the encoding service will read the message from the channel and process it. Because the request is deleted from the channel only when it’s successfully processed, the request will eventually be picked up again and retried if the encoding service fails to handle it.</p>
-<p>Decoupling the API gateway (producer) from the encoding service (consumer) with a channel provides many benefits. The producer can send requests to the consumer even if the consumer is temporarily unavailable. Also, requests can be load-balanced across a pool of consumer instances, making it easy to scale out the consuming side. And because the consumer can read from the channel at its own pace, the channel smooths out load spikes, preventing it from getting overloaded.</p>
-<p>Another benefit is that messaging enables to process multiple messages within a single <em>batch</em> or <em>unit of work</em>. Most messaging brokers support this pattern by allowing clients to fetch up to <em>N</em> messages with a single read request. Although batching degrades the processing latency of individual messages, it dramatically improves the application’s throughput. So when we can afford the extra latency, batching is a no brainer.</p>
-<p>In general, a message channel allows any number of producer and consumer instances to write and read from it. But depending on how the channel delivers a message, it’s classified as either point-to-point or publish-subscribe. In a <em>point-to-point</em> channel, the message is delivered to exactly one consumer instance. Instead, in a <em>publish-subscribe</em> channel, each consumer instance receives a copy of the message.</p>
-<p>Unsurprisingly, introducing a message channel adds complexity. The message broker is yet another service that needs to be maintained and operated. And because there is an additional hop between the producer and consumer, the communication latency is necessarily going to be higher; more so if the channel has a large backlog of messages waiting to be processed. As always, it’s all about tradeoffs.</p>
-<p>Because messaging is a core pattern of distributed systems, we will take a closer look at it in this chapter, starting with the most common communication styles it enables.</p>
-<p><strong>One-way messaging</strong></p>
-<p>In this messaging style, the producer writes a message to a point-to-point channel with the expectation that a consumer will eventually read and process it (see Figure <a href="#fig:one-way-messaging">23.2</a>). This is the style we used in the example earlier.</p>
+<p>在API网关将视频上传至文件存储后，它会向通道写入一条消息，其中包含已上传文件的链接，并以<em>202 Accepted</em>状态码响应，向客户端表明请求已被接受处理但尚未完成。最终，编码服务将从通道读取该消息并进行处理。由于请求只有在成功处理后才会从通道中删除，如果编码服务处理失败，该请求最终会被重新拾取并重试。</p>
+<p>通过通道将API网关（生产者）与编码服务（消费者）解耦带来了诸多好处。即使消费者暂时不可用，生产者也能向消费者发送请求。此外，请求可以在消费者实例池中进行负载均衡，从而轻松扩展消费端。由于消费者可以按照自己的节奏从通道读取数据，通道能够平滑负载峰值，防止其过载。</p>
+<p>另一个好处是，消息传递使得能够在单个<em>批次</em>或<em>工作单元</em>内处理多条消息。大多数消息代理通过允许客户端通过一次读取请求获取最多<em>N</em>条消息来支持这种模式。虽然批处理会降低单个消息的处理延迟，但它能显著提高应用程序的吞吐量。因此，当我们能够承受额外的延迟时，批处理是一个无需多虑的选择。</p>
+<p>通常，消息通道允许任意数量的生产者和消费者实例向其写入和读取数据。但根据通道传递消息的方式，它被分类为点对点或发布-订阅。在<em>点对点</em>通道中，消息被准确地传递给一个消费者实例。相反，在<em>发布-订阅</em>通道中，每个消费者实例都会收到消息的一个副本。</p>
+<p>不出所料，引入消息通道会增加复杂性。消息代理是另一个需要维护和运行的服务。并且由于生产者和消费者之间多了一个中间环节，通信延迟必然会更高；如果通道中有大量积压的消息等待处理，情况会更糟。一如既往，这都关乎权衡取舍。</p>
+<p>由于消息传递是分布式系统的核心模式，我们将在本章中对其进行更深入的探讨，从它支持的最常见通信风格开始。</p>
+<p><strong>单向消息传递</strong></p>
+<p>在这种消息传递风格中，生产者将消息写入点对点通道，期望消费者最终会读取并处理它（参见图<a href="#fig:one-way-messaging">23.2</a>）。这是我们之前示例中所使用的风格。</p>
 <div class="figure" style="text-align: center">
-<img alt="One-way messaging style" width="100%" src="../media/file58.png" />
+<img alt="单向消息传递风格" src="../media/file58.png" width="100%"/>
 <p class="caption">
-Figure 23.2: One-way messaging style
+图 23.2：单向消息传递风格
 </p>
 </div>
-<p><strong>Request-response messaging</strong></p>
-<p>This messaging style is similar to the direct request-response style we are familiar with, albeit with the difference that the request and response messages flow through channels. The consumer has a point-to-point request channel from which it reads messages, while every producer has its dedicated response channel (see Figure <a href="#fig:request-response">23.3</a>).</p>
-<p>When a producer writes a message to the request channel, it decorates it with a request ID and a reference to its response channel. Then, after a consumer has read and processed the message, it writes a reply to the producer’s response channel, tagging it with the request’s ID, which allows the producer to identify the request it belongs to.</p>
+<p><strong>请求-响应消息传递</strong></p>
+<p>这种消息传递风格类似于我们熟悉的直接请求-响应风格，不同之处在于请求和响应消息通过通道流动。消费者拥有一个点对点的请求通道来读取消息，而每个生产者都有其专用的响应通道（参见图<a href="#fig:request-response">23.3</a>）。</p>
+<p>当生产者向请求通道写入消息时，它会用请求ID和对其响应通道的引用进行装饰。然后，在消费者读取并处理消息后，它会向生产者的响应通道写入回复，并使用请求的ID进行标记，这使得生产者能够识别该回复所属的请求。</p>
 <div class="figure" style="text-align: center">
-<img alt="Request-response messaging style" width="100%" src="../media/file59.png" />
+<img alt="Request-response messaging style" src="../media/file59.png" width="100%"/>
 <p class="caption">
-Figure 23.3: Request-response messaging style
+图 23.3：请求-响应消息传递风格
 </p>
 </div>
-<p><strong>Broadcast messaging</strong></p>
-<p>In this messaging style, the producer writes a message to a publish-subscribe channel to broadcast it to all consumer instances (see Figure <a href="#fig:broadcast-messaging">23.4</a>). This style is generally used to notify a group of processes that a specific event has occurred. For example, we have already encountered this pattern when discussing the outbox pattern in section <a href="#log-based-transactions">13.1</a>.</p>
+<p><strong>广播消息</strong></p>
+<p>在这种消息传递风格中，生产者将消息写入发布-订阅通道，以广播给所有消费者实例（参见图<a href="#fig:broadcast-messaging">23.4</a>）。这种风格通常用于通知一组进程某个特定事件已经发生。例如，我们在讨论<a href="#log-based-transactions">13.1</a>节中的发件箱模式时已经遇到过这种模式。</p>
 <div class="figure" style="text-align: center">
-<img alt="Broadcast messaging style" width="100%" src="../media/file60.png" />
+<img alt="Broadcast messaging style" src="../media/file60.png" width="100%"/>
 <p class="caption">
-Figure 23.4: Broadcast messaging style
+图 23.4：广播消息传递风格
 </p>
 </div>
-<section id="guarantees" class="level2" data-number="23.1">
-<h2 data-number="23.1"><span class="header-section-number">23.1</span> Guarantees</h2>
-<p>A message channel is implemented by a messaging service, or broker, like AWS SQS<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> or Kafka, which buffers messages and decouples the producer from the consumer. Different message brokers offer different guarantees depending on the tradeoffs their implementations make. For example, you would think that a channel should respect the insertion order of its messages, but you will find that some implementations, like SQS standard queues<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>, don’t offer any strong ordering guarantees. Why is that?</p>
-<p>Because a message broker needs to scale horizontally just like the applications that use it, its implementation is necessarily distributed. And when multiple nodes are involved, guaranteeing order becomes challenging, as some form of coordination is required. Some brokers, like Kafka, partition a channel into multiple sub-channels. So when messages are written to the channel, they are routed to sub-channels based on their partition key. Since each partition is small enough to be handled by a single broker process, it’s trivial to enforce an ordering of the messages routed to it. But to guarantee that the message order is preserved end-to-end, only a single consumer process is allowed to read from a sub-channel<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>.</p>
-<p>Because the channel is partitioned, all the caveats discussed in chapter <a href="#partitioning">16</a> apply to it. For example, a partition could become hot enough (due to the volume of incoming messages) that the consumer reading from it can’t keep up with the load. In this case, the channel might have to be rebalanced by adding more partitions, potentially degrading the broker while messages are being shuffled across partitions. It should be clear by now why not guaranteeing the order of messages makes the implementation of a broker much simpler.</p>
-<p>Ordering is just one of the many tradeoffs a broker needs to make, such as:</p>
+<section class="level2" data-number="23.1" id="guarantees">
+<h2 data-number="23.1"><span class="header-section-number">23.1</span> 保证</h2>
+<p>消息通道由消息服务或代理（如 AWS SQS<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a> 或 Kafka）实现，它们缓冲消息并将生产者与消费者解耦。不同的消息代理根据其实现所做的权衡，提供不同的保证。例如，你可能会认为通道应该遵循消息的插入顺序，但你会发现有些实现（如 SQS 标准队列<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>）并不提供任何强有力的顺序保证。这是为什么呢？</p>
+<p>因为消息代理需要像使用它的应用程序一样进行水平扩展，其实现必然是分布式的。当涉及多个节点时，保证顺序就变得具有挑战性，因为需要某种形式的协调。一些代理，如 Kafka，将通道划分为多个子通道。因此，当消息写入通道时，会根据其分区键路由到子通道。由于每个分区都足够小，可以由单个代理进程处理，因此对路由到它的消息强制执行顺序是微不足道的。但要保证消息顺序端到端地保持不变，只允许单个消费者进程从子通道读取<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>。</p>
+<p>由于通道是分区的，<a href="#partitioning">第16章</a>讨论的所有注意事项都适用于它。例如，一个分区可能变得非常繁忙（由于传入消息量过大），导致从中读取的消费者无法跟上负载。在这种情况下，可能不得不通过添加更多分区来重新平衡通道，这可能会在消息跨分区重新分配时降低代理的性能。现在应该很清楚，为什么不保证消息顺序会使代理的实现简单得多。</p>
+<p>顺序只是代理需要做出的众多权衡之一，例如：</p>
 <ul>
-<li>delivery guarantees, like at-most-once or at-least-once;</li>
-<li>message durability guarantees;</li>
-<li>latency;</li>
-<li>messaging standards supported, like AMQP<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>;</li>
-<li>support for competing consumer instances;</li>
-<li>broker limits, such as the maximum supported size of messages.</li>
+<li>投递保证，如至多一次或至少一次；</li>
+<li>消息持久性保证；</li>
+<li>延迟；</li>
+<li>支持的消息传递标准，如 AMQP<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>；</li>
+<li>对竞争消费者实例的支持；</li>
+<li>代理限制，例如支持的最大消息大小。</li>
 </ul>
-<p>Because there are so many different ways to implement channels, in the rest of this section, we will make some assumptions for the sake of simplicity:</p>
+<p>由于实现通道的方式多种多样，在本节的剩余部分，为了简单起见，我们将做出一些假设：</p>
 <ul>
-<li>Channels are point-to-point and support many producer and consumer instances.</li>
-<li>Messages are delivered to the consumer at least once.</li>
-<li>While a consumer instance is processing a message, the message remains in the channel, but other instances can’t read it for the duration of a visibility timeout. The <em>visibility timeout</em> guarantees that if the consumer instance crashes while processing the message, the message will become visible to other instances when the timeout triggers. When the consumer instance is done processing the message, it deletes it from the channel, preventing it from being received by any other consumer instance in the future.</li>
+<li>通道是点对点的，并支持多个生产者和消费者实例。</li>
+<li>消息至少被投递给消费者一次。</li>
+<li>当消费者实例正在处理消息时，消息保留在通道中，但在可见性超时期间，其他实例无法读取它。<em>可见性超时</em>保证了如果消费者实例在处理消息时崩溃，当超时触发时，消息将对其他实例变得可见。当消费者实例处理完消息后，它会从通道中删除该消息，防止其将来被任何其他消费者实例接收。</li>
 </ul>
-<p>The above guarantees are similar to the ones offered by managed services such as Amazon’s SQS and Azure Queue Storage<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>.</p>
+<p>上述保证类似于 Amazon SQS 和 Azure Queue Storage<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a> 等托管服务所提供的保证。</p>
 </section>
-<section id="exactly-once-processing" class="level2" data-number="23.2">
-<h2 data-number="23.2"><span class="header-section-number">23.2</span> Exactly-once processing</h2>
-<p>As mentioned before, a consumer instance has to delete a message from the channel once it’s done processing it so that another instance won’t read it. If the consumer instance deletes the message before processing it, there is a risk it could crash after deleting the message but before processing it, causing the message to be lost for good. On the other hand, if the consumer instance deletes the message only after processing it, there is a risk that it crashes after processing the message but before deleting it, causing the same message to be read again later on.</p>
-<p>Because of that, there is no such thing<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> as <em>exactly-once message delivery</em>. So the best a consumer can do is to simulate <em>exactly-once message processing</em> by requiring messages to be idempotent and deleting them from the channel only after they have been processed.</p>
+<section class="level2" data-number="23.2" id="exactly-once-processing">
+<h2 data-number="23.2"><span class="header-section-number">23.2</span> 精确一次处理</h2>
+<p>如前所述，消费者实例在处理完一条消息后，必须将其从通道中删除，这样其他实例才不会再次读取它。如果消费者实例在处理消息之前就将其删除，则存在这样的风险：它可能在删除消息之后、处理消息之前崩溃，导致消息永久丢失。另一方面，如果消费者实例仅在处理完消息后才将其删除，则存在这样的风险：它可能在处理完消息之后、删除消息之前崩溃，导致同一条消息稍后被再次读取。</p>
+<p>因此，并不存在所谓的<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a><em>精确一次消息传递</em>。所以，消费者能做到的最好情况是，通过要求消息具有幂等性，并且仅在消息被处理后才将其从通道中删除，来模拟<em>精确一次消息处理</em>。</p>
 </section>
-<section id="failures" class="level2" data-number="23.3">
-<h2 data-number="23.3"><span class="header-section-number">23.3</span> Failures</h2>
-<p>When a consumer instance fails to process a message, the visibility timeout triggers, and the message is eventually delivered to another instance. What happens if processing a specific message consistently fails with an error, though? To guard against the message being picked up repeatedly in perpetuity, we need to limit the maximum number of times the same message can be read from the channel.</p>
-<p>To enforce a maximum number of retries, the broker can stamp messages with a counter that keeps track of the number of times the message has been delivered to a consumer. If the broker doesn’t support this functionality out of the box, the consumer can implement it.</p>
-<p>Once we have a way to count the number of times a message has been retried, we still have to decide what to do when the maximum is reached. A consumer shouldn’t delete a message without processing it, as that would cause data loss. But what it can do is remove the message from the channel after writing it to a <em>dead letter channel</em> — a channel that buffers messages that have been retried too many times.</p>
-<p>This way, messages that consistently fail are not lost forever but merely put on the side so that they don’t pollute the main channel, wasting the consumer’s resources. A human can then inspect these messages to debug the failure, and once the root cause has been identified and fixed, move them back to the main channel to be reprocessed.</p>
+<section class="level2" data-number="23.3" id="failures">
+<h2 data-number="23.3"><span class="header-section-number">23.3</span> 故障处理</h2>
+<p>当某个消费者实例处理消息失败时，可见性超时机制会触发，该消息最终会被传递给另一个实例。然而，如果处理某个特定消息时总是出错，会发生什么情况呢？为了防止该消息被无限次地重复拾取，我们需要限制同一条消息从通道中被读取的最大次数。</p>
+<p>为了强制执行最大重试次数限制，消息代理可以为消息打上一个计数器标记，用于追踪该消息已被传递给消费者的次数。如果消息代理本身不支持此功能，消费者可以自行实现。</p>
+<p>一旦我们有了统计消息重试次数的方法，我们仍需决定当达到最大重试次数后该如何处理。消费者不应在未处理消息的情况下就将其删除，因为这会导致数据丢失。但它可以将消息写入一个<em>死信通道</em>后，再从原通道中移除该消息——死信通道是一个专门缓冲那些重试次数过多的消息的通道。</p>
+<p>这样一来，持续失败的消息不会永久丢失，而是被暂时搁置，以免污染主通道并浪费消费者的资源。随后，操作人员可以检查这些消息以调试故障，一旦查明并修复了根本原因，就可以将它们移回主通道进行重新处理。</p>
 </section>
-<section id="backlogs" class="level2" data-number="23.4">
-<h2 data-number="23.4"><span class="header-section-number">23.4</span> Backlogs</h2>
-<p>One of the main advantages of using a message broker is that it makes the system more robust to outages. This is because the producer can continue writing messages to a channel even if the consumer is temporarily degraded or unavailable. As long as the arrival rate of messages is lower than or equal to their deletion rate, everything is great. However, when that is no longer true and the consumer can’t keep up with the producer, a backlog builds up.</p>
-<p>A messaging channel introduces a bimodal behavior in the system. In one mode, there is no backlog, and everything works as expected. In the other, a backlog builds up, and the system enters a degraded state. The issue with a backlog is that the longer it builds up, the more resources and/or time it will take to drain it.</p>
-<p>There are several reasons for backlogs, for example:</p>
+<section class="level2" data-number="23.4" id="backlogs">
+<h2 data-number="23.4"><span class="header-section-number">23.4</span> 消息积压</h2>
+<p>使用消息代理的主要优势之一是它能使系统在面对中断时更加健壮。这是因为即使消费者暂时性能下降或不可用，生产者仍能继续向通道写入消息。只要消息的到达速率低于或等于其删除速率，一切都会正常运行。然而，当情况不再如此，消费者无法跟上生产者的速度时，消息积压就会产生。</p>
+<p>消息通道在系统中引入了双峰行为。在一种模式下，没有消息积压，一切按预期工作。在另一种模式下，消息积压产生，系统进入性能下降状态。消息积压的问题在于，它堆积的时间越长，清空它所需的资源和/或时间就越多。</p>
+<p>产生消息积压的原因有多种，例如：</p>
 <ul>
-<li>more producer instances come online, and/or their throughput increases, and the consumer can’t keep up with the arrival rate;</li>
-<li>the consumer’s performance has degraded and messages take longer to be processed, decreasing the deletion rate;</li>
-<li>the consumer fails to process a fraction of the messages, which are picked up again until they eventually end up in the dead letter channel. This wastes the consumer’s resources and delays the processing of healthy messages.</li>
+<li>更多生产者实例上线，和/或其吞吐量增加，而消费者无法跟上到达速率；</li>
+<li>消费者的性能下降，消息处理时间变长，从而降低了删除速率；</li>
+<li>消费者未能处理一部分消息，这些消息会被重新拾取，直到最终进入死信通道。这浪费了消费者的资源，并延迟了健康消息的处理。</li>
 </ul>
-<p>To detect and monitor backlogs, we can measure the average time a message waits in the channel to be read for the first time. Typically, brokers attach a timestamp of when the message was first written to it. The consumer can use that timestamp to compute how long the message has been waiting in the channel by comparing it to the timestamp taken when the message was read. Although the two timestamps have been generated by two physical clocks that aren’t perfectly synchronized (see section <a href="#physical-clocks">8.1</a>), this measure generally provides a good warning sign of backlogs.</p>
+<p>为了检测和监控消息积压，我们可以测量消息在通道中等待首次被读取的平均时间。通常，代理会附加消息首次写入时的时间戳。消费者可以通过将该时间戳与读取消息时记录的时间戳进行比较，来计算消息在通道中等待了多长时间。尽管这两个时间戳是由两个不完全同步的物理时钟生成的（参见章节<a href="#physical-clocks">8.1</a>），但这种度量通常能很好地预警消息积压情况。</p>
 </section>
-<section id="fault-isolation" class="level2" data-number="23.5">
-<h2 data-number="23.5"><span class="header-section-number">23.5</span> Fault isolation</h2>
-<p>A single producer instance that emits “poisonous” messages that repeatedly fail to be processed can degrade the consumer and potentially create a backlog because these messages are processed multiple times before they end up in the dead-letter channel. Therefore, it’s important to find ways to deal with poisonous messages before that happens.</p>
-<p>If messages are decorated with an identifier of the source that generated them, the consumer can treat them differently. For example, suppose messages from a specific user fail consistently. In that case, the consumer could decide to write these messages to an alternate low-priority channel and remove them from the main channel without processing them. The consumer reads from the slow channel but does so less frequently than the main channel, isolating the damage a single bad user can inflict to the others.</p>
+<section class="level2" data-number="23.5" id="fault-isolation">
+<h2 data-number="23.5"><span class="header-section-number">23.5</span> 故障隔离</h2>
+<p>一个单独的生产者实例如果发出“有毒”消息（即反复处理失败的消息），可能会降低消费者的性能，并可能造成消息积压，因为这些消息在被最终转移到死信通道之前会被多次处理。因此，在发生这种情况之前找到处理有毒消息的方法非常重要。</p>
+<p>如果消息被标记了生成它们的来源标识符，消费者就可以区别对待它们。例如，假设来自特定用户的消息持续失败。在这种情况下，消费者可以决定将这些消息写入一个备用的低优先级通道，并将它们从主通道中移除而不进行处理。消费者会从慢速通道读取消息，但读取频率低于主通道，从而将单个不良用户可能对其他用户造成的损害隔离起来。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“Amazon Simple Queue Service,” <a href="https://aws.amazon.com/sqs/" class="uri">https://aws.amazon.com/sqs/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Amazon SQS Standard queues,” <a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues.html" class="uri">https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues.html</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>This is also referred to as the <em>competing consumer pattern</em>, which is implemented using leader election.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“Advanced Message Queuing Protocol,” <a href="https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol" class="uri">https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Azure Queue Storage,” <a href="https://azure.microsoft.com/en-us/services/storage/queues/" class="uri">https://azure.microsoft.com/en-us/services/storage/queues/</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“You Cannot Have Exactly-Once Delivery Redux,” <a href="https://bravenewgeek.com/you-cannot-have-exactly-once-delivery-redux/" class="uri">https://bravenewgeek.com/you-cannot-have-exactly-once-delivery-redux/</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>“亚马逊简单队列服务,” <a class="uri" href="https://aws.amazon.com/sqs/">https://aws.amazon.com/sqs/</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p style="text-align:left;">“亚马逊SQS标准队列,” <a class="uri" href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues.html">https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues.html</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>这也被称为<em>竞争消费者模式</em>，它通过领导者选举来实现。<a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>“高级消息队列协议,” <a class="uri" href="https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol">https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol</a><a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>“Azure队列存储,” <a class="uri" href="https://azure.microsoft.com/en-us/services/storage/queues/">https://azure.microsoft.com/en-us/services/storage/queues/</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>“再论您无法实现精确一次投递,” <a class="uri" href="https://bravenewgeek.com/you-cannot-have-exactly-once-delivery-redux/">https://bravenewgeek.com/you-cannot-have-exactly-once-delivery-redux/</a><a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

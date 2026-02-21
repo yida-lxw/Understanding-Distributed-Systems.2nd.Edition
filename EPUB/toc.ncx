@@ -546,31 +546,31 @@
       </navPoint>
       <navPoint id="navPoint-89">
         <navLabel>
-          <text>18.2 Transport layer load balancing</text>
+          <text>18.2 传输层负载均衡</text>
         </navLabel>
         <content src="text/ch031.xhtml#transport-layer-load-balancing" />
       </navPoint>
       <navPoint id="navPoint-90">
         <navLabel>
-          <text>18.3 Application layer load balancing</text>
+          <text>18.3 应用层负载均衡</text>
         </navLabel>
         <content src="text/ch031.xhtml#l7lb" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-91">
       <navLabel>
-        <text>19 Data storage</text>
+        <text>19 数据存储</text>
       </navLabel>
       <content src="text/ch032.xhtml#datastorage" />
       <navPoint id="navPoint-92">
         <navLabel>
-          <text>19.1 Replication</text>
+          <text>19.1 复制</text>
         </navLabel>
         <content src="text/ch032.xhtml#replication-1" />
       </navPoint>
       <navPoint id="navPoint-93">
         <navLabel>
-          <text>19.2 Partitioning</text>
+          <text>19.2 分区</text>
         </navLabel>
         <content src="text/ch032.xhtml#partitioning-1" />
       </navPoint>
@@ -583,59 +583,59 @@
     </navPoint>
     <navPoint id="navPoint-95">
       <navLabel>
-        <text>20 Caching</text>
+        <text>20 缓存</text>
       </navLabel>
       <content src="text/ch033.xhtml#dbcaching" />
       <navPoint id="navPoint-96">
         <navLabel>
-          <text>20.1 Policies</text>
+          <text>20.1 缓存策略</text>
         </navLabel>
         <content src="text/ch033.xhtml#policies" />
       </navPoint>
       <navPoint id="navPoint-97">
         <navLabel>
-          <text>20.2 Local cache</text>
+          <text>20.2 本地缓存</text>
         </navLabel>
         <content src="text/ch033.xhtml#local-cache" />
       </navPoint>
       <navPoint id="navPoint-98">
         <navLabel>
-          <text>20.3 External cache</text>
+          <text>20.3 外部缓存</text>
         </navLabel>
         <content src="text/ch033.xhtml#external-cache" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-99">
       <navLabel>
-        <text>21 Microservices</text>
+        <text>21 微服务</text>
       </navLabel>
       <content src="text/ch034.xhtml#microservices" />
       <navPoint id="navPoint-100">
         <navLabel>
-          <text>21.1 Caveats</text>
+          <text>21.1 注意事项</text>
         </navLabel>
         <content src="text/ch034.xhtml#caveats" />
       </navPoint>
       <navPoint id="navPoint-101">
         <navLabel>
-          <text>21.2 API gateway</text>
+          <text>21.2 API网关</text>
         </navLabel>
         <content src="text/ch034.xhtml#apigw" />
         <navPoint id="navPoint-102">
           <navLabel>
-            <text>21.2.1 Core responsibilities</text>
+            <text>21.2.1 核心职责</text>
           </navLabel>
           <content src="text/ch034.xhtml#core-responsibilities" />
         </navPoint>
         <navPoint id="navPoint-103">
           <navLabel>
-            <text>21.2.2 Cross-cutting concerns</text>
+            <text>21.2.2 横切关注点</text>
           </navLabel>
           <content src="text/ch034.xhtml#cross-cutting-concerns" />
         </navPoint>
         <navPoint id="navPoint-104">
           <navLabel>
-            <text>21.2.3 Caveats</text>
+            <text>21.2.3 注意事项</text>
           </navLabel>
           <content src="text/ch034.xhtml#caveats-1" />
         </navPoint>
@@ -643,67 +643,67 @@
     </navPoint>
     <navPoint id="navPoint-105">
       <navLabel>
-        <text>22 Control planes and data planes</text>
+        <text>22 控制面板与数据面板</text>
       </navLabel>
       <content src="text/ch035.xhtml#controlplane" />
       <navPoint id="navPoint-106">
         <navLabel>
-          <text>22.1 Scale imbalance</text>
+          <text>22.1 负载不均衡</text>
         </navLabel>
         <content src="text/ch035.xhtml#scale-imbalance" />
       </navPoint>
       <navPoint id="navPoint-107">
         <navLabel>
-          <text>22.2 Control theory</text>
+          <text>22.2 控制理论</text>
         </navLabel>
         <content src="text/ch035.xhtml#controltheory" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-108">
       <navLabel>
-        <text>23 Messaging</text>
+        <text>23 消息传递</text>
       </navLabel>
       <content src="text/ch036.xhtml#messaging" />
       <navPoint id="navPoint-109">
         <navLabel>
-          <text>23.1 Guarantees</text>
+          <text>23.1 保证</text>
         </navLabel>
         <content src="text/ch036.xhtml#guarantees" />
       </navPoint>
       <navPoint id="navPoint-110">
         <navLabel>
-          <text>23.2 Exactly-once processing</text>
+          <text>23.2 精确一次处理</text>
         </navLabel>
         <content src="text/ch036.xhtml#exactly-once-processing" />
       </navPoint>
       <navPoint id="navPoint-111">
         <navLabel>
-          <text>23.3 Failures</text>
+          <text>23.3 故障处理</text>
         </navLabel>
         <content src="text/ch036.xhtml#failures" />
       </navPoint>
       <navPoint id="navPoint-112">
         <navLabel>
-          <text>23.4 Backlogs</text>
+          <text>23.4 消息积压</text>
         </navLabel>
         <content src="text/ch036.xhtml#backlogs" />
       </navPoint>
       <navPoint id="navPoint-113">
         <navLabel>
-          <text>23.5 Fault isolation</text>
+          <text>23.5 故障隔离</text>
         </navLabel>
         <content src="text/ch036.xhtml#fault-isolation" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-114">
       <navLabel>
-        <text>Summary</text>
+        <text>本章总结</text>
       </navLabel>
       <content src="text/ch037.xhtml#scalability-outro" />
     </navPoint>
     <navPoint id="navPoint-115">
       <navLabel>
-        <text>(PART) Resiliency</text>
+        <text>第四部分 弹性</text>
       </navLabel>
       <content src="text/ch038.xhtml#part-resiliency" />
     </navPoint>

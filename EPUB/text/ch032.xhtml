@@ -1,66 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch032.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch032.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="datastorage" class="level1" data-number="19">
-<h1 data-number="19"><span class="header-section-number">19</span> Data storage</h1>
-<p>Because <em>Cruder</em> is stateless, we were able to scale it out by running multiple application servers behind a load balancer. But as the application handles more load, the number of requests to the relational database increases as well. And since the database is hosted on a single machine, it’s only a matter of time until it reaches its capacity and it starts to degrade.</p>
-<section id="replication-1" class="level2" data-number="19.1">
-<h2 data-number="19.1"><span class="header-section-number">19.1</span> Replication</h2>
-<p>We can increase the read capacity of the database by creating replicas. The most common way of doing that is with a leader-follower topology (see Figure <a href="#fig:singleleader">19.1</a>). In this model, clients send writes (updates, inserts, and deletes) exclusively to the leader, which persists the changes to its write-ahead log. Then, the followers, or replicas, connect to the leader and stream log entries from it, committing them locally. Since log entries have a sequence number, followers can disconnect and reconnect at any time and start from where they left off by communicating to the leader the last sequence number they processed.</p>
+<section class="level1" data-number="19" id="datastorage">
+<h1 data-number="19"><span class="header-section-number">19</span> 数据存储</h1>
+<p>由于<em>Cruder</em>是无状态的，我们能够通过在负载均衡器后运行多个应用服务器来扩展它。但随着应用处理更多负载，对关系型数据库的请求数量也随之增加。由于数据库托管在单台机器上，达到其容量并开始性能下降只是时间问题。</p>
+<section class="level2" data-number="19.1" id="replication-1">
+<h2 data-number="19.1"><span class="header-section-number">19.1</span> 复制</h2>
+<p>我们可以通过创建副本（replica）来提升数据库的读取能力。最常见的方法是采用主从（leader-follower）拓扑结构（参见图<a href="#fig:singleleader">19.1</a>）。在这种模型中，客户端将写操作（更新、插入和删除）专门发送给主节点（leader），主节点将这些变更持久化到其预写日志（write-ahead log）中。然后，从节点（follower）或副本连接到主节点，并从中流式传输日志条目，在本地提交这些条目。由于日志条目具有序列号，从节点可以随时断开连接并重新连接，并通过向主节点告知其最后处理的序列号，从上次中断的位置继续同步。</p>
 <div class="figure" style="text-align: center">
-<img alt="Single leader replication" width="40%" src="../media/file49.png" />
+<img alt="Single leader replication" src="../media/file49.png" width="40%"/>
 <p class="caption">
-Figure 19.1: Single leader replication
+图 19.1: 单主复制
 </p>
 </div>
-<p>By creating read-only followers and putting them behind a load balancer, we can increase the read capacity of the database. Replication also increases the availability of the database. For example, the load balancer can automatically take a faulty replica out of the pool when it detects that it’s no longer healthy or available. And when the leader fails, a replica can be reconfigured to take its place. Additionally, individual followers can be used to isolate specific workloads, like expensive analytics queries that are run periodically, so that they don’t impact the leader and other replicas.</p>
-<p>The replication between the leader and the followers can happen either fully synchronously, fully asynchronously, or as a combination of the two.</p>
-<p>If the replication is <em>fully asynchronous</em>, when the leader receives a write, it broadcasts it to the followers and immediately sends a response back to the client without waiting for the followers to acknowledge it. Although this approach minimizes the response time for the client, it’s not fault-tolerant. For example, the leader could crash right after acknowledging a write and before broadcasting it to the followers, resulting in data loss.</p>
-<p>In contrast, if replication is <em>fully synchronous</em>, the leader waits for the write to be acknowledged by the followers before returning a response to the client. This comes with a performance cost since a single slow replica increases the response time of every request. And if any replica is unreachable, the data store becomes unavailable. This approach is not scalable; the more followers there are, the more likely it is that at least one of them is slow or unavailable.</p>
-<p>In practice, relational databases often support a combination of synchronous and asynchronous replication. For example, in PostgreSQL, individual followers can be configured to receive updates synchronously<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>, rather than asynchronously, which is the default. So, for example, we could have a single synchronous follower whose purpose is to act as an up-to-date backup of the leader. That way, if the leader fails, we can fail over to the synchronous follower without incurring any data loss.</p>
-<p>Conceptually, the failover mechanism needs to: detect when the leader has failed, promote the synchronous follower to be the new leader and reconfigure the other replicas to follow it, and ensure client requests are sent to the new leader. Managed solutions like AWS RDS or Azure SQL Database, support read replicas<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> and automated failover<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> out of the box, among other features such as automated patching and backups.</p>
-<p>One caveat of replication is that it only helps to scale out reads, not writes. The other issue is that the entire database needs to fit on a single machine. Although we can work around that by moving some tables from the main database to others running on different nodes, we would only be delaying the inevitable. As you should know by now, we can overcome these limitations with partitioning.</p>
+<p>通过创建只读从节点并将其置于负载均衡器之后，我们可以提升数据库的读取能力。复制还能提高数据库的可用性。例如，当负载均衡器检测到某个副本不再健康或不可用时，可以自动将其从池中移除。而当主节点发生故障时，可以重新配置一个副本来接替其位置。此外，单独的从节点可用于隔离特定的工作负载，例如定期运行的昂贵分析查询，从而避免它们影响主节点和其他副本。</p>
+<p>主节点与从节点之间的复制可以是完全同步的、完全异步的，或者是两者的结合。</p>
+<p>如果复制是<em>完全异步的</em>，当主节点接收到一个写操作时，它会将其广播给从节点，并立即向客户端返回响应，而无需等待从节点的确认。尽管这种方法最大限度地减少了客户端的响应时间，但它不具备容错能力。例如，主节点可能在确认一个写操作之后、但在将其广播给从节点之前崩溃，从而导致数据丢失。</p>
+<p>相反，如果复制是<em>完全同步的</em>，主节点会等待从节点确认写操作后，才向客户端返回响应。这会带来性能开销，因为任何一个缓慢的副本都会增加每个请求的响应时间。并且，如果任何副本不可达，数据存储就会变得不可用。这种方法不具备可扩展性；从节点越多，至少有一个从节点缓慢或不可用的可能性就越大。</p>
+<p>在实战中，关系型数据库通常支持同步和异步复制相结合的方式。例如，在 PostgreSQL 中，可以配置单个从节点以同步方式接收更新<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>，而不是默认的异步方式。因此，举例来说，我们可以有一个同步从节点，其目的是作为主节点的实时备份。这样，如果主节点发生故障，我们可以故障转移到该同步从节点，而不会造成任何数据丢失。</p>
+<p>从概念上讲，故障转移机制需要：检测主节点何时发生故障；将同步从节点提升为新的主节点，并重新配置其他副本以跟随它；确保客户端请求被发送到新的主节点。托管解决方案如 AWS RDS 或 Azure SQL Database，开箱即用地支持只读副本<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>和自动故障转移<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>，以及其他功能如自动补丁和备份。</p>
+<p>复制的一个注意事项是，它仅有助于读取操作扩容，而不是写入操作。另一个问题是整个数据库需要能够容纳在单台机器上。尽管我们可以通过将一些表从主数据库移动到运行在不同节点上的其他数据库来规避这个问题，但这只是延迟了不可避免的情况。正如你现在应该知道的，我们可以通过分区来克服这些限制。</p>
 </section>
-<section id="partitioning-1" class="level2" data-number="19.2">
-<h2 data-number="19.2"><span class="header-section-number">19.2</span> Partitioning</h2>
-<p>Partitioning allows us to scale out a database for both reads and writes. Even though traditional (centralized) relational databases generally don’t support it out of the box, we can implement it at the application layer in principle. However, implementing partitioning at the application layer is challenging and adds a lot of complexity to the system. For starters, we need to decide how to partition the data among the database instances and rebalance it when a partition becomes too hot or too big. Once the data is partitioned, queries that span multiple partitions need to be split into sub-queries and their responses have to be combined (think of aggregations or joins). Also, to support atomic transactions across partitions, we need to implement a distributed transaction protocol, like 2PC. Add to all that the requirement to combine partitioning with replication, and you can see how partitioning at the application layer becomes daunting.</p>
-<p>Taking a step back, the fundamental problem with traditional relational databases is that they have been designed under the assumption they fit on a single beefy machine. Because of that, they support a number of features that are hard to scale, like ACID transactions and joins. Relational databases were designed in an era where disk space was costly, and normalizing the data to reduce the footprint on disk was a priority, even if it came with a significant cost to unnormalize the data at query time with joins.<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a></p>
-<p>Times have changed, and storage is cheap nowadays, while CPU time isn’t. This is why, in the early 2000s, large tech companies began to build bespoke solutions for storing data designed from the ground up with high availability and scalability in mind.</p>
+<section class="level2" data-number="19.2" id="partitioning-1">
+<h2 data-number="19.2"><span class="header-section-number">19.2</span> 分区</h2>
+<p>分区使我们能够扩展数据库以支持读写操作。尽管传统（集中式）的关系数据库通常不直接支持此功能，但原则上我们可以在应用层实现它。然而，在应用层实现分区具有挑战性，并且会给系统增加大量复杂性。首先，我们需要决定如何在数据库实例之间划分数据，并在分区变得过于热门或过大时重新平衡数据。一旦数据被分区，跨越多个分区的查询就需要被拆分为子查询，并且它们的响应必须被合并（例如聚合或连接操作）。此外，为了支持跨分区的原子事务，我们需要实现分布式事务协议，如2PC。再加上需要将分区与复制相结合的要求，你可以看到在应用层实现分区变得多么艰巨。</p>
+<p>退一步讲，传统关系数据库的根本问题在于它们的设计假设是能够运行在单个高性能机器上。正因为如此，它们支持许多难以扩展的特性，例如ACID事务和连接操作。关系数据库设计于磁盘空间昂贵的时代，当时优先考虑的是规范化数据以减少磁盘占用，即使这会在查询时通过连接操作反规范化数据带来显著的成本。<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a></p>
+<p>时代已经改变，如今存储变得廉价，而CPU时间则不然。这就是为什么在21世纪初，大型科技公司开始构建定制化的数据存储解决方案，这些方案从一开始就被设计为具有高可用性和可扩展性。</p>
 </section>
-<section id="nosql" class="level2" data-number="19.3">
+<section class="level2" data-number="19.3" id="nosql">
 <h2 data-number="19.3"><span class="header-section-number">19.3</span> NoSQL</h2>
-<p>These early solutions didn’t support SQL and more generally only implemented a fraction of the features offered by traditional relational data stores. White papers such as Bigtable<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> and Dynamo<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> revolutionized the industry and started a push towards scalable storage layers, resulting in a plethora of open source solutions inspired by them, like HBase and Cassandra.</p>
-<p>Since the first generation of these data stores didn’t support SQL, they were referred to as <em>NoSQL</em>. Nowadays, the designation is misleading as NoSQL stores have evolved to support features, like dialects of SQL, that used to be available only in relational data stores.</p>
-<p>While relational databases support stronger consistency models such as strict serializability, NoSQL stores embrace relaxed consistency models such as eventual and causal consistency to support high availability.</p>
-<p>Additionally, NoSQL stores generally don’t provide joins and rely on the data, often represented as key-value pairs or documents (e.g., JSON), to be unnormalized. A pure key-value store maps an opaque sequence of bytes (key) to an opaque sequence of bytes (value). A document store maps a key to a (possibly hierarchical) document without a strictly enforced schema. The main difference from a key-value store is that documents are interpreted and indexed and therefore can be queried based on their internal structure.</p>
-<p>Finally, since NoSQL stores natively support partitioning for scalability purposes, they have limited support for transactions. For example, Azure Cosmos DB currently only supports transactions scoped to individual partitions. On the other hand, since the data is stored in unnormalized form, there is less need for transactions or joins in the first place.</p>
-<p>Although the data models used by NoSQL stores are generally not relational, we can still use them to model relational data. But if we take a NoSQL store and try to use it as a relational database, we will end up with the worst of both worlds. If used correctly, NoSQL can handle many of the use cases that a traditional relational database can<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a>, while being essentially scalable from day 1.<a href="#fn8" class="footnote-ref" id="fnref8" epub:type="noteref">8</a></p>
-<p>The main requirement for using a NoSQL data store efficiently is to know the access patterns upfront and model the data accordingly; let’s see why that is so important. Take Amazon DynamoDB<a href="#fn9" class="footnote-ref" id="fnref9" epub:type="noteref">9</a>, for example; its main abstraction is a table that contains items. Each item can have different attributes, but it must have a primary key that uniquely identifies an item.</p>
-<p>The primary key can consist of either a single attribute, the <em>partition key</em>, or of two attributes, the <em>partition key</em> and the <em>sort key</em>. As you might suspect, the partition key dictates how the data is partitioned and distributed across nodes, while the sort key defines how the data is sorted within a partition, which allows for efficient range queries.</p>
+<p>这些早期的解决方案不支持SQL，通常它们只实现了传统关系型数据存储所提供功能的一小部分。诸如Bigtable<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>和Dynamo<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>之类的白皮书彻底改变了行业，并推动了可扩展存储层的发展，从而催生了大量受其启发的开源解决方案，如HBase和Cassandra。</p>
+<p>由于第一代这些数据存储不支持SQL，它们被称为<em>NoSQL</em>。如今，这个称谓已具有误导性，因为NoSQL存储已经发展到支持诸如SQL方言等特性，而这些特性过去仅在关系型数据存储中可用。</p>
+<p>虽然关系型数据库支持更强的一致性模型，如严格的序列化，但NoSQL存储则采用宽松的一致性模型，如最终一致性和因果一致性，以支持高可用性。</p>
+<p>此外，NoSQL存储通常不提供连接操作，并且依赖于数据（通常表示为键值对或文档，例如JSON）是非规范化的。纯粹的键值存储将一个不透明的字节序列（键）映射到另一个不透明的字节序列（值）。文档存储将一个键映射到一个（可能是分层的）文档，而没有严格强制执行模式。它与键值存储的主要区别在于，文档会被解析和索引，因此可以根据其内部结构进行查询。</p>
+<p>最后，由于NoSQL存储原生支持分区以实现可扩展性，它们对事务的支持有限。例如，Azure Cosmos DB目前仅支持作用域为单个分区的事务。另一方面，由于数据是以非规范化形式存储的，首先就减少了对事务或连接的需求。</p>
+<p>尽管NoSQL存储使用的数据模型通常不是关系型的，我们仍然可以用它们来建模关系型数据。但如果我们拿一个NoSQL存储并试图将其用作关系型数据库，最终可能会得到两者的缺点。如果使用得当，NoSQL可以处理传统关系型数据库能够处理的许多用例<a class="footnote-ref" epub:type="noteref" href="#fn7" id="fnref7">7</a>，同时从第一天起就具备本质上的可扩展性。<a class="footnote-ref" epub:type="noteref" href="#fn8" id="fnref8">8</a></p>
+<p>高效使用NoSQL数据存储的主要要求是预先了解访问模式并相应地建模数据；让我们看看为什么这一点如此重要。以Amazon DynamoDB<a class="footnote-ref" epub:type="noteref" href="#fn9" id="fnref9">9</a>为例；它的主要抽象是一个包含项目的表。每个项目可以有不同的属性，但它必须有一个唯一标识项目的<em>主键</em>。</p>
+<p>主键可以由单个属性（<em>分区键</em>）或两个属性（<em>分区键</em>和<em>排序键</em>）组成。正如你可能猜到的，分区键决定了数据如何在节点之间进行分区和分布，而排序键则定义了数据在分区内的排序方式，这支持高效的范围查询。</p>
 <!-- TODO: mention that DynamoDB is a distributed B+Tree (dvassalo) -->
-<p>DynamoDB creates three replicas for each partition and uses state machine replication to keep them in sync<a href="#fn10" class="footnote-ref" id="fnref10" epub:type="noteref">10</a>. Writes are routed to the leader, and an acknowledgment is sent to the client when two out of three replicas have received the write. Reads can be either eventually consistent (pick any replica) or strongly consistent (query the leader). Confusingly enough, the architecture of DynamoDB is very different from the one presented in the Dynamo paper, which we discussed in chapter <a href="#dynamo">11.3</a>.</p>
-<p>At a high level, DynamoDB’s API supports:</p>
+<p>DynamoDB为每个分区创建三个副本，并使用状态机复制来保持它们同步<a class="footnote-ref" epub:type="noteref" href="#fn10" id="fnref10">10</a>。写入操作被路由到领导者节点，当三个副本中有两个接收到写入时，会向客户端发送确认。读取操作可以是最终一致性（选择任何副本）或强一致性（查询领导者节点）。足够令人困惑的是，DynamoDB的架构与我们在<a href="#dynamo">11.3</a>章讨论的Dynamo论文中提出的架构大不相同。</p>
+<p>在宏观层面上，DynamoDB的API支持：</p>
 <ul>
-<li>CRUD operations on single items,</li>
-<li>querying multiple items that have the same partition key (optionally specifying conditions on the sort key),</li>
-<li>and scanning the entire table.</li>
+<li>对单个项目的CRUD操作，</li>
+<li>查询具有相同分区键的多个项目（可选择指定排序键的条件），</li>
+<li>以及扫描整个表。</li>
 </ul>
-<p>There are no join operations, by design, since they don’t scale well. But that doesn’t mean we should implement joins in the application. Instead, as we will see shortly, we should model our data so that joins aren’t needed in the first place.</p>
-<p>The partition and sort key attributes are used to model the table’s access patterns. For example, suppose the most common access pattern is retrieving the list of orders for a specific customer sorted by date. In that case, it would make sense for the table to have the customer ID as the partition key, and the order creation date as the sort key:</p>
+<p>我们有意设计不实现连接操作，因为它们不具备良好的扩展性。但这并不意味着我们应该在应用程序中实现连接。相反，正如我们稍后将看到的，我们应该对数据进行建模，从而首先就不需要连接。</p>
+<p>分区键和排序键属性用于建模表的访问模式。例如，假设最常见的访问模式是按日期排序检索特定客户的订单列表。在这种情况下，将客户ID作为分区键，订单创建日期作为排序键是有意义的：</p>
 <table>
 <thead>
 <tr class="header">
-<th>Partition Key</th>
-<th>Sort Key</th>
-<th>Attribute</th>
-<th>Attribute</th>
+<th>分区键</th>
+<th>排序键</th>
+<th>属性</th>
+<th>属性</th>
 </tr>
 </thead>
 <tbody>
@@ -84,14 +85,14 @@ Figure 19.1: Single leader replication
 </tr>
 </tbody>
 </table>
-<p>Now suppose that we also want the full name of the customer in the list of orders. While, in a relational database, a table contains only entities of a certain type (e.g., customer), in NoSQL, a table can contain entities of multiple types. Thus, we could store both customers and orders within the same table:</p>
+<p>现在假设我们还希望在订单列表中包含客户的完整姓名。在关系型数据库中，一个表只包含特定类型的实体（例如，客户），而在NoSQL中，一个表可以包含多种类型的实体。因此，我们可以在同一个表中存储客户和订单：</p>
 <table>
 <thead>
 <tr class="header">
-<th>Partition Key</th>
-<th>Sort Key</th>
-<th>Attribute</th>
-<th>Attribute</th>
+<th>分区键</th>
+<th>排序键</th>
+<th>属性</th>
+<th>属性</th>
 </tr>
 </thead>
 <tbody>
@@ -121,32 +122,32 @@ Figure 19.1: Single leader replication
 </tr>
 </tbody>
 </table>
-<p>Because a customer and its orders have the same partition key, we can now issue a single query that retrieves all entities for the desired customer.</p>
-<p>See what we just did? We have structured the table based on the access patterns so that queries won’t require any joins. Now think for a moment about how you would model the same data in normalized form in a relational database. You would probably have one table for orders and another for customers. And, to perform the same query, a join would be required at query time, which would be slower and harder to scale.</p>
-<p>The previous example is very simple, and DynamoDB supports secondary indexes to model more complex access patterns — local secondary indexes allow for alternate sort keys in the same table, while global secondary indexes allow for different partition and sort keys, with the caveat that index updates are asynchronous and eventually consistent.</p>
-<p>It’s a common misconception that NoSQL data stores are more flexible than relational databases because they can seamlessly scale without modeling the data upfront. Nothing is further from the truth — NoSQL requires a lot more attention to how the data is modeled. Because NoSQL stores are tightly coupled to the access patterns, they are a lot less flexible than relational databases.</p>
-<p>If there is one concept you should take away from this chapter, it’s this: using a NoSQL data store requires identifying the access patterns upfront to model the data accordingly. If you want to learn how to do that, I recommend reading “The DynamoDB Book”<a href="#fn11" class="footnote-ref" id="fnref11" epub:type="noteref">11</a>, even if you plan to use a different NoSQL store.</p>
-<p>As scalable data stores keep evolving, the latest trend is to combine the scalability of NoSQL with the ACID guarantees of relational databases. These new data stores are also referred to as NewSQL<a href="#fn12" class="footnote-ref" id="fnref12" epub:type="noteref">12</a>. While NoSQL data stores prioritize availability over consistency in the face of network partitions, NewSQL stores prefer consistency. The argument behind NewSQL stores is that, with the right design, the reduction in availability caused by enforcing strong consistency is hardly noticeable<a href="#fn13" class="footnote-ref" id="fnref13" epub:type="noteref">13</a> for many applications. That, combined with the fact that perfect 100% availability is not possible anyway (availability is defined in 9s), has spurred the drive to build storage systems that can scale but favor consistency over availability in the presence of network partitions. CockroachDB<a href="#fn14" class="footnote-ref" id="fnref14" epub:type="noteref">14</a> and Spanner<a href="#fn15" class="footnote-ref" id="fnref15" epub:type="noteref">15</a> are well-known examples of NewSQL data stores.</p>
+<p>由于一个客户及其订单具有相同的分区键，我们现在可以发起一个查询来检索所需客户的所有实体。</p>
+<p>看到我们刚才做了什么吗？我们根据访问模式构建了表，使得查询不需要任何连接。现在想一想，在关系型数据库中，你会如何以规范化形式建模相同的数据。你可能会有一个订单表和一个客户表。并且，为了执行相同的查询，在查询时需要执行连接操作，这会更慢且更难扩展。</p>
+<p>前面的例子非常简单，DynamoDB支持二级索引来建模更复杂的访问模式——本地二级索引允许在同一表中使用替代排序键，而全局二级索引允许使用不同的分区键和排序键，但需要注意的是索引更新是异步且最终一致的。</p>
+<p>一个常见的误解是，NoSQL数据存储比关系型数据库更灵活，因为它们可以在不预先建模数据的情况下无缝扩展。事实远非如此——NoSQL需要更多地关注数据是如何建模的。因为NoSQL存储与访问模式紧密耦合，所以它们比关系型数据库的灵活性要低得多。</p>
+<p>如果本章有一个概念你应该记住，那就是：使用NoSQL数据存储需要预先识别访问模式，以便相应地建模数据。如果你想学习如何做到这一点，我推荐阅读“The DynamoDB Book”<a class="footnote-ref" epub:type="noteref" href="#fn11" id="fnref11">11</a>，即使你计划使用不同的NoSQL存储。</p>
+<p>随着可扩展数据存储的不断发展，最新的趋势是将NoSQL的可扩展性与关系型数据库的ACID保证结合起来。这些新的数据存储也被称为NewSQL<a class="footnote-ref" epub:type="noteref" href="#fn12" id="fnref12">12</a>。虽然NoSQL数据存储在面临网络分区时优先考虑可用性而非一致性，但NewSQL存储则更倾向于一致性。NewSQL存储背后的论点是，对于许多应用程序来说，通过正确的设计，强制执行强一致性导致的可用性降低几乎难以察觉<a class="footnote-ref" epub:type="noteref" href="#fn13" id="fnref13">13</a>。这一点，再加上完美的100%可用性无论如何都是不可能的（可用性以9的个数定义），促使人们努力构建具备扩展性的存储系统，但在存在网络分区的情况下，更注重一致性而非可用性。CockroachDB<a class="footnote-ref" epub:type="noteref" href="#fn14" id="fnref14">14</a>和Spanner<a class="footnote-ref" epub:type="noteref" href="#fn15" id="fnref15">15</a>就是NewSQL数据存储的著名例子。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“PostgreSQL Server Configuration, Replication,” <a href="https://www.postgresql.org/docs/14/runtime-config-replication.html" class="uri">https://www.postgresql.org/docs/14/runtime-config-replication.html</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Amazon RDS Read Replicas,” <a href="https://aws.amazon.com/rds/features/read-replicas/" class="uri">https://aws.amazon.com/rds/features/read-replicas/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“Multi-AZ deployments for high availability,” <a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html" class="uri">https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>That said, reducing storage costs isn’t the only benefit of normalization: it also helps maintain data integrity. If a piece of data is duplicated in multiple places, then to update it, we have to make sure it gets updated everywhere. In contrast, if the data is normalized, we only need to update it in one place.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Bigtable: A Distributed Storage System for Structured Data,” <a href="https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf" class="uri">https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>we talked about Dynamo in section <a href="#dynamo">11.3</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>“AWS re:Invent 2018: Amazon DynamoDB Deep Dive: Advanced Design Patterns for DynamoDB (DAT401),” <a href="https://www.youtube.com/watch?v=HaEPXoXVf2k" class="uri">https://www.youtube.com/watch?v=HaEPXoXVf2k</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8" epub:type="footnote"><p>On the other hand, while we certainly can find ways to scale a relational database, what works on day 1 might not work on day 10 or 100.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9" epub:type="footnote"><p>“Amazon DynamoDB,” <a href="https://aws.amazon.com/dynamodb/" class="uri">https://aws.amazon.com/dynamodb/</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn10" epub:type="footnote"><p>“AWS re:Invent 2018: Amazon DynamoDB Under the Hood: How We Built a Hyper-Scale Database (DAT321),” <a href="https://www.youtube.com/watch?v=yvBR71D0nAQ" class="uri">https://www.youtube.com/watch?v=yvBR71D0nAQ</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn11" epub:type="footnote"><p>“The DynamoDB Book,” <a href="https://www.dynamodbbook.com/" class="uri">https://www.dynamodbbook.com/</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn12" epub:type="footnote"><p>“Andy Pavlo — The official ten-year retrospective of NewSQL databases,” <a href="https://www.youtube.com/watch?v=LwkS82zs65g" class="uri">https://www.youtube.com/watch?v=LwkS82zs65g</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn13" epub:type="footnote"><p>“NewSQL database systems are failing to guarantee consistency, and I blame Spanner,” <a href="https://dbmsmusings.blogspot.com/2018/09/newsql-database-systems-are-failing-to.html" class="uri">https://dbmsmusings.blogspot.com/2018/09/newsql-database-systems-are-failing-to.html</a><a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn14" epub:type="footnote"><p>“CockroachDB,” <a href="https://github.com/cockroachdb/cockroach" class="uri">https://github.com/cockroachdb/cockroach</a><a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn15" epub:type="footnote"><p>we talked about Spanner in section <a href="#spanner">12.4</a><a href="#fnref15" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>“PostgreSQL 服务器配置，复制，” <a class="uri" href="https://www.postgresql.org/docs/14/runtime-config-replication.html">https://www.postgresql.org/docs/14/runtime-config-replication.html</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>“Amazon RDS 只读副本，” <a class="uri" href="https://aws.amazon.com/rds/features/read-replicas/">https://aws.amazon.com/rds/features/read-replicas/</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>“用于高可用性的多可用区部署，” <a class="uri" href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html">https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>话虽如此，降低存储成本并非规范化的唯一好处：它还有助于维护数据完整性。如果一段数据在多个位置重复，那么要更新它，我们必须确保它在所有地方都被更新。相反，如果数据是规范化的，我们只需要在一个地方更新它。<a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p style="text-align:left;">“Bigtable：一个用于结构化数据的分布式存储系统，” <a class="uri" href="https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf">https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>我们在 <a href="#dynamo">11.3</a> 节讨论过 Dynamo<a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn7"><p>“AWS re:Invent 2018: Amazon DynamoDB 深度探讨：DynamoDB 高级设计模式 (DAT401)，” <a class="uri" href="https://www.youtube.com/watch?v=HaEPXoXVf2k">https://www.youtube.com/watch?v=HaEPXoXVf2k</a><a class="footnote-back" href="#fnref7" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn8"><p>另一方面，虽然我们肯定能找到扩展关系型数据库的方法，但第一天有效的方法可能在第十天或第一百天就不适用了。<a class="footnote-back" href="#fnref8" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn9"><p>“Amazon DynamoDB，” <a class="uri" href="https://aws.amazon.com/dynamodb/">https://aws.amazon.com/dynamodb/</a><a class="footnote-back" href="#fnref9" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn10"><p style="text-align:left;">“AWS re:Invent 2018: Amazon DynamoDB 内部揭秘：我们如何构建一个超大规模数据库 (DAT321)，” <a class="uri" href="https://www.youtube.com/watch?v=yvBR71D0nAQ">https://www.youtube.com/watch?v=yvBR71D0nAQ</a><a class="footnote-back" href="#fnref10" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn11"><p>“The DynamoDB Book，” <a class="uri" href="https://www.dynamodbbook.com/">https://www.dynamodbbook.com/</a><a class="footnote-back" href="#fnref11" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn12"><p>“Andy Pavlo — NewSQL 数据库官方十年回顾，” <a class="uri" href="https://www.youtube.com/watch?v=LwkS82zs65g">https://www.youtube.com/watch?v=LwkS82zs65g</a><a class="footnote-back" href="#fnref12" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn13"><p>“NewSQL 数据库系统未能保证一致性，我归因于 Spanner，” <a class="uri" href="https://dbmsmusings.blogspot.com/2018/09/newsql-database-systems-are-failing-to.html">https://dbmsmusings.blogspot.com/2018/09/newsql-database-systems-are-failing-to.html</a><a class="footnote-back" href="#fnref13" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn14"><p>“CockroachDB，” <a class="uri" href="https://github.com/cockroachdb/cockroach">https://github.com/cockroachdb/cockroach</a><a class="footnote-back" href="#fnref14" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn15"><p>我们在 <a href="#spanner">12.4</a> 节讨论过 Spanner<a class="footnote-back" href="#fnref15" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

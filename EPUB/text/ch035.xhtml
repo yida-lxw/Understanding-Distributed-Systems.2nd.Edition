@@ -1,71 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch035.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch035.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="controlplane" class="level1" data-number="22">
-<h1 data-number="22"><span class="header-section-number">22</span> Control planes and data planes</h1>
-<p>The API gateway is a single point of failure. If it goes down, then so does <em>Cruder</em>, which is why it needs to be highly available. And because every external request needs to go through it, it must also be scalable. This creates some interesting challenges with regard to external dependencies.</p>
-<p>For example, suppose the gateway has a specific “configuration” or management endpoint to add, remove and configure API keys used to rate-limit requests. Unsurprisingly, the request volume for the configuration endpoint is a lot lower than the one for the main endpoint(s), and a lower scale would suffice to handle it. And while the gateway needs to prefer availability and performance over consistency for routing external requests to internal services, it should prefer consistency over availability for requests sent to the management endpoint.</p>
+<section class="level1" data-number="22" id="controlplane">
+<h1 data-number="22"><span class="header-section-number">22</span> 控制面板与数据面板</h1>
+<p>API网关是一个单点故障。如果它宕机，那么<em>Cruder</em>也会宕机，这就是为什么它需要具备高可用性。并且由于每个外部请求都需要经过它，它还必须具备可扩展性。这在外部依赖方面带来了一些有趣的挑战。</p>
+<p>例如，假设网关有一个特定的“配置”或管理端点，用于添加、移除和配置用于限流请求的API密钥。不出所料，配置端点的请求量远低于主端点，较低的规模就足以处理它。虽然网关在将外部请求路由到内部服务时，需要优先考虑可用性和性能而非一致性，但对于发送到管理端点的请求，它应该优先考虑一致性而非可用性。</p>
 <!-- TODO: show an example of the relational database not coping with load on the hot path -->
-<p>Because of these different and competing requirements, we could split the API gateway into a <em>data plane</em> service that serves external requests directed towards our internal services and a <em>control plane</em> service that manages the gateway’s metadata and configuration. As it turns out, this split is a common pattern<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>. For example, in chain replication in section <a href="#chain-replication">10.4</a>, the control plane holds the configuration of the chains. And in Azure Storage, which we discussed in chapter <a href="#filestorage">17</a>, the stream and partition managers are control planes that manage the allocation of streams and partitions to storage and partition servers, respectively.</p>
-<p>More generally, a data plane includes any functionality on the critical path that needs to run for each client request. Therefore, it must be highly available, fast, and scale with the number of requests. In contrast, a control plane is not on the critical path and has less strict scaling requirements. Its main job is to help the data plane do its work by managing metadata or configuration and coordinating complex and infrequent operations. And since it generally needs to offer a consistent view of its state to the data plane, it favors consistency over availability.</p>
-<p>An application can have multiple independent control and data planes. For example, a control plane might be in charge of scaling a service up or down based on load, while another manages its configuration.</p>
-<p>But separating the control plane from the data plane introduces complexity. The data plane needs to be designed to withstand control plane failures for the separation to be robust. If the data plane stops serving requests when the control plane becomes unavailable, we say the former has a <em>hard dependency</em> on the latter. Intuitively, the entire system becomes unavailable if either the control plane or the data plane fails. More formally, when we have a chain of components that depend on each other, the theoretical availability of the system is the product of the availabilities of its components.</p>
-<p>For example, if the data plane has a theoretical availability of 99.99%, but the control plane has an availability of 99%, then the overall system can only achieve a combined availability of 98.99%:</p>
+<p>由于这些不同且相互竞争的需求，我们可以将API网关拆分为一个<em>数据面板</em>服务，用于处理指向我们内部服务的外部请求，以及一个<em>控制面板</em>服务，用于管理网关的元数据和配置。事实证明，这种拆分是一种常见的模式<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>。例如，在<a href="#chain-replication">10.4节</a>的链式复制中，控制面板持有链的配置。而在我们<a href="#filestorage">第17章</a>讨论的Azure存储中，流管理器和分区管理器就是控制面板，它们分别管理流和分区到存储服务器与分区服务器的分配。</p>
+<p>广义而言，数据面板包含关键路径上的任何功能，这些功能需要为每个客户端请求运行。因此，它必须具备高可用性、快速响应能力，并能随请求数量而扩展。相比之下，控制面板不在关键路径上，其扩展要求不那么严格。其主要工作是通过管理元数据或配置以及协调复杂且不频繁的操作，来帮助数据面板完成其工作。并且，由于它通常需要向数据面板提供其状态的一致视图，因此它更倾向于一致性而非可用性。</p>
+<p>一个应用程序可以拥有多个独立的控制面板和数据面板。例如，一个控制面板可能负责根据负载扩展或缩减服务，而另一个则管理其配置。</p>
+<p>然而，将控制面板与数据面板分离会引入复杂性。数据面板需要被设计成能够承受控制面板故障，才能使这种分离变得健壮。如果控制面板变得不可用时，数据面板停止处理请求，我们就说前者对后者存在<em>硬依赖</em>。直观地说，如果控制面板或数据面板任一发生故障，整个系统就会变得不可用。更正式地说，当我们有一系列相互依赖的组件时，系统的理论可用性是其各个组件可用性的乘积。</p>
+<p>例如，如果数据面板的理论可用性为99.99%，但控制面板的可用性为99%，那么整个系统只能达到98.99%的综合可用性：</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0.9999</mn><mo>⋅</mo><mn>0.99</mn><mo>=</mo><mn>0.9899</mn></mrow><annotation encoding="application/x-tex">
 0.9999 \cdot 0.99 = 0.9899
 </annotation></semantics></math></p>
-<p>In other words, a system can at best be only as available as its least available hard dependency. We can try to make the control plane more reliable, but more importantly, we should ensure that the data plane can withstand control plane failures. If the control plane is temporarily unavailable, the data plane should continue to run with a stale configuration rather than stop. This concept is also referred to as <em>static stability</em>.</p>
-<section id="scale-imbalance" class="level2" data-number="22.1">
-<h2 data-number="22.1"><span class="header-section-number">22.1</span> Scale imbalance</h2>
-<p>Generally, data planes and control planes tend to have very different scale requirements. This creates a risk as the data plane can overload<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> the control plane.</p>
-<p>Suppose the control plane exposes an API that the data plane periodically queries to retrieve the latest configuration. Under normal circumstances, you would expect the requests to the control plane to be spread out in time more or less uniformly. But, in some cases, they can cluster within a short time interval. For example, if, for whatever reason, the processes that make up the data plane are restarted at the same time and must retrieve the configuration from the control plane, they could overload it.</p>
-<p>Although the control plane can defend itself to some degree with the resiliency mechanisms described in chapter <a href="#upstream-resiliency">28</a>, eventually, it will start to degrade. If the control plane becomes unavailable because of overload or any other reason (like a network partition), it can take down the data plane with it.</p>
-<p>Going back to the previous example, if part of the data plane is trying to start but can’t reach the control plane because it’s overloaded, it won’t be able to come online. So how can we design around that?</p>
-<p>One way is to use a scalable file store, like Azure Storage or S3, as a buffer between the control plane and the data plane. The control plane periodically dumps its entire state to the file store regardless of whether it changed, while the data plane reads the state periodically from it (see Figure <a href="#fig:cpstore">22.1</a>). Although this approach sounds naive and expensive, it tends to be reliable and robust in practice. And, depending on the size of the state, it might be cheap too.<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a></p>
+<p>换句话说，一个系统的可用性最多只能与其最不可用的硬依赖项相当。我们可以尝试让控制面板更加可靠，但更重要的是，我们应该确保数据面板能够承受控制面板的故障。如果控制面板暂时不可用，数据面板应该继续运行，即使使用的是过时的配置，而不是停止运行。这个概念也被称为<em>静态稳定性</em>。</p>
+<section class="level2" data-number="22.1" id="scale-imbalance">
+<h2 data-number="22.1"><span class="header-section-number">22.1</span> 负载不均衡</h2>
+<p>通常，数据面板和控制面板往往具有截然不同的规模需求。这会带来风险，因为数据面板可能使控制面板过载<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>。</p>
+<p>假设控制面板公开了一个API，数据面板定期查询该API以获取最新配置。正常情况下，你会期望对控制面板的请求在时间上或多或少均匀分布。但在某些情况下，它们可能会在短时间内集中出现。例如，如果由于某种原因，构成数据面板的进程同时重启，并且必须从控制面板获取配置，它们就可能使控制面板过载。</p>
+<p>尽管控制面板可以利用<a href="#upstream-resiliency">第28章</a>所述的弹性机制在一定程度上进行自我保护，但最终它仍会开始性能下降。如果控制面板因过载或任何其他原因（如网络分区）而变得不可用，它可能会连带导致数据面板瘫痪。</p>
+<p>回到前面的例子，如果部分数据面板试图启动，但由于控制面板过载而无法访问，它将无法上线。那么，我们该如何围绕这一点进行设计呢？</p>
+<p>一种方法是使用可扩展的文件存储（如Azure Storage或S3）作为控制面板和数据面板之间的缓冲区。控制面板定期将其整个状态转储到文件存储中，无论状态是否更改，而数据面板则定期从中读取状态（参见<a href="#fig:cpstore">图22.1</a>）。尽管这种方法听起来简单且成本高昂，但在实战中往往可靠且健壮。而且，根据状态的大小，它也可能很便宜。<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a></p>
 <div class="figure" style="text-align: center">
-<img alt="The intermediate data store protects the control plane by absorbing the load generated by the data plane." width="80%" src="../media/file55.png" />
+<img alt="中间数据存储通过吸收数据面板产生的负载来保护控制面板。" src="../media/file55.png" width="80%"/>
 <p class="caption">
-Figure 22.1: The intermediate data store protects the control plane by absorbing the load generated by the data plane.
+图22.1：中间数据存储通过吸收数据面板产生的负载来保护控制面板。
 </p>
 </div>
-<p>Introducing an intermediate store as a buffer decouples the control plane from the data plane and protects the former from overload. It also enables the data plane to continue to operate (or start) if the control plane becomes unavailable. But this comes at the cost of higher latencies and weaker consistency guarantees, since the time it takes to propagate changes from the control plane to the data plane will necessarily increase.</p>
-<p>To decrease the propagation latency, a different architecture is needed in which there is no intermediary. The idea is to have the data plane connect to the control plane, like in our original approach, but have the control plane push the configuration whenever it changes, rather than being at the mercy of periodic queries from the data plane. Because the control plane controls the pace, it will slow down rather than fall over when it can’t keep up.<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a></p>
-<p>To further reduce latencies and load, the control plane can version changes and push only updates/deltas to the data plane. Although this approach is more complex to implement, it significantly reduces the propagation time when the state is very large.</p>
-<p>However, the control plane could still get hammered if many data plane instances start up around the same time (due to a massive scale-out or restart) and try to read the entire configuration from the control plane for the first time. To defend against this, we can reintroduce an intermediate data store that contains a recent snapshot of the control plane’s state. This allows the data plane to read a snapshot from the store at startup and then request only a small delta from the control plane (see Figure <a href="#fig:cpdelta">22.2</a>).</p>
+<p>引入中间存储作为缓冲区，将控制面板与数据面板解耦，并保护前者免受过载影响。它还使得在控制面板不可用时，数据面板能够继续运行（或启动）。但这是以更高的延迟和更弱的一致性保证为代价的，因为将变更从控制面板传播到数据面板所需的时间必然会增加。</p>
+<p>为了降低传播延迟，需要一种没有中间层的不同架构。其思路是让数据面板连接到控制面板，就像我们最初的方法一样，但让控制面板在配置更改时主动推送配置，而不是被动地受制于数据面板的定期查询。因为控制面板控制着节奏，当它跟不上时，它会减慢速度而不是崩溃。<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a></p>
+<p>为了进一步降低延迟和负载，控制面板可以对变更进行版本控制，并仅向数据面板推送更新/增量。尽管这种方法实现起来更复杂，但当状态非常大时，它能显著减少传播时间。</p>
+<p>然而，如果许多数据面板实例在同一时间附近启动（由于大规模横向扩展或重启），并试图首次从控制面板读取整个配置，控制面板仍可能受到冲击。为了防止这种情况，我们可以重新引入一个包含控制面板状态最新快照的中间数据存储。这使得数据面板可以在启动时从存储中读取快照，然后仅向控制面板请求一个小的增量（参见<a href="#fig:cpdelta">图22.2</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="The intermediate data store absorbs the load of bulk reads, while the control plane pushes small deltas to the data plane whenever the state changes." width="80%" src="../media/file56.png" />
+<img alt="中间数据存储吸收批量读取的负载，而控制面板在状态更改时向数据面板推送小的增量。" src="../media/file56.png" width="80%"/>
 <p class="caption">
-Figure 22.2: The intermediate data store absorbs the load of bulk reads, while the control plane pushes small deltas to the data plane whenever the state changes.
+图22.2：中间数据存储吸收批量读取的负载，而控制面板在状态更改时向数据面板推送小的增量。
 </p>
 </div>
 </section>
-<section id="controltheory" class="level2" data-number="22.2">
-<h2 data-number="22.2"><span class="header-section-number">22.2</span> Control theory</h2>
-<p>Control theory gives us another<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> way to think about control planes and data planes. In control theory, the goal is to create a controller that monitors a dynamic system, compares its state to the desired one, and applies a corrective action to drive the system closer to it while minimizing any instabilities on the way.</p>
-<p>In our case, the data plane is the dynamic system we would like to drive to the desired state, while the controller is the control plane responsible for <em>monitoring</em> the data plane, <em>comparing</em> it to the desired state, and executing a corrective <em>action</em> if needed.</p>
-<p>The control plane and the data plane are part of a feedback loop. And without all three ingredients (<em>monitor</em>, <em>compare</em>, and <em>action</em>), you don’t have a closed loop, and the data plane can’t reach the desired state<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a>. The monitoring part is the most commonly missing ingredient to achieve a closed loop.</p>
-<p>Take chain replication, for example. The control plane’s job shouldn’t be just to push the configuration of the chains to the data plane. It should also monitor whether the data plane has actually applied the configuration within a reasonable time. If it hasn’t, it should perform some corrective action, which could be as naive as rebooting nodes with stale configurations or excluding them from being part of any chain.</p>
-<p>A more mundane example of a control plane is a CI/CD pipeline for releasing a new version of a service without causing any disruption. One way to implement the pipeline is to deploy and release a new build blindly without monitoring the running service — the build might throw an exception at startup that prevents the service from starting, resulting in a catastrophic failure. Instead, the pipeline should release the new build incrementally while monitoring the service and stop the roll-out if there is clear evidence that something is off, and potentially also roll it back automatically.</p>
-<p>To sum up, when dealing with a control plane, ask yourself what’s missing to close the loop. We have barely scratched the surface of the topic, and if you want to learn more about it, “Designing Distributed Control Systems”<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a> is a great read.</p>
+<section class="level2" data-number="22.2" id="controltheory">
+<h2 data-number="22.2"><span class="header-section-number">22.2</span> 控制理论</h2>
+<p>控制理论为我们提供了另一种<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>思考控制面板与数据面板的方式。在控制理论中，目标是创建一个控制器，用于监控一个动态系统，将其状态与期望状态进行比较，并施加纠正动作以使系统趋近于期望状态，同时最小化过程中的任何不稳定性。</p>
+<p>在我们的场景中，数据面板就是我们希望驱动至期望状态的动态系统，而控制器则是负责<em>监控</em>数据面板、将其与期望状态<em>比较</em>并在需要时执行纠正<em>动作</em>的控制面板。</p>
+<p>控制面板和数据面板构成了一个反馈回路。如果没有全部三个要素（<em>监控</em>、<em>比较</em>和<em>动作</em>），就无法形成闭环，数据面板也就无法达到期望状态<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>。其中，监控部分是实现闭环最常缺失的要素。</p>
+<p>以链式复制为例。控制面板的职责不应仅仅是向数据面板推送链的配置。它还应该监控数据面板是否在合理时间内实际应用了该配置。如果没有，它应该执行一些纠正动作，这些动作可以很简单，比如重启配置过时的节点，或者将它们排除在任何链之外。</p>
+<p>一个更常见的控制面板例子是用于发布服务新版本而不造成任何中断的CI/CD流水线。实现这种流水线的一种方式是盲目地部署和发布新构建，而不监控运行中的服务——新构建可能在启动时抛出异常，导致服务无法启动，从而造成灾难性故障。相反，流水线应该在监控服务的同时逐步发布新构建，如果有明确证据表明出现问题，则停止发布，并可能自动回滚。</p>
+<p>总而言之，在处理控制面板时，问问自己还缺少什么来形成闭环。我们仅仅触及了这个主题的表面，如果你想了解更多，推荐阅读《设计分布式控制系统》<a class="footnote-ref" epub:type="noteref" href="#fn7" id="fnref7">7</a>。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“Control Planes vs Data Planes,” <a href="https://brooker.co.za/blog/2019/03/17/control.html" class="uri">https://brooker.co.za/blog/2019/03/17/control.html</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Avoiding overload in distributed systems by putting the smaller service in control,” <a href="https://aws.amazon.com/builders-library/avoiding-overload-in-distributed-systems-by-putting-the-smaller-service-in-control/" class="uri">https://aws.amazon.com/builders-library/avoiding-overload-in-distributed-systems-by-putting-the-smaller-service-in-control/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>This is another example of the CQRS pattern applied in practice.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>That said, there is still the potential to overload the control plane if it needs to juggle too many connections.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“AWS re:Invent 2018: Close Loops &amp; Opening Minds: How to Take Control of Systems, Big &amp; Small ARC337,” <a href="https://www.youtube.com/watch?v=O8xLxNje30M" class="uri">https://www.youtube.com/watch?v=O8xLxNje30M</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>That said, having a closed loop doesn’t guarantee that either, it’s merely a prerequisite.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>“Designing Distributed Control Systems,” <a href="https://www.amazon.com/gp/product/1118694155" class="uri">https://www.amazon.com/gp/product/1118694155</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>“控制面板与数据面板”，<a class="uri" href="https://brooker.co.za/blog/2019/03/17/control.html">https://brooker.co.za/blog/2019/03/17/control.html</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>“通过控制较小的服务来避免分布式系统中的过载”，<a class="uri" href="https://aws.amazon.com/builders-library/avoiding-overload-in-distributed-systems-by-putting-the-smaller-service-in-control/">https://aws.amazon.com/builders-library/avoiding-overload-in-distributed-systems-by-putting-the-smaller-service-in-control/</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>这是CQRS模式在实战中应用的另一个例子。<a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>话虽如此，如果控制面板需要处理过多的连接，仍然有过载的潜在风险。<a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p style="text-align:left;">“AWS re:Invent 2018: 闭环与开放思维：如何掌控系统，无论大小 ARC337”，<a class="uri" href="https://www.youtube.com/watch?v=O8xLxNje30M">https://www.youtube.com/watch?v=O8xLxNje30M</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>话虽如此，拥有一个闭环也不能保证这一点，它仅仅是一个先决条件。<a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn7"><p>“设计分布式控制系统”，<a class="uri" href="https://www.amazon.com/gp/product/1118694155">https://www.amazon.com/gp/product/1118694155</a><a class="footnote-back" href="#fnref7" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

@@ -1,68 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch033.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch033.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="dbcaching" class="level1" data-number="20">
-<h1 data-number="20"><span class="header-section-number">20</span> Caching</h1>
-<p>Suppose a significant fraction of requests that <em>Cruder</em> sends to its data store consists of a small pool of frequently accessed entries. In that case, we can improve the application’s performance and reduce the load on the data store by introducing a cache. A <em>cache</em> is a high-speed storage layer that temporarily buffers responses from an <em>origin</em>, like a data store, so that future requests can be served directly from it. It only provides best-effort guarantees, since its state is disposable and can be rebuilt from the origin. We have already seen some applications of caching when discussing the DNS protocol or CDNs.</p>
-<p>For a cache to be cost-effective, the proportion of requests that can be served directly from it (hit ratio) should be high. The <em>hit ratio</em> depends on several factors, such as the universe of cachable objects (the fewer, the better), the likelihood of accessing the same objects repeatedly (the higher, the better), and the size of the cache (the larger, the better).</p>
-<p>As a general rule of thumb, the higher up in the call stack caching is used, the more resources can be saved downstream. This is why the first use case for caching we discussed was client-side HTTP caching. However, it’s worth pointing out that caching is an optimization, and you don’t have a scalable architecture if the origin, e.g., the data store in our case, can’t withstand the load without the cache fronting it. If the access pattern suddenly changes, leading to cache misses, or the cache becomes unavailable, you don’t want your application to fall over (but it’s okay for it to become slower).</p>
-<section id="policies" class="level2" data-number="20.1">
-<h2 data-number="20.1"><span class="header-section-number">20.1</span> Policies</h2>
-<p>When a cache miss occurs, the missing object has to be requested from the origin, which can happen in two ways:</p>
+<section class="level1" data-number="20" id="dbcaching">
+<h1 data-number="20"><span class="header-section-number">20</span> 缓存</h1>
+<p>假设<em>Cruder</em>发送给其数据存储的请求中，有相当一部分是由一小部分频繁访问的条目组成的。在这种情况下，我们可以通过引入缓存来提升应用程序的性能并减轻数据存储的负载。<em>缓存</em>是一种高速存储层，它临时缓冲来自<em>源服务器</em>（例如数据存储）的响应，以便未来的请求可以直接从缓存中获取。它只提供尽力而为的保证，因为其状态是可丢弃的，并且可以从源服务器重建。我们在讨论DNS协议或CDN时已经看到了一些缓存的应用。</p>
+<p>要使缓存具有成本效益，能够直接从缓存中提供服务的请求比例（命中率）需要很高。<em>命中率</em>取决于几个因素，例如可缓存对象的范围（越少越好）、重复访问相同对象的可能性（越高越好）以及缓存的大小（越大越好）。</p>
+<p>作为一条通用经验法则，在调用栈中越靠上层使用缓存，下游就能节省更多资源。这就是为什么我们讨论的第一个缓存用例是客户端HTTP缓存。然而，值得指出的是，缓存是一种优化手段，如果源服务器（例如我们案例中的数据存储）在没有前端缓存的情况下无法承受负载，那么你的架构就不具备可扩展性。如果访问模式突然改变导致缓存未命中，或者缓存变得不可用，你肯定不希望应用程序因此崩溃（但允许其运行速度变慢）。</p>
+<section class="level2" data-number="20.1" id="policies">
+<h2 data-number="20.1"><span class="header-section-number">20.1</span> 缓存策略</h2>
+<p>当发生缓存未命中时，缺失的对象必须从源服务器获取，这可以通过两种方式实现：</p>
 <ul>
-<li>After getting an “object-not-found” error from the cache, the application requests the object from the origin and updates the cache. In this case, the cache is referred to as a <em>side cache</em>, and it’s typically treated as a key-value store by the application.</li>
-<li>Alternatively, the cache is <em>inline</em>, and it communicates directly with the origin, requesting the missing object on behalf of the application. In this case, the application only ever accesses the cache. We have already seen an example of an inline cache when discussing HTTP caching.</li>
+<li>应用程序从缓存收到“对象未找到”错误后，向源服务器请求该对象并更新缓存。在这种情况下，缓存被称为<em>旁路缓存</em>，应用程序通常将其视为键值存储。</li>
+<li>或者，缓存是<em>内联</em>的，它直接与源服务器通信，代表应用程序请求缺失的对象。在这种情况下，应用程序只访问缓存。我们在讨论HTTP缓存时已经见过内联缓存的例子。</li>
 </ul>
-<p>Because a cache has a limited capacity, one or more entries need to be evicted to make room for new ones when its capacity is reached. Which entry to remove depends on the eviction policy used by the cache and the objects’ access pattern. For example, one commonly used policy is to evict the <em>least recently used</em> (LRU) entry.</p>
-<p>A cache can also have an <em>expiration policy</em> that dictates when an object should be evicted, e.g., a TTL. When an object has been in the cache for longer than its TTL, it expires and can safely be evicted. The longer the expiration time, the higher the hit ratio, but also the higher the likelihood of serving stale and inconsistent data.</p>
-<p>The expiration doesn’t need to occur immediately, and it can be deferred to the next time the entry is requested. In fact, that might be preferable — if the origin (e.g., a data store) is temporarily unavailable, it’s more resilient to return an object with an expired TTL to the application rather than an error.</p>
-<p>An expiry policy based on TTL is a workaround for <em>cache invalidation</em>, which is very hard to implement in practice<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>. For example, if you were to cache the result of a database query, every time any of the data touched by that query changes (which could span thousands of records or more), the cached result would need to be invalidated somehow.</p>
+<p>由于缓存容量有限，当达到其容量上限时，需要剔除一个或多个条目以便为新条目腾出空间。移除哪个条目取决于缓存使用的剔除策略以及对象的访问模式。例如，一种常用的策略是剔除<em>最近最少使用</em>的条目。</p>
+<p>缓存还可以有一个<em>过期策略</em>，用于规定对象何时应被剔除，例如生存时间。当一个对象在缓存中存放的时间超过其TTL时，它就会过期并可以被安全地剔除。过期时间越长，命中率越高，但提供过时和不一致数据的可能性也越高。</p>
+<p>过期不需要立即发生，可以推迟到下次请求该条目时。事实上，这可能更可取——如果源服务器暂时不可用，向应用程序返回一个TTL已过期的对象比返回一个错误更具弹性。</p>
+<p>基于TTL的过期策略是<em>缓存失效</em>的一种变通方法，而缓存失效在实践中很难实现<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>。例如，如果你要缓存一个数据库查询的结果，那么每次该查询所触及的任何数据发生变化时（这可能涉及数千条甚至更多记录），都需要以某种方式使缓存结果失效。</p>
 </section>
-<section id="local-cache" class="level2" data-number="20.2">
-<h2 data-number="20.2"><span class="header-section-number">20.2</span> Local cache</h2>
-<p>The simplest way to implement a cache is to co-locate it with the client. For example, the client could use a simple in-memory hash table or an embeddable key-value store, like RocksDB<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>, to cache responses (see Figure <a href="#fig:processcache">20.1</a>).</p>
+<section class="level2" data-number="20.2" id="local-cache">
+<h2 data-number="20.2"><span class="header-section-number">20.2</span> 本地缓存</h2>
+<p>实现缓存最简单的方法是将其与客户端部署在同一位置。例如，客户端可以使用简单的内存哈希表或可嵌入的键值存储（如RocksDB<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>）来缓存响应（参见图<a href="#fig:processcache">20.1</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="In-process cache" width="70%" src="../media/file50.png" />
+<img alt="In-process cache" src="../media/file50.png" width="70%"/>
 <p class="caption">
-Figure 20.1: In-process cache
+图 20.1: 进程内缓存
 </p>
 </div>
-<p>Because each client cache is independent of the others, the same objects are duplicated across caches, wasting resources. For example, if every client has a local cache of 1GB, then no matter how many clients there are, the total size of the cache is 1 GB. Also, consistency issues will inevitably arise; for example, two clients might see different versions of the same object.</p>
-<p>Additionally, as the number of clients grows, the number of requests to the origin increases. This issue is exacerbated when clients restart, or new ones come online, and their caches need to be populated from scratch. This can cause a “thundering herd” effect where the downstream origin is hit with a spike of requests. The same can also happen when a specific object that wasn’t accessed before becomes popular all of a sudden.</p>
-<p>Clients can reduce the impact of a thundering herd by <em>coalescing</em> requests for the same object. The idea is that, at any given time, there should be at most one outstanding request per client to fetch a specific object.</p>
+<p>由于每个客户端缓存彼此独立，相同的对象会在多个缓存中重复存储，造成资源浪费。例如，如果每个客户端都有一个1GB的本地缓存，那么无论有多少客户端，缓存的总大小仍然是1GB。此外，一致性问题也必然会出现；例如，两个客户端可能会看到同一对象的不同版本。</p>
+<p>另外，随着客户端数量的增加，对源服务器的请求数量也会增加。当客户端重启或新客户端上线时，其缓存需要从头开始填充，这个问题会变得更加严重。这可能导致“惊群效应”，即下游源服务器会遭受请求激增的冲击。当某个之前未被访问的特定对象突然变得热门时，同样的情况也可能发生。</p>
+<p>客户端可以通过<em>合并</em>对同一对象的请求来减轻惊群效应的影响。其核心思想是，在任何给定时间，每个客户端最多只应有一个正在进行的请求来获取特定对象。</p>
 </section>
-<section id="external-cache" class="level2" data-number="20.3">
-<h2 data-number="20.3"><span class="header-section-number">20.3</span> External cache</h2>
-<p>An external cache is a service dedicated to caching objects, typically in memory. Because it’s shared across clients, it addresses some of the drawbacks of local caches at the expense of greater complexity and cost (see Figure <a href="#fig:externalcache">20.2</a>). For example, Redis<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> or Memcached<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a> are popular caching services, also available as managed services on AWS and Azure.</p>
+<section class="level2" data-number="20.3" id="external-cache">
+<h2 data-number="20.3"><span class="header-section-number">20.3</span> 外部缓存</h2>
+<p>外部缓存是一种专门用于缓存对象的服务，通常位于内存中。由于它在客户端之间共享，因此它解决了本地缓存的一些缺点，但代价是更高的复杂性和成本（参见图 <a href="#fig:externalcache">20.2</a>）。例如，Redis<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a> 或 Memcached<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a> 是流行的缓存服务，在 AWS 和 Azure 上也作为托管服务提供。</p>
 <div class="figure" style="text-align: center">
-<img alt="Out-of-process cache" width="40%" src="../media/file51.png" />
+<img alt="进程外缓存" src="../media/file51.png" width="40%"/>
 <p class="caption">
-Figure 20.2: Out-of-process cache
+图 20.2: 进程外缓存
 </p>
 </div>
-<p>Unlike a local cache, an external cache can increase its throughput and size using replication and partitioning. For example, Redis<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> can automatically partition data across multiple nodes and replicate each partition using a leader-follower protocol.</p>
-<p>Since the cache is shared among its clients, there is only a single version of each object at any given time (assuming the cache is not replicated), which reduces consistency issues. Also, the number of times an object is requested from the origin doesn’t grow with the number of clients.</p>
-<p>Although an external cache decouples clients from the origin, the load merely shifts to the external cache. Therefore, the cache will eventually need to be scaled out if the load increases. When that happens, as little data as possible should be moved around (or dropped) to avoid the cache degrading or the hit ratio dropping significantly. Consistent hashing, or a similar partitioning technique, can help reduce the amount of data that needs to be shuffled when the cache is rebalanced.</p>
-<p>An external cache also comes with a maintenance cost as it’s yet another service that needs to be operated. Additionally, the latency to access it is higher than accessing a local cache because a network call is required.</p>
-<p>If the external cache is down, how should the clients react? You would think it might be okay to bypass the cache and directly hit the origin temporarily. But the origin might not be prepared to withstand a sudden surge of traffic. Consequently, the external cache becoming unavailable could cause a cascading failure, resulting in the origin becoming unavailable as well.</p>
-<p>To avoid that, clients could use an in-process cache as a defense against the external cache becoming unavailable. That said, the origin also needs to be prepared to handle these sudden “attacks” by, e.g., shedding requests; we will discuss a few approaches for achieving that in the book’s resiliency part. What’s important to remember is that caching is an optimization, and the system needs to survive without it at the cost of being slower.</p>
+<p>与本地缓存不同，外部缓存可以通过复制和分区来增加其吞吐量和容量。例如，Redis<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a> 可以自动将数据分区到多个节点，并使用主从协议复制每个分区。</p>
+<p>由于缓存在其客户端之间共享，因此在任何给定时间，每个对象只有一个版本（假设缓存未被复制），这缓解了一致性问题。此外，从源服务器请求对象的次数不会随着客户端数量的增加而增加。</p>
+<p>虽然外部缓存将客户端与源服务器解耦，但负载仅仅转移到了外部缓存上。因此，如果负载增加，缓存最终也需要进行横向扩展。当这种情况发生时，应尽可能少地移动（或丢弃）数据，以避免缓存性能下降或命中率显著降低。一致性哈希或类似的分区技术可以帮助减少在缓存重新平衡时需要重新分配的数据量。</p>
+<p>外部缓存还伴随着维护成本，因为它是另一个需要运维的服务。此外，访问它的延迟高于访问本地缓存，因为需要进行网络调用。</p>
+<p>如果外部缓存宕机，客户端应如何应对？你可能会认为暂时绕过缓存直接访问源服务器是可以的。但源服务器可能没有准备好承受突然激增的流量。因此，外部缓存变得不可用可能会导致连锁故障，从而导致源服务器也变得不可用。</p>
+<p>为了避免这种情况，客户端可以使用进程内缓存作为外部缓存不可用时的防御措施。也就是说，源服务器也需要准备好处理这些突然的“攻击”，例如通过丢弃请求；我们将在本书的弹性部分讨论几种实现这一目标的方法。重要的是要记住，缓存是一种优化，系统需要能够在没有它的情况下存活下来，代价是响应速度变慢。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“Cache coherence,” <a href="https://en.wikipedia.org/wiki/Cache_coherence" class="uri">https://en.wikipedia.org/wiki/Cache_coherence</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“RocksDB,” <a href="http://rocksdb.org/" class="uri">http://rocksdb.org/</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“Redis,” <a href="https://redis.io/" class="uri">https://redis.io/</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“Memcached,” <a href="https://memcached.org/" class="uri">https://memcached.org/</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Redis cluster tutorial,” <a href="https://redis.io/topics/cluster-tutorial" class="uri">https://redis.io/topics/cluster-tutorial</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>“缓存一致性，” <a class="uri" href="https://en.wikipedia.org/wiki/Cache_coherence">https://en.wikipedia.org/wiki/Cache_coherence</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>“RocksDB，” <a class="uri" href="http://rocksdb.org/">http://rocksdb.org/</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>“Redis，” <a class="uri" href="https://redis.io/">https://redis.io/</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>“Memcached，” <a class="uri" href="https://memcached.org/">https://memcached.org/</a><a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>“Redis集群教程，” <a class="uri" href="https://redis.io/topics/cluster-tutorial">https://redis.io/topics/cluster-tutorial</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

@@ -1,114 +1,115 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch034.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch034.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="microservices" class="level1" data-number="21">
-<h1 data-number="21"><span class="header-section-number">21</span> Microservices</h1>
-<p>If <em>Cruder</em> is successful in the market, we can safely assume that we will continue to add more components to it to satisfy an ever-growing list of business requirements, as shown in Figure <a href="#fig:monolithfig">21.1</a>.</p>
+<section class="level1" data-number="21" id="microservices">
+<h1 data-number="21"><span class="header-section-number">21</span> 微服务</h1>
+<p>如果<em>Cruder</em>在市场上取得成功，我们可以有把握地假设，我们将继续为其添加更多组件，以满足不断增长的业务需求列表，如图<a href="#fig:monolithfig">21.1</a>所示。</p>
 <div class="figure" style="text-align: center">
-<img alt="A monolithic application composed of multiple components" width="50%" src="../media/file52.png" />
+<img alt="一个由多个组件组成的单体应用程序" src="../media/file52.png" width="50%"/>
 <p class="caption">
-Figure 21.1: A monolithic application composed of multiple components
+图 21.1：一个由多个组件组成的单体应用程序
 </p>
 </div>
-<p>The components will likely become increasingly coupled in time, causing developers to step on each other’s toes more frequently. Eventually, the codebase becomes complex enough that nobody fully understands every part of it, and implementing new features or fixing bugs becomes a lot more time-consuming than it used to be.</p>
-<p>Also, a change to a component might require the entire application to be rebuilt and deployed. And if the deployment of a new version introduces a bug, like a memory or socket leak, unrelated components might also be affected. Moreover, reverting a deployment affects the velocity of every developer, not just the one that introduced a bug.</p>
-<p>One way to mitigate the growing pains of a <em>monolithic</em> application is to functionally decompose it into a set of independently deployable services that communicate via APIs, as shown in Figure <a href="#fig:microservicesfig">21.2</a>. The APIs decouple the services from each other by creating boundaries that are hard to violate, unlike the ones between components running in the same process.</p>
+<p>随着时间的推移，组件之间的耦合度可能会越来越高，导致开发者之间更频繁地相互干扰。最终，代码库变得足够复杂，以至于没有人能完全理解其中的每一个部分，实现新功能或修复错误所需的时间也会比过去长得多。</p>
+<p>此外，对某个组件的修改可能需要重新构建和部署整个应用程序。如果新版本的部署引入了错误，例如内存或套接字泄漏，不相关的组件也可能受到影响。而且，回滚部署会影响每位开发者的工作效率，而不仅仅是引入Bug的那一位。</p>
+<p>缓解<em>单体</em>应用成长痛点的一种方法是，将其按功能拆分为一组可通过API通信的独立可部署服务，如图<a href="#fig:microservicesfig">21.2</a>所示。这些API通过创建难以逾越的边界，使服务彼此解耦，这与运行在同一进程内的组件之间的边界截然不同。</p>
 <div class="figure" style="text-align: center">
-<img alt="An application split into independently deployable services that communicate via APIs" width="80%" src="../media/file53.png" />
+<img alt="An application split into independently deployable services that communicate via APIs" src="../media/file53.png" width="80%"/>
 <p class="caption">
-Figure 21.2: An application split into independently deployable services that communicate via APIs
+图 21.2：一个被拆分为多个可独立部署服务并通过API进行通信的应用程序
 </p>
 </div>
-<p>Each service can be owned and operated by a small team. Smaller teams collaborate more effectively than larger ones, since the communication overhead grows quadratically<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> with the team’s size. And because each team controls its own codebase and dictates its own release schedule, less cross-team communication is required overall. Also, the surface area of a service is smaller than the whole application, making it more digestible to developers, especially new hires.</p>
-<p>Each team is also free in principle to adopt the tech stack and hardware that fits their specific needs. After all, the consumers of the APIs don’t care how the functionality is implemented. This makes it easy to experiment and evaluate new technologies without affecting other parts of the system. As a result, each service can have its own independent data model and data store(s) that best fit its use cases.</p>
-<p>This architectural style is also referred to as the <em>microservice architecture</em>. The term <em>micro</em> is misleading, though — there doesn’t have to be anything micro about services.<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> If a service doesn’t do much, it only adds operational overhead and complexity. As a rule of thumb, APIs should have a small surface area and encapsulate a significant amount of functionality.<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a></p>
-<section id="caveats" class="level2" data-number="21.1">
-<h2 data-number="21.1"><span class="header-section-number">21.1</span> Caveats</h2>
-<p>To recap, splitting an application into services adds a great deal of complexity to the overall system, which is only worth paying if it can be amortized across many development teams. Let’s take a closer look at why that is.</p>
-<p><strong>Tech stack</strong></p>
-<p>While nothing forbids each microservice to use a different tech stack, doing so makes it more difficult for a developer to move from one team to another. And think of the sheer number of libraries — one for each language adopted — that need to be supported to provide common functionality that all services need, like logging.</p>
-<p>It’s only reasonable, then, to enforce a certain degree of standardization. One way to do that, while still allowing some degree of freedom, is to loosely encourage specific technologies by providing a great development experience for the teams that stick with the recommended portfolio of languages and technologies.</p>
-<p><strong>Communication</strong></p>
-<p>Remote calls are expensive and introduce non-determinism. Much of what is described in this book is about dealing with the complexity of distributed processes communicating over the network. That said, a monolith doesn’t live in isolation either, since it serves external requests and likely depends on third-party APIs as well, so these issues need to be tackled there as well, albeit on a smaller scale.</p>
-<p><strong>Coupling</strong></p>
-<p>Microservices should be loosely coupled so that a change in one service doesn’t require changing others. When that’s not the case, you can end up with a dreaded distributed monolith, which has all the downsides of a monolith while being an order of magnitude more complex due to its distributed nature.</p>
-<p>There are many causes of tight coupling, like fragile APIs that require clients to be updated whenever they change, shared libraries that have to be updated in lockstep across multiple services, or the use of static IP addresses to reference external services.</p>
-<p><strong>Resource provisioning</strong></p>
-<p>To support a large number of independent services, it should be simple to provision new machines, data stores, and other commodity resources — you don’t want every team to come up with their own way of doing it. And, once these resources have been provisioned, they have to be configured. To pull this off efficiently, a fair amount of automation is needed.</p>
-<p><strong>Testing</strong></p>
-<p>While testing individual microservices is not necessarily more challenging than testing a monolith, testing the integration of microservices is a lot harder. This is because very subtle and unexpected behaviors will emerge only when services interact with each other at scale in production.</p>
-<p><strong>Operations</strong></p>
-<p>Just like with resource provisioning, there should be a common way of continuously delivering and deploying new builds safely to production so that each team doesn’t have to reinvent the wheel.</p>
-<p>Additionally, debugging failures, performance degradations, and bugs is a lot more challenging with microservices, as you can’t just load the whole application onto your local machine and step through it with a debugger. This is why having a good observability platform becomes crucial.</p>
-<p><strong>Eventual consistency</strong></p>
-<p>As a side effect of splitting an application into separate services, the data model no longer resides in a single data store. However, as we have learned in previous chapters, atomically updating data spread in different data stores, and guaranteeing strong consistency, is slow, expensive, and hard to get right. Hence, this type of architecture usually requires embracing eventual consistency.</p>
-<p>So to summarize, it’s generally best to start with a monolith and decompose it only when there is a good reason to do so<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>. As a bonus, you can still componentize the monolith, with the advantage that it’s much easier to move the boundaries as the application grows. Once the monolith is well matured and growing pains start to arise, you can start to peel off one microservice at a time from it.</p>
+<p>每项服务都可以由一个小型团队拥有和运营。小型团队比大型团队协作更高效，因为沟通开销会随着团队规模呈二次方增长<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>。由于每个团队控制自己的代码库并决定自己的发布计划，总体上所需的跨团队沟通也更少。此外，服务的范围比整个应用程序更小，这使得开发者（尤其是新入职员工）更容易理解。</p>
+<p>原则上，每个团队也可以自由选择适合其特定需求的技术栈和硬件。毕竟，API的消费者并不关心功能是如何实现的。这使得在不影响系统其他部分的情况下，轻松试验和评估新技术成为可能。因此，每个服务都可以拥有最适合其用例的独立数据模型和数据存储。</p>
+<p>这种架构风格也被称为<em>微服务架构</em>。不过，<em>micro</em>这个术语容易引起误解——服务本身并不一定需要是微小的。<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a> 如果一个服务功能不多，它只会增加运维开销和复杂性。根据经验法则，API应该具有较小的接口面积，并封装大量的功能。<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a></p>
+<section class="level2" data-number="21.1" id="caveats">
+<h2 data-number="21.1"><span class="header-section-number">21.1</span> 注意事项</h2>
+<p>回顾一下，将应用程序拆分为服务会给整个系统增加大量的复杂性，只有当这种复杂性可以被分摊到多个开发团队时，这样做才值得。让我们更仔细地看看其中的原因。</p>
+<p><strong>技术栈</strong></p>
+<p>虽然没有任何规定禁止每个微服务使用不同的技术栈，但这样做会使开发者在不同团队之间调动变得更加困难。再想想需要支持的库的数量——每种采用的语言都需要一个——来提供所有服务都需要的基础功能，比如日志记录。</p>
+<p>因此，强制执行一定程度的标准化是合理的。一种在允许一定自由度的同时实现标准化的方法是，通过为那些坚持使用推荐语言和技术组合的团队提供出色的开发体验，来宽松地鼓励使用特定的技术。</p>
+<p><strong>通信</strong></p>
+<p>远程调用成本高昂且会引入不确定性。本书中描述的许多内容都是关于处理通过网络通信的分布式进程的复杂性。话虽如此，单体应用也并非孤立存在，因为它要处理外部请求，并且很可能也依赖于第三方API，所以这些问题在单体应用中也需要解决，尽管规模较小。</p>
+<p><strong>耦合</strong></p>
+<p>微服务应该是松耦合的，这样对一个服务的更改就不需要更改其他服务。如果不是这样，你最终可能会得到一个可怕的分布式单体应用，它具有单体应用的所有缺点，同时由于其分布式特性，复杂性要高出一个数量级。</p>
+<p>紧耦合的原因有很多，比如脆弱的API在更改时需要客户端同步更新，需要在多个服务中同步更新的共享库，或者使用静态IP地址来引用外部服务。</p>
+<p><strong>资源分配</strong></p>
+<p>为了支持大量独立服务，应该能够简单地分配新的机器、数据存储和其他通用资源——你不希望每个团队都发明自己的方法。而且，一旦这些资源被分配，它们还需要进行配置。为了高效地完成这项工作，需要大量的自动化。</p>
+<p><strong>测试</strong></p>
+<p>虽然测试单个微服务不一定比测试单体应用更具挑战性，但测试微服务的集成要困难得多。这是因为只有在生产环境中服务大规模交互时，才会出现非常微妙和意想不到的行为。</p>
+<p><strong>运维</strong></p>
+<p>就像资源分配一样，应该有一种通用的方法，能够持续、安全地将新构建交付和部署到生产环境，这样每个团队就不必重复造轮子。</p>
+<p>此外，对于微服务来说，调试故障、性能下降和错误要困难得多，因为你不能简单地将整个应用程序加载到本地机器上并用调试器逐步调试。这就是为什么拥有一个良好的可观测性平台变得至关重要。</p>
+<p><strong>最终一致性</strong></p>
+<p>作为将应用程序拆分为独立服务的副作用，数据模型不再驻留在单一的数据存储中。然而，正如我们在前几章所学到的，原子性地更新分布在不同的数据存储中的数据，并保证强一致性，是缓慢、昂贵且难以正确实现的。因此，这种类型的架构通常需要接受最终一致性。</p>
+<p>总而言之，通常最好从一个单体应用开始，只有在有充分理由时才对其进行拆分<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>。作为额外的好处，你仍然可以对单体应用进行组件化，其优势在于随着应用程序的增长，更容易移动组件边界。一旦单体应用足够成熟并且开始出现增长带来的痛点，你就可以开始逐个地从其中剥离出微服务。</p>
 </section>
-<section id="apigw" class="level2" data-number="21.2">
-<h2 data-number="21.2"><span class="header-section-number">21.2</span> API gateway</h2>
-<p>After decomposing <em>Cruder</em> into a group of services, we need to rethink how the outside world communicates with the application. For example, a client might need to perform multiple requests to different services to fetch all the information it needs to complete a specific operation. This can be expensive on mobile devices, where every network request consumes precious battery life.</p>
-<p>Moreover, clients need to be aware of implementation details, such as the DNS names of all the internal services. This makes it challenging to change the application’s architecture as it requires changing the clients as well, which is hard to do if you don’t control them. Once a public API is out there, you had better be prepared to maintain it for a very long time.</p>
-<p>As is common in computer science, we can solve almost any problem by adding a layer of indirection. We can hide the internal APIs behind a public one that acts as a facade, or proxy, for the internal services (see Figure <a href="#fig:api-gw">21.3</a>). The service that exposes this public API is called the <em>API gateway</em> (a reverse proxy).</p>
+<section class="level2" data-number="21.2" id="apigw">
+<h2 data-number="21.2"><span class="header-section-number">21.2</span> API网关</h2>
+<p>将<em>Cruder</em>拆分为一组服务后，我们需要重新思考外部世界如何与应用程序通信。例如，客户端可能需要向不同的服务发出多个请求，以获取完成特定操作所需的全部信息。这在移动设备上代价高昂，因为每个网络请求都会消耗宝贵的电池寿命。</p>
+<p>此外，客户端需要了解实现细节，例如所有内部服务的DNS名称。这使得更改应用程序架构变得具有挑战性，因为它也需要更改客户端，而如果你不控制这些客户端，就很难做到这一点。一旦公开API发布，你最好准备好长期维护它。</p>
+<p>正如计算机科学中常见的那样，我们可以通过添加一层间接性来解决几乎所有问题。我们可以将内部API隐藏在一个公开API之后，该API充当内部服务的外观或代理（参见图<a href="#fig:api-gw">21.3</a>）。暴露此公开API的服务称为<em>API网关</em>（反向代理）。</p>
 <div class="figure" style="text-align: center">
-<img alt="The API gateway hides the internal APIs from its clients." width="75%" src="../media/file54.png" />
+<img alt="API网关向其客户端隐藏内部API。" src="../media/file54.png" width="75%"/>
 <p class="caption">
-Figure 21.3: The API gateway hides the internal APIs from its clients.
+图21.3：API网关向其客户端隐藏内部API。
 </p>
 </div>
-<section id="core-responsibilities" class="level3" data-number="21.2.1">
-<h3 data-number="21.2.1"><span class="header-section-number">21.2.1</span> Core responsibilities</h3>
-<p>Let’s have a look at some of the most common responsibilities of an API gateway.</p>
-<p><strong>Routing</strong></p>
-<p>The most obvious function of an API gateway is routing inbound requests to internal services. One way to implement that is with the help of a routing map, which defines how the public API maps to the internal APIs. This mapping allows internal APIs to change without breaking external clients. For example, suppose there is a 1:1 mapping between a specific public endpoint and an internal one — if in the future the internal endpoint changes, the external clients can continue to use the public endpoint as if nothing had changed.</p>
-<p><strong>Composition</strong></p>
-<p>The data of a monolithic application generally resides in a single data store, but in a distributed system, it’s spread across multiple services, each using its own data store. As such, we might encounter use cases that require stitching data together from multiple sources. The API gateway can offer a higher-level API that queries multiple services and composes their responses. This relieves the client from knowing which services to query and reduces the number of requests it needs to perform to get the data it needs.</p>
-<p>Composing APIs is not simple. The availability of the composed API decreases as the number of internal calls increases, since each has a non-zero probability of failure. Moreover, the data might be inconsistent, as updates might not have propagated to all services yet; in that case, the gateway will have to resolve this discrepancy somehow.</p>
-<p><strong>Translation</strong></p>
-<p>The API gateway can translate from one IPC mechanism to another. For example, it can translate a RESTful HTTP request into an internal gRPC call.</p>
-<p>It can also expose different APIs to different clients. For example, the API for a desktop application could potentially return more data than the one for a mobile application, as the screen estate is larger and more information can be presented at once. Also, network calls are more expensive for mobile clients, and requests generally need to be batched to reduce battery usage.</p>
-<p>To meet these different and competing requirements, the gateway can provide different APIs tailored to different use cases and translate these to internal calls. Graph-based APIs are an increasingly popular solution for this. A <em>graph-based API</em> exposes a schema composed of types, fields, and relationships across types, which describes the data. Based on this schema, clients send queries declaring precisely what data they need, and the gateway’s job is to figure out how to translate these queries into internal API calls.</p>
-<p>This approach reduces the development time as there is no need to introduce different APIs for different use cases, and clients are free to specify what they need. There is still an API, though; it just happens that it’s described with a graph schema, and the gateway allows to perform restricted queries on it. GraphQL<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a> is the most popular technology in this space at the time of writing.</p>
+<section class="level3" data-number="21.2.1" id="core-responsibilities">
+<h3 data-number="21.2.1"><span class="header-section-number">21.2.1</span> 核心职责</h3>
+<p>让我们看看API网关的一些最常见职责。</p>
+<p><strong>路由</strong></p>
+<p>API网关最明显的功能是将入站请求路由到内部服务。实现这一点的一种方法是借助路由映射，它定义了公开API如何映射到内部API。这种映射允许内部API更改而不会破坏外部客户端。例如，假设特定的公开端点与内部端点之间存在1:1映射——如果将来内部端点发生变化，外部客户端可以继续使用公开端点，就像什么都没改变一样。</p>
+<p><strong>组合</strong></p>
+<p>单体应用程序的数据通常驻留在单个数据存储中，但在分布式系统中，数据分布在多个服务中，每个服务使用自己的数据存储。因此，我们可能会遇到需要将来自多个源的数据拼接在一起的用例。API网关可以提供更高级别的API，查询多个服务并组合它们的响应。这使客户端无需知道要查询哪些服务，并减少了获取所需数据需要执行的请求数量。</p>
+<p>组合API并不简单。随着内部调用次数的增加，组合API的可用性会降低，因为每个调用都有非零的失败概率。此外，数据可能不一致，因为更新可能尚未传播到所有服务；在这种情况下，网关必须以某种方式解决这种差异。</p>
+<p><strong>转换</strong></p>
+<p>API网关可以将一种IPC机制转换为另一种。例如，它可以将RESTful HTTP请求转换为内部的gRPC调用。</p>
+<p>它还可以向不同的客户端暴露不同的API。例如，桌面应用的API可能比移动应用的API返回更多数据，因为屏幕空间更大，可以一次性展示更多信息。此外，网络调用对移动客户端来说成本更高，通常需要批量处理请求以减少电池使用。</p>
+<p>为了满足这些不同且相互竞争的需求，网关可以提供针对不同用例量身定制的不同API，并将这些API转换为内部调用。基于图的API是解决此问题日益流行的方案。<em>基于图的API</em>暴露一个由类型、字段和跨类型的关系组成的模式，用于描述数据。基于此模式，客户端发送查询，精确声明它们需要什么数据，而网关的工作是弄清楚如何将这些查询转换为内部API调用。</p>
+<p>这种方法减少了开发时间，因为无需为不同用例引入不同的API，客户端可以自由指定它们需要什么。不过，仍然存在一个API；只是它恰好用图模式描述，并且网关允许对其执行受限查询。GraphQL<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>在撰写本文时是该领域最流行的技术。</p>
 <!-- TODO: describe cons of GraphQL (e.g. increased complexity due to larger surface area) -->
 </section>
-<section id="cross-cutting-concerns" class="level3" data-number="21.2.2">
-<h3 data-number="21.2.2"><span class="header-section-number">21.2.2</span> Cross-cutting concerns</h3>
-<p>As the API gateway is a reverse proxy, it can also implement cross-cutting functionality that otherwise would have to be part of each service. For example, it can cache frequently accessed resources or rate-limit requests to protect the internal services from being overwhelmed.</p>
-<p>Authentication and authorization are some of the most common and critical cross-cutting concerns. <em>Authentication</em> is the process of validating that a so-called <em>principal</em> — a human or an application — issuing a request is who it says it is. <em>Authorization</em> is the process of granting the authenticated principal permissions to perform specific operations, like creating, reading, updating, or deleting a particular resource. Typically, this is implemented by assigning one or more roles that grant specific permissions to a principal.</p>
-<p>A common way for a monolithic application to implement authentication and authorization is with sessions. Because HTTP is a stateless protocol, the application needs a way to store data between HTTP requests to associate a request with any other request. When a client first sends a request to the application, the application creates a session object with an ID (e.g., a cryptographically-strong random number) and stores it in an in-memory cache or an external data store. The session ID is returned in the response through an HTTP cookie so that the client will include it in all future requests. That way, when the application receives a request with a session cookie, it can retrieve the corresponding session object.</p>
-<p>So when a client sends its credentials to the application API’s login endpoint, and the credential validation is successful, the principal’s ID and roles are stored in the session object. The application can later retrieve this information and use it to decide whether to allow the principal to perform a request or not.</p>
-<p>Translating this approach to a microservice architecture is not that straightforward. For example, it’s not obvious which service should be responsible for authenticating and authorizing requests, as the handling of requests can span multiple services.</p>
-<p>One approach is to have the API gateway authenticate external requests, since that’s their point of entry. This allows centralizing the logic to support different authentication mechanisms into a single component, hiding the complexity from internal services. In contrast, <em>authorizing</em> requests is best left to individual services to avoid coupling the API gateway with domain logic.</p>
-<p>When the API gateway has authenticated a request, it creates a <em>security token</em>. The gateway passes this token with the request to the internal services, which in turn pass it downstream to their dependencies. Now, when an internal service receives a request with a security token attached, it needs to have a way to validate it and obtain the principal’s identity and roles. The validation differs depending on the type of token used, which can be <em>opaque</em> and not contain any information, or <em>transparent</em> and embed the principal’s information within the token itself. The downside of an opaque token is that it requires calling an external auth service to validate it and retrieve the principal’s information. Transparent tokens eliminate that call at the expense of making it harder to revoke compromised tokens.</p>
-<p>The most popular standard for transparent tokens is the <em>JSON Web Token</em><a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> (JWT). A JWT is a JSON payload that contains an expiration date, the principal’s identity and roles, and other metadata. In addition, the payload is signed with a certificate trusted by the internal services. Hence, no external calls are needed to validate the token.</p>
-<p>Another common mechanism for authentication is the use of API keys. An <em>API key</em> is a custom key that allows the API gateway to identify the principal making a request and limit what they can do. This approach is popular for public APIs, like the ones of, e.g., Github or Twitter.</p>
-<p>We have barely scratched the surface of the topic, and there are entire books<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a> written on the subject that you can read to learn more about it.</p>
+<section class="level3" data-number="21.2.2" id="cross-cutting-concerns">
+<h3 data-number="21.2.2"><span class="header-section-number">21.2.2</span> 横切关注点</h3>
+<p>由于API网关是反向代理，它还可以实现横切功能，否则这些功能将成为每个服务的一部分。例如，它可以缓存频繁访问的资源或进行速率限制，以保护内部服务免受过载影响。</p>
+<p>身份验证和授权是最常见和关键的横切关注点之一。<em>身份验证</em>是验证发出请求的所谓<em>主体</em>（人或应用程序）是否是其声称的身份的过程。<em>授权</em>是授予经过身份验证的主体执行特定操作（如创建、读取、更新或删除特定资源）权限的过程。通常，这是通过向主体分配一个或多个授予特定权限的角色来实现的。</p>
+<p>单体应用程序实现身份验证和授权的一种常见方式是使用会话。因为HTTP是无状态协议，应用程序需要一种在HTTP请求之间存储数据的方式，以将请求与其他任何请求关联起来。当客户端首次向应用程序发送请求时，应用程序创建一个带有ID（例如，加密强度高的随机数）的会话对象，并将其存储在内存缓存或外部数据存储中。会话ID通过HTTP cookie在响应中返回，以便客户端将在所有后续请求中包含它。这样，当应用程序收到带有会话cookie的请求时，它可以检索相应的会话对象。</p>
+<p>因此，当客户端将其凭据发送到应用程序API的登录端点，并且凭据验证成功后，主体的ID和角色将存储在会话对象中。应用程序稍后可以检索此信息，并使用它来决定是否允许主体执行请求。</p>
+<p>将这种方法转换到微服务架构并不那么简单。例如，不清楚哪个服务应该负责对请求进行身份验证和授权，因为请求的处理可能跨越多个服务。</p>
+<p>一种方法是让API网关对外部请求进行身份验证，因为这是它们的入口点。这允许将支持不同身份验证机制的逻辑集中到单个组件中，从而对内部服务隐藏复杂性。相比之下，<em>授权</em>请求最好留给各个服务，以避免将API网关与领域逻辑耦合。</p>
+<p>当API网关对请求进行身份验证后，它会创建一个<em>安全令牌</em>。网关将此令牌与请求一起传递给内部服务，内部服务又将其传递给它们的下游依赖项。现在，当内部服务收到附有安全令牌的请求时，它需要有一种方法来验证令牌并获取主体的身份和角色。验证方式取决于所使用的令牌类型，令牌可以是<em>不透明的</em>（不包含任何信息），也可以是<em>透明的</em>（在令牌本身中嵌入主体的信息）。不透明令牌的缺点是需要调用外部身份验证服务来验证令牌并检索主体的信息。透明令牌消除了该调用，但代价是使撤销受损令牌变得更加困难。</p>
+<p>透明令牌最流行的标准是<em>JSON Web令牌</em><a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>（JWT）。JWT是一个JSON负载，包含过期日期、主体的身份和角色以及其他元数据。此外，负载使用内部服务信任的证书进行签名。因此，验证令牌不需要外部调用。</p>
+<p>另一种常见的身份验证机制是使用API密钥。<em>API密钥</em>是一种自定义密钥，允许API网关识别发出请求的主体并限制他们可以执行的操作。这种方法在公开API中很流行，例如Github或Twitter的API。</p>
+<p>我们只是触及了这个主题的表面，有整本书<a class="footnote-ref" epub:type="noteref" href="#fn7" id="fnref7">7</a>专门讨论这个主题，你可以阅读以了解更多信息。</p>
 </section>
-<section id="caveats-1" class="level3" data-number="21.2.3">
-<h3 data-number="21.2.3"><span class="header-section-number">21.2.3</span> Caveats</h3>
-<p>One of the drawbacks of using an API gateway is that it can become a development bottleneck. Since it’s tightly coupled with the APIs of the internal services it’s shielding, whenever an internal API changes, the gateway needs to be modified as well. Another downside is that it’s one more service that needs to be maintained. It also needs to scale to whatever the request rate is for all the services behind it.</p>
-<p>That said, if an application has many services and APIs, the pros outweigh the cons, and it’s generally a worthwhile investment. So how do you go about implementing a gateway? You can roll your own API gateway, using a reverse proxy as a starting point, like NGINX, or use a managed solution, like Azure API Management<a href="#fn8" class="footnote-ref" id="fnref8" epub:type="noteref">8</a> or Amazon API Gateway<a href="#fn9" class="footnote-ref" id="fnref9" epub:type="noteref">9</a>.</p>
+<section class="level3" data-number="21.2.3" id="caveats-1">
+<h3 data-number="21.2.3"><span class="header-section-number">21.2.3</span> 注意事项</h3>
+<p>使用API网关的缺点之一是它可能成为开发瓶颈。由于它与它所屏蔽的内部服务的API紧密耦合，每当内部API发生变化时，网关也需要修改。另一个缺点是它是另一个需要维护的服务。它还需要根据其后所有服务的请求速率进行扩展。</p>
+<p>话虽如此，如果一个应用程序有许多服务和API，那么利大于弊，这通常是一项值得的投资。那么如何实现网关呢？你可以使用反向代理（如NGINX）作为起点，自己构建API网关，或者使用托管解决方案，如Azure API管理<a class="footnote-ref" epub:type="noteref" href="#fn8" id="fnref8">8</a>或Amazon API网关<a class="footnote-ref" epub:type="noteref" href="#fn9" id="fnref9">9</a>。</p>
 </section>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“The Mythical Man-Month,” <a href="https://en.wikipedia.org/wiki/The_Mythical_Man-Month" class="uri">https://en.wikipedia.org/wiki/The_Mythical_Man-Month</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>A more appropriate name for the microservices architecture is service-oriented architecture, but unfortunately, that name comes with some baggage as well.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>This idea is described well in John Ousterhout’s <em>A Philosophy of Software Design</em>, which I highly recommend.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“MicroservicePremium,” <a href="https://martinfowler.com/bliki/MicroservicePremium.html" class="uri">https://martinfowler.com/bliki/MicroservicePremium.html</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“GraphQL,” <a href="https://graphql.org/" class="uri">https://graphql.org/</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“Introduction to JSON Web Tokens,” <a href="https://jwt.io/introduction" class="uri">https://jwt.io/introduction</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>“Microservices Security in Action,” <a href="https://www.manning.com/books/microservices-security-in-action" class="uri">https://www.manning.com/books/microservices-security-in-action</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8" epub:type="footnote"><p>“Azure API Management,” <a href="https://azure.microsoft.com/en-gb/services/api-management/" class="uri">https://azure.microsoft.com/en-gb/services/api-management/</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9" epub:type="footnote"><p>“Amazon API Gateway,” <a href="https://aws.amazon.com/api-gateway/" class="uri">https://aws.amazon.com/api-gateway/</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>“《人月神话》,” <a class="uri" href="https://en.wikipedia.org/wiki/The_Mythical_Man-Month">https://en.wikipedia.org/wiki/The_Mythical_Man-Month</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>微服务架构一个更贴切的名称是面向服务的架构，但不幸的是，这个名称也附带了一些历史包袱。<a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>这个观点在约翰·奥斯特豪特的《软件设计的哲学》一书中得到了很好的阐述，我强烈推荐这本书。<a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>微服务高级版,” <a class="uri" href="https://martinfowler.com/bliki/MicroservicePremium.html">https://martinfowler.com/bliki/MicroservicePremium.html</a><a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>“GraphQL,” <a class="uri" href="https://graphql.org/">https://graphql.org/</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>“JSON Web Tokens 简介,” <a class="uri" href="https://jwt.io/introduction">https://jwt.io/introduction</a><a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn7"><p>“微服务安全实战,” <a class="uri" href="https://www.manning.com/books/microservices-security-in-action">https://www.manning.com/books/microservices-security-in-action</a><a class="footnote-back" href="#fnref7" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn8"><p>“Azure API 管理,” <a class="uri" href="https://azure.microsoft.com/en-gb/services/api-management/">https://azure.microsoft.com/en-gb/services/api-management/</a><a class="footnote-back" href="#fnref8" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn9"><p>“亚马逊 API 网关,” <a class="uri" href="https://aws.amazon.com/api-gateway/">https://aws.amazon.com/api-gateway/</a><a class="footnote-back" href="#fnref9" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>
