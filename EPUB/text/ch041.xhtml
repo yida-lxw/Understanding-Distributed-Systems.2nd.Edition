@@ -1,48 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch041.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch041.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="redundancy" class="level1" data-number="25">
-<h1 data-number="25"><span class="header-section-number">25</span> Redundancy</h1>
-<p>Redundancy, the replication of functionality or state, is arguably the first line of defense against failures. When functionality or state is replicated over multiple nodes and a node fails, the others can take over. Moreover, as discussed in Part III, replication is also a core pattern that enables our applications to scale out horizontally.</p>
-<p>Redundancy is the main reason why distributed applications can achieve better availability than single-node applications. But only some forms of redundancy actually improve availability. Marc Brooker lists four prerequisites<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>:</p>
+<section class="level1" data-number="25" id="redundancy">
+<h1 data-number="25"><span class="header-section-number">25</span> 冗余</h1>
+<p>冗余，即功能或状态的复制，可以说是抵御故障的第一道防线。当功能或状态在多个节点上复制时，如果一个节点发生故障，其他节点可以接管。此外，正如第三部分所讨论的，复制也是使我们的应用程序能够水平扩展的核心模式。</p>
+<p>冗余是分布式应用能够比单节点应用实现更高可用性的主要原因。但只有某些形式的冗余才能真正提高可用性。马克·布鲁克(亚马逊云服务(AWS)副总裁)列出了四个先决条件<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>：</p>
 <ol type="1">
-<li>The complexity added by introducing redundancy mustn’t cost more availability than it adds.</li>
-<li>The system must reliably detect which of the redundant components are healthy and which are unhealthy.</li>
-<li>The system must be able to run in degraded mode.</li>
-<li>The system must be able to return to fully redundant mode.</li>
+<li>引入冗余所带来的复杂性，其代价不应超过它所能提升的可用性。</li>
+<li>系统必须能够可靠地检测出冗余组件中哪些是健康的，哪些是不健康的。</li>
+<li>系统必须能够在降级模式下运行。</li>
+<li>系统必须能够恢复到完全冗余模式。</li>
 </ol>
-<p>Let’s see how these prerequisites apply to a concrete example. Hardware faults such as disk, memory, and network failures can cause a node to crash, degrade or become otherwise unavailable. In a stateless service, a load balancer can mask these faults using a pool of redundant nodes. Although the load balancer increases the system’s complexity and, therefore, the number of ways the system can fail, the benefits in terms of scalability and availability almost always outweigh the risks it introduces (e.g., the load balancer failing).</p>
-<p>The load balancer needs to detect which nodes are healthy and which aren’t to take the faulty ones out of the pool. It does that with health checks, as we learned in chapter <a href="#load-balancing">18</a>. Health checks are critical to achieving high availability; if there are ten servers in the pool and one is unresponsive for some reason, then 10% of requests will fail, causing the availability to drop. Therefore, the longer it takes for the load balancer to detect the unresponsive server, the longer the failures will be visible to the clients.</p>
-<p>Now, when the load balancer takes one or more unhealthy servers out of the pool, the assumption is that the others have enough capacity left to handle the increase in load. In other words, the system must be able to run in degraded mode. However, that by itself is not enough; new servers also need to be added to the pool to replace the ones that have been removed. Otherwise, there eventually won’t be enough servers left to cope with the load.</p>
-<p>In stateful services, masking a node failure is a lot more complex since it involves replicating state. We have discussed replication at length in the previous chapters, and it shouldn’t come as a surprise by now that meeting the above requisites is a lot more challenging for a stateful service than for a stateless one.</p>
-<section id="correlation" class="level2" data-number="25.1">
-<h2 data-number="25.1"><span class="header-section-number">25.1</span> Correlation</h2>
-<p>Redundancy is only helpful when the redundant nodes can’t fail for the same reason at the same time, i.e., when failures are not correlated. For example, if a faulty memory module causes a server to crash, it’s unlikely other servers will fail simultaneously for the same reason since they are running on different machines. However, if the servers are hosted in the same data center, and a fiber cut or an electrical storm causes a data-center-wide outage, the entire application becomes unavailable no matter how many servers there are. In other words, the failures caused by a data center outage are correlated and limit the application’s availability. So if we want to increase the availability, we have to reduce the correlation between failures by using more than one data center.</p>
-<p>Cloud providers such as AWS and Azure replicate their entire stack in multiple regions for that very reason. Each region comprises multiple data centers called Availability Zones (AZs) that are cross-connected with high-speed network links. AZs are far enough from each other to minimize the risk of correlated failures (e.g., power cuts) but still close enough to have low network latency, which is bounded by the speed of light. In fact, the latency is low enough by design to support synchronous replication protocols without a significant latency penalty.</p>
-<p>With AZs, we can create applications that are resilient to data center outages. For example, a stateless service could have instances running in multiple AZs behind a shared load balancer so that if an AZ becomes unavailable, it doesn’t impact the availability of the service. On the other hand, stateful services require the use of a replication protocol to keep their state in sync across AZs. But since latencies are low enough between AZs, the replication protocol can be partially synchronous, like Raft, or even fully synchronous, like chain replication.</p>
-<p>Taking it to the extreme, a catastrophic event could destroy an entire region with all of its AZs. To tolerate that, we can duplicate the entire application stack in multiple regions. To distribute the traffic to different data centers located in different regions, we can use <em>global DNS load balancing</em>. Unlike earlier, the application’s state needs to be replicated asynchronously across regions<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> given the high network latency between regions (see Figure <a href="#fig:multigeo">25.1</a>).</p>
+<p>让我们看看这些先决条件如何应用于一个具体示例。磁盘、内存和网络故障等硬件故障可能导致节点崩溃、性能下降或变得不可用。在无状态服务中，负载均衡器可以通过一组冗余节点来掩盖这些故障。尽管负载均衡器增加了系统的复杂性，从而也增加了系统可能失败的途径，但其在可扩展性与可用性方面的收益，几乎总是超过它所引入的风险（例如负载均衡器自身故障）。</p>
+<p>负载均衡器需要检测哪些节点是健康的，哪些不是健康的，以便将有故障的节点从池中移除。正如我们在<a href="#load-balancing">第18章</a>中学到的，它通过健康检查来实现这一点。健康检查对于实现高可用性至关重要；如果池中有十台服务器，其中一台由于某种原因无响应，那么10%的请求将会失败，导致系统可用性下降。因此，负载均衡器检测到无响应服务器所需的时间越长，客户端观察到故障的时间也就越长。</p>
+<p>现在，当负载均衡器将一个或多个不健康的服务器从池中移除时，前提是其他服务器有足够的剩余容量来处理增加的负载。换句话说，系统必须能够在降级模式下运行。然而，仅此还不够；还需要向池中添加新的服务器来替换已被移除的服务器。否则，最终将没有足够的服务器来应对负载。</p>
+<p>在有状态服务中，掩盖节点故障要复杂得多，因为这涉及到状态的复制。我们在之前的章节中详细讨论了复制，满足上述要求对有状态服务而言，远比对无状态服务更具挑战性，对此，现在我们应该不会感到意外。</p>
+<section class="level2" data-number="25.1" id="correlation">
+<h2 data-number="25.1"><span class="header-section-number">25.1</span> 相关性</h2>
+<p>冗余只有在冗余节点不会因相同原因同时失效时才有效，即故障必须是不相关的。例如，若一个内存模块故障导致某台服务器崩溃，其他服务器因运行在不同机器上，几乎不可能因同一原因同时失效。然而，如果服务器托管在同一个数据中心，并且光纤被切断或伴随雷鸣与闪电的暴风雨导致整个数据中心中断，那么无论服务器数量有多少，整个应用程序都将不可用。换句话说，由数据中心故障引发的失效是相关的，这会限制应用的可用性。因此，若我们想要提升系统的可用性，就必须通过部署多个数据中心来降低故障之间的相关性。</p>
+<p>像AWS和Azure这样的云服务提供商正是出于这个原因，在多个区域复制它们的整个技术栈。每个区域包含多个被称为可用区（AZ）的数据中心，这些数据中心通过高速网络链路互连。可用区之间距离足够远，以最小化相关故障（例如，停电）的风险，但又足够近，以保持较低的网络延迟，这个延迟受限于光速。事实上，延迟经过精心设计，低到足以支持同步复制协议，且不会带来显著的延迟开销。</p>
+<p>利用可用区，我们可以创建能够抵御数据中心中断的应用程序。例如，一个无状态服务可以在共享负载均衡器后面，在多个可用区中运行实例，这样如果一个可用区变得不可用，它不会影响服务的可用性。另一方面，有状态服务需要使用复制协议来保持其状态在多个可用区之间同步。但由于可用区之间的延迟足够低，复制协议可以是部分同步的，如Raft，甚至是完全同步的，如链式复制。</p>
+<p>极端情况下，一场灾难性事件可能摧毁包含其所有可用区的整个区域。为了容忍这种情况，我们可以在多个区域复制整个应用程序技术栈。为了将流量分发到位于不同区域的不同数据中心，我们可以使用<em>全局DNS负载均衡</em>。与之前不同，考虑到区域之间的高网络延迟，应用程序的状态需要在区域之间异步复制<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>（参见图 <a href="#fig:multigeo">25.1</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="A simplistic multi-region architecture" width="90%" src="../media/file64.png" />
+<img alt="一个简化的多区域架构" src="../media/file64.png" width="90%"/>
 <p class="caption">
-Figure 25.1: A simplistic multi-region architecture
+图 25.1: 一个简化的多区域架构
 </p>
 </div>
-<p>That said, the chance of an entire region being destroyed is extremely low. Before embarking on the effort of making your application resilient against region failures, you should have very good reasons for it. It’s more likely your application will be forced to have a presence in multiple regions for legal compliance reasons. For example, there are laws mandating that the data of European customers has to be processed and stored within Europe<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>.</p>
+<p>话虽如此，整个区域被摧毁的可能性极低。在着手提升应用对区域级故障的容错能力之前，你必须有充分且明确的理由。更可能的情况是，您的应用程序将出于法律合规原因而被迫在多个区域部署。例如，有法律规定欧洲客户的数据必须在欧洲境内处理和存储<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“When Redundancy Actually Helps,” <a href="https://brooker.co.za/blog/2019/06/20/redundancy.html" class="uri">https://brooker.co.za/blog/2019/06/20/redundancy.html</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Active-Active for Multi-Regional Resiliency,” <a href="https://netflixtechblog.com/active-active-for-multi-regional-resiliency-c47719f6685b" class="uri">https://netflixtechblog.com/active-active-for-multi-regional-resiliency-c47719f6685b</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“The CJEU judgment in the Schrems II case,” <a href="https://www.europarl.europa.eu/RegData/etudes/ATAG/2020/652073/EPRS_ATA(2020)652073_EN.pdf" class="uri">https://www.europarl.europa.eu/RegData/etudes/ATAG/2020/652073/EPRS_ATA(2020)652073_EN.pdf</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>《冗余何时真正有益》，<a class="uri" href="https://brooker.co.za/blog/2019/06/20/redundancy.html">https://brooker.co.za/blog/2019/06/20/redundancy.html</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>《面向多区域韧性的双活架构》，<a class="uri" href="https://netflixtechblog.com/active-active-for-multi-regional-resiliency-c47719f6685b">https://netflixtechblog.com/active-active-for-multi-regional-resiliency-c47719f6685b</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p style="text-align:left;">《欧盟法院对Schrems II案的判决》，<a class="uri" href="https://www.europarl.europa.eu/RegData/etudes/ATAG/2020/652073/EPRS_ATA(2020)652073_EN.pdf">https://www.europarl.europa.eu/RegData/etudes/ATAG/2020/652073/EPRS_ATA(2020)652073_EN.pdf</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

@@ -1,109 +1,110 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch048.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch048.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="testing" class="level1" data-number="29">
-<h1 data-number="29"><span class="header-section-number">29</span> Testing</h1>
-<p>The longer it takes to detect a bug, the more expensive it becomes to fix. A software test can verify that some part of the application works as intended, catching bugs early in the process. But the real benefit that comes from testing shows up only later when developers want to make changes to the existing implementation (e.g., bug fixes, refactorings, and new features) without breaking the expected behaviors. Tests also act as always up-to-date documentation and improve the quality of public interfaces since developers have to put themselves in the users’ shoes to test them effectively.</p>
-<p>Unfortunately, testing is not a silver bullet because it’s impossible to predict all the states a complex distributed application can get into. It only provides best-effort guarantees that the code being tested is correct and fault-tolerant. No matter how exhaustive the test coverage is, tests can only cover failures developers can imagine, not the kind of complex emergent behavior that manifests itself in production<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>.</p>
-<p>Although tests can’t guarantee that code is bug-free, they certainly do a good job validating expected behaviors. So, as a rule of thumb, if you want to be confident that your implementation behaves in a certain way, you have to add a test for it.</p>
-<section id="scope" class="level2" data-number="29.1">
-<h2 data-number="29.1"><span class="header-section-number">29.1</span> Scope</h2>
-<p>Tests come in different shapes and sizes. To begin with, we need to distinguish between the code paths a test is actually testing (aka system under test or SUT) from the ones that are being run. The SUT represents the scope of the test. It determines whether the test is categorized as a unit test, an integration test, or an end-to-end test.</p>
-<p>A <em>unit test</em> validates the behavior of a small part of the codebase, like an individual class<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>. A good unit test should be relatively static in time and change only when the behavior of the SUT changes — refactoring, bug fixes, or new features shouldn’t break it. To achieve that, a unit test should:</p>
+<section class="level1" data-number="29" id="testing">
+<h1 data-number="29"><span class="header-section-number">29</span> 测试</h1>
+<p>检测bug所需的时间越长，修复它的成本就越高。软件测试可以验证应用程序的某些部分是否按预期工作，从而在开发过程中及早发现bug。但测试带来的真正好处只有在后续才会显现出来，即当开发人员希望对现有实现进行更改（例如，bug修复、代码重构和新功能开发）而又不破坏预期行为时。测试还充当了始终最新的文档，并提高公共接口的质量，因为开发人员必须设身处地为用户着想才能有效地进行测试。</p>
+<p>遗憾的是，测试并非灵丹妙药，因为我们无法预测一个复杂的分布式应用可能进入的所有状态。它只能尽最大努力确保被测试的代码是正确的且具备容错能力。无论测试覆盖多么全面，测试只能覆盖开发者能预想到的故障，而无法覆盖在生产环境中显现的那种复杂的涌现行为<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>。</p>
+<p>尽管测试无法保证代码完全没有bug，但它们确实在验证预期行为方面做得很好。因此，基于通用经验法则，如果你想确保你的实现会以某种方式运行，就必须为其添加测试。</p>
+<section class="level2" data-number="29.1" id="scope">
+<h2 data-number="29.1"><span class="header-section-number">29.1</span> 测试范围</h2>
+<p>测试有多种形式和规模。首先，我们需要区分测试实际正在测试的代码路径（即被测系统，SUT）与正在运行的代码路径。SUT代表了测试的范围。它决定了测试被归类为单元测试、集成测试还是端到端测试。</p>
+<p><em>单元测试</em>验证代码库中一小部分的行为，例如单个类<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>。一个好的单元测试在时间上应该是相对静态的，并且仅当SUT的行为发生变化时才需要更改——代码重构、bug修复或新功能开发不应破坏它。为了实现这一点，单元测试应该遵循以下原则：</p>
 <ul>
-<li>use only the public interfaces of the SUT;</li>
-<li>test for state changes in the SUT (not predetermined sequences of actions);</li>
-<li>test for behaviors, i.e., how the SUT handles a given input when it’s in a specific state.</li>
+<li>仅使用SUT的公共接口；</li>
+<li>测试SUT中的状态变化（而非预定的操作序列）；</li>
+<li>测试行为，即SUT在特定状态下如何处理给定的输入。</li>
 </ul>
-<p>An <em>integration test</em> has a larger scope than a unit test, since it verifies that a service can interact with an external dependency as expected. Confusingly, integration testing has different meanings for different people. Martin Fowler<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> makes the distinction between <em>narrow</em> and <em>broad</em> integration tests. A narrow integration test exercises only the code paths of a service that communicate with a specific external dependency, like an adapter and its supporting classes. In contrast, a broad integration test exercises code paths across multiple live services. In the rest of the chapter, we will refer to these broader integration tests as end-to-end tests.</p>
-<p>An <em>end-to-end test</em> validates behavior that spans multiple services in the system, like a user-facing scenario. These tests usually run in shared environments, like staging or production, and therefore should not impact other tests or users sharing the same environment. Because of their scope, they are slow and more prone to intermittent failures.</p>
-<p>End-to-end tests can also be painful and expensive to maintain. For example, when an end-to-end test fails, it’s generally not obvious which service caused the failure, and a deeper investigation is required. But these tests are a necessary evil to ensure that user-facing scenarios work as expected across the entire application. They can uncover issues that tests with smaller scope can’t, like unanticipated side effects and emergent behaviors.</p>
-<p>One way to minimize the number of end-to-end tests is to frame them as user journey tests. A <em>user journey test</em> simulates a multi-step interaction of a user with the system (e.g., for an e-commerce service: create an order, modify it, and finally cancel it). Such a test usually requires less time to run than the individual journey parts split into separate end-to-end tests.</p>
-<p>As the scope of a test increases, it becomes more brittle, slow, and costly. Intermittently failing tests are nearly as bad as no tests at all, as developers stop trusting them and eventually ignore their failures. When possible, it’s preferable to have tests with smaller scope as they tend to be more reliable, faster, and cheaper. A good trade-off is to have a large number of unit tests, a smaller fraction of integration tests, and even fewer end-to-end tests (see Figure <a href="#fig:testpyramid">29.1</a>).</p>
+<p><em>集成测试</em>的范围比单元测试更大，因为它验证服务是否能够按预期与外部依赖项交互。令人困惑的是，集成测试对不同的人有不同的含义。马丁·福勒(软件开发领域的大神，《重构》一书的作者)<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>区分了<em>狭义</em>和<em>广义</em>的集成测试。狭义集成测试仅执行服务中与特定外部依赖项（如适配器及其支持类）通信的代码路径。相比之下，广义集成测试则执行跨多个实时服务的代码路径。在本章后续部分，我们将把这些广义的集成测试称为端到端测试。</p>
+<p><em>端到端测试</em>验证系统中跨越多个服务的行为，例如面向用户的场景。这些测试通常在共享环境（如预发布环境或生产环境）中运行，因此不应影响共享同一环境的其他测试或用户。由于其范围广泛，因此它们运行速度慢，并且更容易出现间歇性故障。</p>
+<p>端到端测试的维护也可能非常痛苦且成本高昂。例如，当端到端测试失败时，通常不清楚是哪个服务导致了故障，需要进行更深入的排查。但这些测试是一种必要之恶，为的是确保面向用户的场景在整个应用程序中按预期工作。它们能发现那些范围更小的测试所无法捕捉的问题，比如未预料的副作用和系统在运行中涌现出的复杂行为。</p>
+<p>减少端到端测试数量的一种方法是将其构建为用户旅程测试。<em>用户旅程测试</em>模拟用户与系统的多步骤交互（例如，对于电子商务服务：创建订单、修改订单，最后取消订单）。这样的测试通常比将各个旅程部分拆分成单独的端到端测试所需的时间更少。</p>
+<p>随着测试范围的扩大，它会变得更加脆弱、缓慢和昂贵。间歇性失败的测试几乎和没有测试一样糟糕，因为开发人员会不再信任它们，并最终忽略它们的失败。在可能的情况下，最好使用范围较小的测试，因为它们往往更可靠、更快且成本更低。一个良好的折衷权衡是创建大量的单元测试、较少的集成测试以及更少的端到端测试（参见图 <a href="#fig:testpyramid">29.1</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="Test pyramid" width="80%" src="../media/file75.png" />
+<img alt="Test pyramid" src="../media/file75.png" width="80%"/>
 <p class="caption">
-Figure 29.1: Test pyramid
+图 29.1: 测试金字塔
 </p>
 </div>
 </section>
-<section id="size" class="level2" data-number="29.2">
-<h2 data-number="29.2"><span class="header-section-number">29.2</span> Size</h2>
-<p>The size of a test<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a> reflects how much computing resources it needs to run, like the number of nodes. Generally, that depends on how realistic the environment is where the test runs. Although the scope and size of a test tend to be correlated, they are distinct concepts, and it helps to separate them.</p>
-<p>A <em>small test</em> runs in a single process and doesn’t perform any blocking calls or I/O. As a result, it’s very fast, deterministic, and has a very small probability of failing intermittently.</p>
-<p>An <em>intermediate test</em> runs on a single node and performs local I/O, like reads from disk or network calls to localhost. This introduces more room for delays and non-determinism, increasing the likelihood of intermittent failures.</p>
-<p>A <em>large test</em> requires multiple nodes to run, introducing even more non-determinism and longer delays.</p>
-<p>Unsurprisingly, the larger a test is, the longer it takes to run and the flakier it becomes. This is why we should write the smallest possible test for a given behavior. We can use a <em>test double</em> in place of a real dependency, such as a fake, a stub, or a mock, to reduce the test’s size, making it faster and less prone to intermittent failures:</p>
+<section class="level2" data-number="29.2" id="size">
+<h2 data-number="29.2"><span class="header-section-number">29.2</span> 测试规模</h2>
+<p>测试<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>的规模反映了其运行所需的计算资源量，例如节点数量。通常，这取决于测试运行环境的真实程度。尽管测试的范围和规模往往相关，但它们是不同的概念，将它们区分开来是有益的。</p>
+<p><em>小型测试</em>在单个进程中运行，不执行任何阻塞调用或I/O操作。因此，它非常快速、具有确定性，并且间歇性失败的概率极低。</p>
+<p><em>中型测试</em>在单个节点上运行，并执行本地I/O操作，例如从磁盘读取或向本地主机发起网络调用。这引入了更多的延迟和不确定性空间，增加了间歇性故障的可能性。</p>
+<p><em>大型测试</em>需要多个节点才能运行，引入了更多的非确定性和更长的延迟。</p>
+<p>不出所料，测试规模越大，运行时间越长，也越不稳定。这就是为什么我们应该为给定的行为编写尽可能小的测试。我们可以使用<em>测试替身</em>来代替真实的依赖项，例如伪造对象、插桩对象或模拟对象，以减少测试的规模，使其运行更快且更不易发生间歇性故障：</p>
 <ul>
-<li>A <em>fake</em> is a lightweight implementation of an interface that behaves similarly to a real one. For example, an in-memory version of a database is a fake.</li>
-<li>A <em>stub</em> is a function that always returns the same value no matter which arguments are passed to it.</li>
-<li>Finally, a <em>mock</em> has expectations on how it should be called, and it’s used to test the interactions between objects.</li>
+<li><em>伪造对象</em>是接口的轻量级实现，其行为类似于真实对象。例如，内存版本的数据库就是一个伪造对象。</li>
+<li><em>桩对象</em>是一个无论传入什么参数都始终返回相同值的函数。</li>
+<li>最后，<em>模拟对象</em>对其应如何被调用有预期，用于测试对象之间的交互。</li>
 </ul>
-<p>The problem with test doubles is that they don’t resemble how the real implementation behaves with all its nuances. The weaker the resemblance is, the less confidence we should have that the test using the double is actually useful. Therefore, when the real implementation is fast, deterministic, and has few dependencies, we should use that rather than a double. When using the real implementation is not an option, we can use a fake maintained by the same developers of the dependency if one is available. Stubbing, or mocking, are last-resort options as they offer the least resemblance to the actual implementation, which makes tests that use them brittle.</p>
-<p>For integration tests, a good compromise is to combine mocking with contract tests<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>. A <em>contract test</em> defines a request for an external dependency with the corresponding expected response. Then the test uses this contract to mock the dependency. For example, a contract for a REST API consists of an HTTP request and response. To ensure that the contract is valid and doesn’t break in the future, the test suite of the external dependency uses the same contract definition to simulate the client request and ensure that the expected response is returned.</p>
+<p>测试替身的问题在于，它们无法模拟真实实现的所有细微差别。相似度越低，我们对使用替身的测试的实际效用就越缺乏信心。因此，当真实实现快速、确定且依赖项很少时，我们应该使用真实实现而不是替身。当无法使用真实实现时，如果依赖项的开发者提供了伪造对象，我们可以使用它。桩对象或模拟对象是最后的选择，因为它们与真实实现的相似度最低，这使得使用它们的测试变得脆弱。</p>
+<p>对于集成测试，一个很好的折衷方案是将模拟与契约测试<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>结合起来。<em>契约测试</em>定义了对外部依赖项的请求以及相应的预期响应。然后，测试使用此契约来模拟该依赖项。例如，REST API的契约由HTTP请求和响应组成。为了确保契约有效且未来不会失效，外部依赖项的测试套件使用相同的契约定义来模拟客户端请求，并确保返回预期的响应。</p>
 </section>
-<section id="practical-considerations-1" class="level2" data-number="29.3">
-<h2 data-number="29.3"><span class="header-section-number">29.3</span> Practical considerations</h2>
-<p>As with everything else, testing requires making trade-offs. Suppose we want to end-to-end test the behavior of a specific API endpoint exposed by a service. The service talks to:</p>
+<section class="level2" data-number="29.3" id="practical-considerations-1">
+<h2 data-number="29.3"><span class="header-section-number">29.3</span> 实际考量</h2>
+<p>与其他所有事情一样，测试也需要权衡取舍。假设我们想要对一个服务暴露的特定API端点进行端到端测试。该服务需要与以下组件通信：</p>
 <ul>
-<li>a data store,</li>
-<li>an internal service owned by another team,</li>
-<li>and a third-party API used for billing (see Figure <a href="#fig:testusecase">29.2</a>).</li>
+<li>一个数据存储，</li>
+<li>由另一个团队负责的内部服务，</li>
+<li>以及一个用于计费的第三方API（参见图 <a href="#fig:testusecase">29.2</a>）。</li>
 </ul>
-<p>As suggested earlier, we should try to write the smallest possible test for the desired scope while minimizing the use of test doubles that don’t resemble how the real implementation behaves.</p>
+<p>如前所述，我们应该尝试为期望的测试范围编写尽可能小的测试，同时尽量减少使用那些与真实实现行为不符的测试替身。</p>
 <div class="figure" style="text-align: center">
-<img alt="How should we test the service?" width="90%" src="../media/file76.png" />
+<img alt="我们应该如何测试这个服务？" src="../media/file76.png" width="90%"/>
 <p class="caption">
-Figure 29.2: How should we test the service?
+图 29.2: 我们应该如何测试这个服务？
 </p>
 </div>
-<p>Let’s assume the specific endpoint under test doesn’t communicate with the internal service, so we can safely use a mock in its place. And if the data store comes with an in-memory implementation (a fake), we can use that in the test to avoid issuing network calls. Finally, we can’t easily call the third-party billing API since that would require issuing real transactions. However, assuming a fake is not available, the billing service might still offer a testing endpoint that issues fake transactions.</p>
-<p>Here is a more nuanced example in which it’s a lot riskier to go for a smaller test. Suppose we need to test whether purging the data belonging to a specific user across the entire application stack works as expected. In Europe, this functionality is mandated by law (GDPR), and failing to comply with it can result in fines up to 20 million euros or 4% annual turnover, whichever is greater. In this case, because the risk of the functionality silently breaking is high, we want to be as confident as possible that it’s working as expected. This warrants the use of an end-to-end test that runs in production periodically and uses live services rather than test doubles.</p>
+<p>让我们假设被测的特定端点不与内部服务通信，因此我们可以安全地使用一个模拟对象来替代它。如果数据存储提供了内存实现（一个仿制品），我们可以在测试中使用它，以避免发起网络调用。最后，我们无法轻易调用第三方计费API，因为那将需要发起真实的交易。然而，假设没有可用的仿制品，计费服务可能仍然提供一个用于发起模拟交易的测试端点。</p>
+<p>这里有一个更微妙的例子，采用较小的测试风险要大得多。假设我们需要测试在整个应用栈中清除特定用户数据的功能是否按预期工作。在欧洲，这项功能是法律（GDPR）强制要求的，未能遵守可能导致高达2000万欧元或年营业额4%的罚款，以较高者为准。在这种情况下，由于功能在无声无息中失效的风险很高，我们希望尽可能确保它正在按预期工作。这就证明了有必要使用一个在生产环境中定期运行、并使用真实服务而非测试替身的端到端测试。</p>
 </section>
-<section id="verification" class="level2" data-number="29.4">
-<h2 data-number="29.4"><span class="header-section-number">29.4</span> Formal verification</h2>
-<p>Software tests are not the only way to catch bugs early. Taking the time to write a high-level description of how a system behaves, i.e., a <em>specification</em>, allows subtle bugs and architecture shortcomings to be detected before writing a single line of code.</p>
-<p>A specification can range from an informal one-pager to a formal mathematical description that a computer can check. Since it’s hard to specify what we don’t fully understand, a specification can help us reason about the behaviors of the system we are designing. It also acts as documentation for others and as a guide for the actual implementation. On top of the benefits mentioned so far, by writing the specification in a formal language, we also gain the ability to verify algorithmically whether the specification is flawed (<em>model checking</em>).</p>
-<p>Writing a specification doesn’t mean describing every corner of a system in detail. The specification’s goal is to catch errors while they are still cheap to fix. Therefore, we only want to specify those parts that are most likely to contain errors and are hard to detect by other means, like traditional tests. Once we have decided what to specify, we also need to choose the level of abstraction, i.e., which details to omit.</p>
-<p>TLA+<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> is a well-known and widely used formal specification language<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a>. The likes of Amazon or Microsoft use it to describe some of their most complex distributed systems, like S3 or Cosmos DB<a href="#fn8" class="footnote-ref" id="fnref8" epub:type="noteref">8</a>.</p>
-<p>In TLA+, a <em>behavior</em> of a system is represented by a sequence of states, where a state is an assignment of values to global variables. Thus, the specification of a system is the set of all possible behaviors.</p>
-<p>One of the goals of writing a specification is to verify that it satisfies properties we want the system to have, like safety and liveness. A <em>safety</em> property asserts that something is true for all states of a behavior (invariant). A <em>liveness</em> property instead asserts that something eventually happens. TLA+ allows to describe and verify properties that should be satisfied by all possible states and behaviors of a specification. This is extremely powerful, since a system running at scale will eventually run into all possible states and behaviors, and humans are bad at imagining behaviors in which several rare events occur simultaneously.</p>
-<p>For example, suppose we have a service that uses key-value store X, and we would like to migrate it to use key-value store Y that costs less and has proven to perform better in benchmarks. At a high level, one way we could implement this migration without any downtime is the following:</p>
+<section class="level2" data-number="29.4" id="verification">
+<h2 data-number="29.4"><span class="header-section-number">29.4</span> 形式化验证</h2>
+<p>软件测试并非及早发现bug的唯一途径。花时间编写系统行为的宏观层面描述，即<em>规范</em>，可以在编写一行代码之前就发现微妙的bug和架构上的不足。</p>
+<p>规范的范围可以从非正式的一页纸描述，到计算机可以检查的正式数学描述。由于我们很难去规定自己不完全理解的东西，因此规范可以帮助我们推理所设计系统的行为。它也为他人提供了文档，并为实际实现提供了指南。除了上述好处之外，通过使用形式化语言编写规范，我们还获得了算法化验证规范是否存在bug的能力（<em>模型检查</em>）。</p>
+<p>编写规范并不意味着要详细描述系统的每一个角落。规范的目标是在错误修复成本尚低时捕获它们。因此，我们只需要规定那些最有可能包含错误且难以通过传统测试等其他手段检测的部分。一旦决定了要规定什么，我们还需要选择抽象级别，即省略哪些细节。</p>
+<p>TLA+<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a> 是一种知名且广泛使用的形式化规范语言<a class="footnote-ref" epub:type="noteref" href="#fn7" id="fnref7">7</a>。亚马逊或微软等公司使用它来描述其最复杂的分布式系统，如 S3 或 Cosmos DB<a class="footnote-ref" epub:type="noteref" href="#fn8" id="fnref8">8</a>。</p>
+<p>在 TLA+ 中，系统的<em>行为</em>由一系列状态表示，其中状态是对全局变量的赋值。因此，系统的规范就是所有可能行为的集合。</p>
+<p>编写规范的目标之一是验证它是否满足我们希望系统拥有的属性，例如安全性和活性。<em>安全性</em>属性断言某个条件对于行为的所有状态都成立（不变量）。而<em>活性</em>属性则断言某事最终会发生。TLA+ 允许描述和验证规范的所有可能状态和行为都应满足的属性。这非常强大，因为大规模运行的系统最终会遇到所有可能的状态和行为，而人类不擅长想象多个罕见事件同时发生的行为。</p>
+<p>例如，假设我们有一个使用键值存储 X 的服务，我们希望将其迁移到使用成本更低且在基准测试中证明性能更好的键值存储 Y。从宏观角度来看，一种无需任何停机时间即可实现此迁移的方法如下：</p>
 <ol type="1">
-<li>The service writes to both data stores X and Y (dual write) while reading exclusively from X.</li>
-<li>A one-off batch process backfills Y with data from X created before the service started writing to Y.</li>
-<li>The application switches to read and write exclusively from and to Y.</li>
+<li>服务同时写入数据存储 X 和 Y（双写），但仅从 X 读取。</li>
+<li>一个一次性批处理程序，用服务开始写入 Y 之前 X 中的数据回填 Y。</li>
+<li>应用程序切换为仅从 Y 读取和写入 Y。</li>
 </ol>
-<p>This approach might seem reasonable, but will it guarantee that the data stores eventually end up in the same state?</p>
-<p>If we were to model this with TLA+, the model checker would be able to identify several problems, like a liveness violation that leaves the system in an inconsistent state when a service instance crashes after writing to A but before writing to B. The beauty of automated model checking is that it returns an error trace with the behavior (i.e., sequence of states) that violates the properties when it fails.</p>
-<p>Although modeling writes as atomic (i.e., either both writes succeed, or they both fail) fixes the liveness issue, the model isn’t correct yet. For example, if two service instances are writing to A and B simultaneously, the two data stores can end up in different states because the order of writes can differ, as shown in Fig <a href="#fig:dualwrite">29.3</a>.</p>
+<p>这种方法看起来可能合理，但它能保证两个数据存储最终达到相同的状态吗？</p>
+<p>如果我们用 TLA+ 对此建模，模型检查器将能够识别出几个问题，例如活性违规：当服务实例在写入 A 之后、写入 B 之前崩溃时，会使系统处于不一致的状态。自动化模型检查的美妙之处在于，当验证失败时，它会返回一个包含违规行为（即状态序列）的错误轨迹。</p>
+<p>尽管将写操作建模为原子操作（即要么两个写都成功，要么都失败）可以修复活性问题，但模型仍然不正确。例如，如果两个服务实例同时向 A 和 B 写入，两个数据存储最终可能处于不同的状态，因为写入的顺序可能不同，如图 <a href="#fig:dualwrite">29.3</a> 所示。</p>
 <div class="figure" style="text-align: center">
-<img alt="Data stores can see writes in different orders." width="80%" src="../media/file77.png" />
+<img alt="数据存储可能看到不同顺序的写入。" src="../media/file77.png" width="80%"/>
 <p class="caption">
-Figure 29.3: Data stores can see writes in different orders.
+图 29.3: 数据存储可能看到不同顺序的写入。
 </p>
 </div>
-<p>If you remember the discussion about transactions in section <a href="#log-based-transactions">13.1</a>, you know we can solve this problem by introducing a message channel between the service and data stores that serializes all writes and guarantees a single global order. Regardless of the actual solution, the point is that a formal model enables us to test architectural decisions that would be hard to verify otherwise.</p>
+<p>如果你还记得第 <a href="#log-based-transactions">13.1</a> 节中关于事务的讨论，就知道我们可以通过在服务和数据存储之间引入一个消息通道来解决这个问题，该通道序列化所有写入并保证单一的全局顺序。无论实际解决方案如何，关键在于形式化模型使我们能够测试那些难以通过其他方式验证的架构决策。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>Cindy Sridharan wrote a great blog post series on the topic, see “Testing Microservices, the sane way,” <a href="https://copyconstruct.medium.com/testing-microservices-the-sane-way-9bb31d158c16" class="uri">https://copyconstruct.medium.com/testing-microservices-the-sane-way-9bb31d158c16</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>The kind of unit test I have in mind is the sociable kind; see “On the Diverse And Fantastical Shapes of Testing,” <a href="https://martinfowler.com/articles/2021-test-shapes.html" class="uri">https://martinfowler.com/articles/2021-test-shapes.html</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“IntegrationTest,” <a href="https://martinfowler.com/bliki/IntegrationTest.html" class="uri">https://martinfowler.com/bliki/IntegrationTest.html</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“Software Engineering at Google: Lessons Learned from Programming Over Time,” <a href="https://www.amazon.com/dp/B0859PF5HB" class="uri">https://www.amazon.com/dp/B0859PF5HB</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“ContractTest,” <a href="https://martinfowler.com/bliki/ContractTest.html" class="uri">https://martinfowler.com/bliki/ContractTest.html</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“The TLA+ Home Page,” <a href="https://lamport.azurewebsites.net/tla/tla.html" class="uri">https://lamport.azurewebsites.net/tla/tla.html</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>TLA stands for Temporal Logic of Actions.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8" epub:type="footnote"><p>“Industrial Use of TLA+,” <a href="https://lamport.azurewebsites.net/tla/industrial-use.html" class="uri">https://lamport.azurewebsites.net/tla/industrial-use.html</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>Cindy Sridharan 就这一主题撰写了一篇精彩的博客系列文章，参见《以合理的方式测试微服务》，<a class="uri" href="https://copyconstruct.medium.com/testing-microservices-the-sane-way-9bb31d158c16">https://copyconstruct.medium.com/testing-microservices-the-sane-way-9bb31d158c16</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p style="text-align:left;">我心目中的那种单元测试是社交型的；参见《论测试的多样与奇幻形态》，<a class="uri" href="https://martinfowler.com/articles/2021-test-shapes.html">https://martinfowler.com/articles/2021-test-shapes.html</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>《集成测试》，<a class="uri" href="https://martinfowler.com/bliki/IntegrationTest.html">https://martinfowler.com/bliki/IntegrationTest.html</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p style="text-align:left;">《谷歌软件工程：从长期编程中汲取的经验教训》，<a class="uri" href="https://www.amazon.com/dp/B0859PF5HB">https://www.amazon.com/dp/B0859PF5HB</a><a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>《契约测试》，<a class="uri" href="https://martinfowler.com/bliki/ContractTest.html">https://martinfowler.com/bliki/ContractTest.html</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>《TLA+ 主页》，<a class="uri" href="https://lamport.azurewebsites.net/tla/tla.html">https://lamport.azurewebsites.net/tla/tla.html</a><a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn7"><p>TLA 代表行动时序逻辑。<a class="footnote-back" href="#fnref7" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn8"><p>《TLA+ 的工业应用》，<a class="uri" href="https://lamport.azurewebsites.net/tla/industrial-use.html">https://lamport.azurewebsites.net/tla/industrial-use.html</a><a class="footnote-back" href="#fnref8" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

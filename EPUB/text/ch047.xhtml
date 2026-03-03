@@ -1,28 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch047.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch047.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="operations-intro" class="level1 unnumbered unlisted">
-<h1 class="unnumbered unlisted">Introduction</h1>
+<section class="level1 unnumbered unlisted" id="operations-intro">
+<h1 class="unnumbered unlisted">引言</h1>
 <blockquote>
-<p><em>“Everyone knows that debugging is twice as hard as writing a program in the first place. So if you’re as clever as you can be when you write it, how will you ever debug it?”</em></p>
-<p>– Brian Kernighan</p>
+<p><em>“众所周知，调试程序的难度是编写程序的两倍。因此，如果你在编写时已经竭尽所能地展现聪明才智，那么将来又该如何调试它呢？”</em></p>
+<p>– 布莱恩·克尼汉</p>
 </blockquote>
-<p>It’s a well-known fact that the majority of the cost of software is spent after its initial development in maintenance activities, such as fixing bugs, adding new features, and operating it. Thus, we should aspire to make our systems easy to modify, extend and operate so that they are easy to maintain.</p>
-<p>Good testing — in the form of unit, integration, and end-to-end tests — is a minimum requirement to be able to modify or extend a system without worrying it will break. And once a change has been merged into the codebase, it needs to be released to production safely without affecting the application’s availability. Also, the operators need to be able to monitor the system’s health, investigate degradations and restore the service when it gets into a bad state. This requires altering the system’s behavior without code changes, e.g., toggling a feature flag or scaling out a service with a configuration change.</p>
-<p>Historically, developers, testers, and operators were part of different teams. First, the developers handed over their software to a team of QA engineers responsible for testing it. Then, when the software passed that stage, it moved to an operations team responsible for deploying it to production, monitoring it, and responding to alerts. However, this model is being phased out in the industry. Nowadays, it’s common for developers to be responsible for testing and operating the software they write, which requires embracing an end-to-end view of the software’s lifecycle.</p>
-<p>In this part, we will explore some of the best practices for testing and operating large distributed applications.</p>
-<p>Chapter <a href="#testing">29</a> describes the different types of tests — unit, integration, and end-to-end tests — that we can leverage to increase the confidence that a distributed application works as expected. This chapter also explores the use of formal verification methods to verify the correctness of an application before writing a single line of code.</p>
-<p>Chapter <a href="#cd">30</a> dives into continuous delivery and deployment pipelines to release changes safely and efficiently to production.</p>
-<p>Chapter <a href="#monitoring">31</a> discusses how to use metrics, service-level indicators, and dashboards to monitor the health of distributed applications. It then talks about how to define and enforce service-level objectives that describe how the service should behave when it’s functioning correctly.</p>
-<p>Chapter <a href="#observability">32</a> introduces the concept of observability and its relation to monitoring. Later, it describes how to debug production issues using logs and traces.</p>
-<p>Chapter <a href="#manageability">33</a> describes how to modify a system’s behavior without changing its code, which is a must-have to enable operators to quickly mitigate failures in production when everything else fails.</p>
+<p>众所周知，软件的大部分成本并非产生于初次开发阶段，而是耗费在后续的维护活动中，例如修复bug、添加新功能以及运维。因此，我们应该致力于使我们的系统易于修改、扩展和操作，以便于维护。</p>
+<p>良好的测试——包括单元测试、集成测试和端到端测试——是能够修改或扩展系统而不必担心其崩溃的最低要求。一旦变更被合并到代码库中，就需要在不影响应用程序可用性的情况下安全地发布到生产环境。此外，运维人员需要能够监控系统的健康状况，调查性能下降问题，并在系统进入不良状态时恢复服务。这要求能够在无需更改代码的情况下调整系统的行为，例如，通过切换功能开关或通过配置变更来扩展服务。</p>
+<p>历史上，开发人员、测试人员和运维人员分属不同的团队。首先，开发人员将他们的软件移交给负责测试的QA工程师团队。然后，当软件通过该阶段后，它会转移到负责将其部署到生产环境、进行监控并响应报警的运维团队。然而，这种模式正在行业内逐步被淘汰。如今，开发人员通常需要负责测试和运维他们编写的软件，这要求他们拥抱软件生命周期的端到端视角。</p>
+<p>在这一部分，我们将探讨测试和运行大型分布式应用程序的一些最佳实践。</p>
+<p>第<a href="#testing">29</a>章描述了我们可以利用的不同类型的测试——单元测试、集成测试和端到端测试——以提高分布式应用程序按预期运行的信心。本章还探讨了在编写一行代码之前，如何使用形式化验证方法来验证应用程序的正确性。</p>
+<p>第<a href="#cd">30</a>章深入探讨持续交付和部署流水线，以安全高效地将变更发布到生产环境。</p>
+<p>第<a href="#monitoring">31</a>章讨论了如何使用指标、服务级别指示器和仪表板来监控分布式应用程序的健康状况。接着阐述了如何定义和执行服务级别目标，这些目标描述了服务在正常运行时应有的表现。</p>
+<p>第<a href="#observability">32</a>章介绍了可观测性的概念及其与监控的关系。随后，它描述了如何使用日志和追踪来调试生产环境问题。</p>
+<p>第<a href="#manageability">33</a>章描述了如何在不修改系统代码的情况下改变其行为，这是让运维人员在所有其他方法都失效时能够快速缓解生产环境中故障的必备能力。</p>
 </section>
 </body>
 </html>

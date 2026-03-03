@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch039.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch039.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="resiliency-intro" class="level1 unnumbered unlisted">
-<h1 class="unnumbered unlisted">Introduction</h1>
+<section class="level1 unnumbered unlisted" id="resiliency-intro">
+<h1 class="unnumbered unlisted">引言</h1>
 <blockquote>
-<p><em>“Anything that can go wrong will go wrong.”</em></p>
-<p>– Murphy’s law</p>
+<p><em>“凡是可能出错的事，就一定会出错。”</em></p>
+<p>– 墨菲定律</p>
 </blockquote>
-<p>In the last part, we discussed the three fundamental scalability patterns: functional decomposition, data partitioning, and replication. They all have one thing in common: they increase the number of moving parts (machines, services, processes, etc.) in our applications. But since every part has a probability of failing, the more moving parts there are, the higher the chance that any of them will fail. Eventually, anything that can go wrong will go wrong <a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>; power outages, hardware faults, software crashes, memory leaks — you name it.</p>
-<p>Remember when we talked about availability and “nines” in chapter <a href="#introduction">1</a>? Well, to guarantee just two nines, an application can only be unavailable for up to 15 minutes a day. That’s very little time to take any manual action when something goes wrong. And if we strive for three nines, we only have 43 minutes per <em>month</em> available. Clearly, the more nines we want, the faster our systems need to detect, react to, and repair faults as they occur. In this part, we will discuss a variety of resiliency best practices and patterns to achieve that.</p>
-<p>To build fault-tolerant applications, we first need to have an idea of what can go wrong. In chapter <a href="#failure-causes">24</a>, we will explore some of the most common root causes of failures.</p>
-<p>Chapter <a href="#redundancy">25</a> describes how to use redundancy, the replication of functionality or state, to increase the availability of a system. As we will learn, redundancy is only helpful when the redundant nodes can’t fail for the same reason at the same time, i.e., when failures are not correlated.</p>
-<p>Chapter <a href="#faultisolation">26</a> discusses how to isolate correlated failures by partitioning resources and then describes two very powerful forms of partitioning: shuffle sharding and cellular architectures.</p>
-<p>Chapter <a href="#downstream-resiliency">27</a> dives into more tactical resiliency patterns for tolerating failures of downstream dependencies that you can apply to existing systems with few changes, like timeouts and retries.</p>
-<p>Chapter <a href="#upstream-resiliency">28</a> discusses resiliency patterns, like load shedding and rate-limiting, for protecting systems against overload from upstream dependencies.</p>
+<p>在上一部分中，我们讨论了三种基本的可扩展性模式：功能拆分、数据分区和复制。它们都有一个共同点：它们增加了我们应用程序中活动组件（机器、服务、进程等）的数量。但由于每个组件都有发生故障的概率，活动组件越多，其中任何一个发生故障的可能性就越高。最终，任何可能出错的事情都会出错<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>；停电、硬件故障、软件崩溃、内存泄漏——你能想到的都有可能发生。</p>
+<p>还记得我们在<a href="#introduction">第1章</a>讨论可用性和"9"的概念吗？要保证两个9的可用性，一个应用每天最多只能有15分钟不可用。当出现问题时，这点时间几乎来不及采取任何手动操作。而如果我们追求三个9，我们每个月只有43分钟的不可用时间。显然，我们想要的"9"越多，系统就需要在故障发生时更快地检测、响应并修复它们。在本部分，我们将讨论实现这一目标的各种弹性最佳实践和模式。</p>
+<p>要构建可容错应用，我们首先需要了解可能出现哪些问题。在<a href="#failure-causes">第24章</a>中，我们将探讨一些最常见的故障根源。</p>
+<p>第<a href="#redundancy">25</a>章描述了如何使用冗余——即功能或状态的复制——来提高系统的可用性。正如我们将要了解到的，只有当冗余节点不会因相同原因同时失效时（即当故障不相关时），冗余才是有用的。</p>
+<p>第<a href="#faultisolation">26</a>章讨论了如何通过划分资源来隔离相关故障，然后介绍了两种非常强大的划分形式：随机分片和蜂窝架构。</p>
+<p>第<a href="#downstream-resiliency">27</a>章深入探讨了更具战术性的弹性模式，用于容忍下游依赖项的故障，这些模式只需少量改动即可应用于现有系统，例如超时和重试。</p>
+<p>第<a href="#upstream-resiliency">28</a>章讨论了弹性模式，例如负载丢弃和速率限制，用于保护系统免受上游依赖过载的影响。</p>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>Also known as Murphy’s law<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>亦被称为墨菲定律<a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

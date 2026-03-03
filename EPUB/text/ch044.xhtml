@@ -1,117 +1,118 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch044.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch044.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="upstream-resiliency" class="level1" data-number="28">
-<h1 data-number="28"><span class="header-section-number">28</span> Upstream resiliency</h1>
-<p>The previous chapter discussed patterns that protect services against downstream failures, like failures to reach an external dependency. In this chapter, we will shift gears and discuss mechanisms to protect against upstream pressure.<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a></p>
-<section id="load-shedding" class="level2" data-number="28.1">
-<h2 data-number="28.1"><span class="header-section-number">28.1</span> Load shedding</h2>
-<p>A server has very little control over how many requests it receives at any given time. The operating system has a connection queue per port with a limited capacity that, when reached, causes new connection attempts to be rejected immediately. But typically, under extreme load, the server crawls to a halt before that limit is reached as it runs out of resources like memory, threads, sockets, or files. This causes the response time to increase until eventually, the server becomes unavailable to the outside world.</p>
-<p>When a server operates at capacity, it should reject excess requests<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> so that it can dedicate its resources to the requests it’s already processing. For example, the server could use a counter to measure the number of concurrent requests being processed that is incremented when a new request comes in and decreased when a response is sent. The server can then infer whether it’s overloaded by comparing the counter with a threshold that approximates the server’s capacity.</p>
-<p>When the server detects that it’s overloaded, it can reject incoming requests by failing fast and returning a response with status code <em>503 (Service Unavailable)</em>. This technique is also referred to as <em>load shedding</em>. The server doesn’t necessarily have to reject arbitrary requests; for example, if different requests have different priorities, the server could reject only low-priority ones. Alternatively, the server could reject the oldest requests first since those will be the first ones to time out and be retried, so handling them might be a waste of time.</p>
-<p>Unfortunately, rejecting a request doesn’t completely shield the server from the cost of handling it. Depending on how the rejection is implemented, the server might still have to pay the price of opening a TLS connection and reading the request just to reject it. Hence, load shedding can only help so much, and if load keeps increasing, the cost of rejecting requests will eventually take over and degrade the server.</p>
+<section class="level1" data-number="28" id="upstream-resiliency">
+<h1 data-number="28"><span class="header-section-number">28</span> 上游服务韧性</h1>
+<p>上一章讨论了保护服务免受下游故障影响的模式，例如无法访问外部依赖的情况。本章我们将转换视角，讨论防御上游压力的机制。<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a></p>
+<section class="level2" data-number="28.1" id="load-shedding">
+<h2 data-number="28.1"><span class="header-section-number">28.1</span> 负载丢弃</h2>
+<p>服务器对于在任何给定时间点接收到的请求数量几乎没有控制能力。操作系统为每个端口维护一个容量有限的连接队列，当队列满时，新的连接尝试会立即被拒绝。但通常情况下，在极端负载下，服务器会在达到该限制之前因耗尽内存、线程、套接字或文件等资源而渐进式陷入停滞。这会导致响应时间不断增加，最终使服务器对外部世界变得不可用。</p>
+<p>当服务器在满负荷运行时，它应该拒绝多余的请求<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>，以便将其资源专用于正在处理的请求。例如，服务器可以使用一个计数器来测量正在处理的并发请求数量，该计数器在新请求到达时递增，在发送响应时递减。然后，服务器可以通过将计数器与一个近似于服务器容量的阈值进行比较，推断自己是否过载。</p>
+<p>当服务器检测到过载时，可以通过快速失败并返回状态码为<em>503（服务不可用）</em>的响应来拒绝传入的请求。这种技术也被称为<em>负载丢弃</em>。服务器不一定必须拒绝任意请求；例如，如果不同的请求具有不同的优先级，服务器可以只拒绝低优先级的请求。或者，服务器可以先拒绝最旧的请求，因为这些请求将首先超时并被重试，因此处理它们可能是浪费时间。</p>
+<p>不幸的是，拒绝请求并不能完全使服务器免于承担处理它的成本。根据拒绝机制的具体实现方式，服务器可能仍然需要承担建立TLS连接和读取请求的开销，最终却仅为了拒绝该请求。因此，负载丢弃的帮助是有限的，如果负载持续增加，拒绝请求的成本最终将占据主导地位并使服务器性能下降。</p>
 </section>
-<section id="load-leveling" class="level2" data-number="28.2">
-<h2 data-number="28.2"><span class="header-section-number">28.2</span> Load leveling</h2>
-<p>There is an alternative to load shedding, which can be exploited when clients don’t expect a prompt response. The idea is to introduce a messaging channel between the clients and the service. The channel decouples the load directed to the service from its capacity, allowing it to process requests at its own pace.</p>
-<p>This pattern is referred to as load leveling and it’s well suited to fending off short-lived spikes, which the channel smooths out (see Figure <a href="#fig:loadlevelling">28.1</a>). But if the service doesn’t catch up eventually, a large backlog will build up, which comes with its own problems, as discussed in chapter <a href="#messaging">23</a>.</p>
+<section class="level2" data-number="28.2" id="load-leveling">
+<h2 data-number="28.2"><span class="header-section-number">28.2</span> 负载均衡</h2>
+<p>除了负载丢弃之外，还有一种替代方案，适用于客户端不要求即时响应的场景。其核心思想是在客户端与服务之间引入一个消息通道。该通道将施加于服务的请求负载与其处理能力解耦，使得服务能够按照自身的节奏来处理请求。</p>
+<p>这种模式被称为负载均衡，它非常适合应对短暂的流量尖峰，因为通道能够平滑这些峰值（参见图 <a href="#fig:loadlevelling">28.1</a>）。但是，如果服务最终无法跟上处理进度，将会积压大量任务，进而引发一系列自身的问题，正如第 <a href="#messaging">23</a> 章所讨论的那样。</p>
 <div class="figure" style="text-align: center">
-<img alt="The channel smooths out the load for the consuming service." width="100%" src="../media/file70.png" />
+<img alt="该通道平滑了消费服务的负载。" src="../media/file70.png" width="100%"/>
 <p class="caption">
-Figure 28.1: The channel smooths out the load for the consuming service.
+图 28.1：该通道平滑了消费服务的负载。
 </p>
 </div>
-<p>Load-shedding and load leveling don’t address an increase in load directly but rather protect a service from getting overloaded. To handle more load, the service needs to be scaled out. This is why these protection mechanisms are typically combined with auto-scaling<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>, which detects that the service is running hot and automatically increases its scale to handle the additional load.</p>
+<p>负载丢弃和负载均衡并不能直接应对负载的增加，而是保护服务免受过载影响。为了处理更大的负载，需要对服务进行横向扩展。这就是为什么这些保护机制通常与自动扩缩容<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>结合使用，后者能够检测到服务运行负载过高，并自动增加其规模以处理额外的负载。</p>
 <!-- TODO: Autoscaling section -->
 </section>
-<section id="ratelimiting" class="level2" data-number="28.3">
-<h2 data-number="28.3"><span class="header-section-number">28.3</span> Rate-limiting</h2>
-<p>Rate-limiting, or throttling, is a mechanism that rejects a request when a specific quota is exceeded. A service can have multiple quotas, e.g., for the number of requests or bytes received within a time interval. Quotas are typically applied to specific users, API keys, or IP addresses.</p>
-<p>For example, if a service with a quota of 10 requests per second per API key receives on average 12 requests per second from a specific API key, it will, on average, reject 2 requests per second from that API key.</p>
-<p>When a service rate-limits a request, it needs to return a response with a particular error code so that the sender knows that it failed because a quota has been exhausted. For services with HTTP APIs, the most common way to do that is by returning a response with status code <em>429 (Too Many Requests)</em>. The response should include additional details about which quota has been exhausted and by how much; it can also include a <em>Retry-After</em> header indicating how long to wait before making a new request:</p>
-<p>If the client application plays by the rules, it will stop hammering the service for some time, shielding the service from non-malicious users monopolizing it by mistake. In addition, this protects against bugs in the clients that cause a client to hit a downstream service for one reason or another repeatedly.</p>
-<p>Rate-limiting is also used to enforce pricing tiers; if users want to use more resources, they should also be willing to pay more. This is how you can offload your service’s cost to your users: have them pay proportionally to their usage and enforce pricing tiers with quotas.</p>
-<p>You would think that rate-limiting also offers strong protection against a DDoS attack, but it only partially protects a service from it. Nothing forbids throttled clients from continuing to hammer a service after getting <em>429s</em>. Rate-limited requests aren’t free either — for example, to rate-limit a request by API key, the service has to pay the price of opening a TLS connection, and at the very least, download part of the request to read the key. Although rate limiting doesn’t fully protect against DDoS attacks, it does help reduce their impact.</p>
-<p>Economies of scale are the only true protection against DDoS attacks. If you run multiple services behind one large gateway service, no matter which of the services behind it are attacked, the gateway service will be able to withstand the attack by rejecting the traffic upstream. The beauty of this approach is that the cost of running the gateway is amortized across all the services that are using it.</p>
-<p>Although rate-limiting has some similarities with load shedding, they are different concepts. Load shedding rejects traffic based on the local state of a process, like the number of requests concurrently processed by it; rate-limiting instead sheds traffic based on the global state of the system, like the total number of requests concurrently processed for a specific API key across all service instances. And because there is a global state involved, some form of coordination is required.</p>
-<section id="single-process-implementation" class="level3" data-number="28.3.1">
-<h3 data-number="28.3.1"><span class="header-section-number">28.3.1</span> Single-process implementation</h3>
-<p>The distributed implementation of rate-limiting is interesting in its own right, and it’s well worth spending some time discussing it. We will start with a single-process implementation first and then extend it to a distributed one.</p>
-<p>Suppose we want to enforce a quota of 2 requests per minute, per API key. A naive approach would be to use a doubly-linked list per API key, where each list stores the timestamps of the last N requests received. Whenever a new request comes in, an entry is appended to the list with its corresponding timestamp. Then, periodically, entries older than a minute are purged from the list.</p>
-<p>By keeping track of the list’s length, the process can rate-limit incoming requests by comparing it with the quota. The problem with this approach is that it requires a list per API key, which quickly becomes expensive in terms of memory as it grows with the number of requests received.</p>
-<p>To reduce memory consumption, we need to come up with a way to reduce the storage requirements. One way to do this is by dividing time into buckets of fixed duration, for example of 1 minute, and keeping track of how many requests have been seen within each bucket (see Figure <a href="#fig:buckets">28.2</a>).</p>
+<section class="level2" data-number="28.3" id="ratelimiting">
+<h2 data-number="28.3"><span class="header-section-number">28.3</span> 速率限制</h2>
+<p>速率限制，或称节流，是一种在超出特定配额时拒绝请求的机制。一个服务可以拥有多个配额，例如，针对特定时间间隔内接收到的请求数量或字节数。配额通常应用于特定用户、API密钥或IP地址。</p>
+<p>例如，如果一个服务对每个API密钥的配额是每秒10个请求，而某个特定API密钥平均每秒发送12个请求，那么该服务平均每秒将拒绝来自该API密钥的2个请求。</p>
+<p>当服务对请求进行速率限制时，它需要返回一个带有特定错误代码的响应，以便发送方知道失败是由于配额已耗尽。对于提供HTTP API的服务，最常见的做法是返回状态码为<em>429（请求过多）</em>的响应。响应应包含关于哪个配额已耗尽以及超出多少的详细信息；它还可以包含一个<em>Retry-After</em>头部，指示在发起新请求前需要等待多长时间：</p>
+<p>如果客户端应用程序遵守规则，它将在某段时间内停止频繁请求服务，从而保护服务不被非恶意用户无意中独占。此外，这也能防止客户端因各种原因反复调用下游服务的bug。</p>
+<p>速率限制也用于强制执行定价层级；如果用户希望使用更多资源，他们也应该愿意支付更多费用。通过这种方式，您可以将服务成本转嫁给用户：让他们按使用量比例付费，并通过配额强制执行定价层级。</p>
+<p>您可能会认为速率限制也能有效防御DDoS攻击，但它只能部分保护服务免受此类攻击。被限制的客户端在收到<em>429</em>响应后继续频繁请求服务，并没有任何限制。被速率限制的请求也并非没有成本——例如，要通过API密钥对请求进行速率限制，服务必须承担建立TLS连接的成本，并且至少需要下载部分请求内容来读取密钥。尽管速率限制不能完全防御DDoS攻击，但它确实有助于减轻其影响。</p>
+<p>规模经济是抵御DDoS攻击的唯一真正保护措施。如果您在一个大型网关服务后面运行多个服务，那么无论其后哪个服务受到攻击，网关服务都能够通过在上游拒绝流量来抵御攻击。这种方法的好处在于，运行网关的成本被分摊到所有使用它的服务上。</p>
+<p>尽管速率限制与负载丢弃有某些相似之处，但它们是不同的概念。负载丢弃基于进程的本地状态（例如其并发处理的请求数量）来拒绝流量；而速率限制则是基于系统的全局状态（例如跨所有服务实例为特定API密钥并发处理的总请求数）来丢弃流量。由于涉及全局状态，因此需要某种形式的协调。</p>
+<section class="level3" data-number="28.3.1" id="single-process-implementation">
+<h3 data-number="28.3.1"><span class="header-section-number">28.3.1</span> 单进程实现</h3>
+<p>速率限制的分布式实现本身就很有趣，非常值得花些时间讨论。我们将首先从单进程实现开始，然后将其扩展到分布式实现。</p>
+<p>假设我们希望强制执行每个API密钥每分钟2个请求的配额。一种简单的方法是为每个API密钥使用一个双向链表，其中每个链表存储接收到的最后N个请求的时间戳。每当有新请求到来时，就向列表追加一个带有相应时间戳的条目。然后，定期清除列表中超过一分钟的条目。</p>
+<p>通过跟踪列表的长度，进程可以通过将其与配额进行比较来对传入请求进行速率限制。这种方法的问题在于，它需要为每个API密钥维护一个列表，随着接收到的请求数量不断增加，内存开销会迅速攀升。</p>
+<p>为了减少内存消耗，我们需要找到一种降低存储需求的方法。一种方法是将时间划分为固定时长的桶，例如1分钟，并跟踪在每个桶内观察到的请求数量（参见图<a href="#fig:buckets">28.2</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="Buckets divide time into 1-minute intervals, which keep track of the number of requests seen." width="100%" src="../media/file71.png" />
+<img alt="桶将时间划分为1分钟的间隔，用于跟踪观察到的请求数量。" src="../media/file71.png" width="100%"/>
 <p class="caption">
-Figure 28.2: Buckets divide time into 1-minute intervals, which keep track of the number of requests seen.
+图 28.2: 桶将时间划分为1分钟的间隔，用于跟踪观察到的请求数量。
 </p>
 </div>
-<p>A bucket contains a numerical counter. When a new request comes in, its timestamp is used to determine the bucket it belongs to. For example, if a request arrives at 12.00.18, the counter of the bucket for minute “12.00” is incremented by 1 (see Figure <a href="#fig:bucketscounter">28.3</a>).</p>
+<p>一个桶包含一个数字计数器。当新请求到来时，其时间戳用于确定它属于哪个桶。例如，如果一个请求在12.00.18到达，则"12.00"分钟对应的桶的计数器增加1（参见图<a href="#fig:bucketscounter">28.3</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="When a new request comes in, its timestamp is used to determine the bucket it belongs to." width="100%" src="../media/file72.png" />
+<img alt="当新请求到来时，其时间戳用于确定它属于哪个桶。" src="../media/file72.png" width="100%"/>
 <p class="caption">
-Figure 28.3: When a new request comes in, its timestamp is used to determine the bucket it belongs to.
+图 28.3: 当新请求到来时，其时间戳用于确定它属于哪个桶。
 </p>
 </div>
-<p>With bucketing, we can compress the information about the number of requests seen in a way that doesn’t grow with the number of requests. Now that we have a memory-friendly representation, how can we use it to implement rate-limiting? The idea is to use a sliding window that moves across the buckets in real time, keeping track of the number of requests within it.</p>
-<p>The sliding window represents the interval of time used to decide whether to rate-limit or not. The window’s length depends on the time unit used to define the quota, which in our case is 1 minute. But there is a caveat: a sliding window can overlap with multiple buckets. To derive the number of requests under the sliding window, we have to compute a weighted sum of the bucket’s counters, where each bucket’s weight is proportional to its overlap with the sliding window (see Figure <a href="#fig:bucketssliding">28.4</a>).</p>
+<p>通过分桶，我们可以压缩关于观察到的请求数量的信息，这种方式内存开销不会随着请求数量的增加而增大。现在我们有了一个内存友好的表示方法，如何使用它来实现速率限制呢？思路是使用一个滑动窗口，该窗口实时跨越各个桶移动，并跟踪其内的请求数量。</p>
+<p>滑动窗口表示用于决定是否进行速率限制的时间间隔。窗口的长度取决于定义配额时使用的时间单位，在我们的例子中是1分钟。但有一个注意事项：滑动窗口可能与多个桶重叠。为了计算滑动窗口下的请求数量，我们必须计算桶计数器的加权和，其中每个桶的权重与每个桶和滑动窗口的重叠部分成正比（参见图<a href="#fig:bucketssliding">28.4</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="A bucket&#39;s weight is proportional to its overlap with the sliding window." width="100%" src="../media/file73.png" />
+<img alt="桶的权重与该桶和滑动窗口的重叠部分成正比。" src="../media/file73.png" width="100%"/>
 <p class="caption">
-Figure 28.4: A bucket’s weight is proportional to its overlap with the sliding window.
+图 28.4: 桶的权重与该桶和滑动窗口的重叠部分成正比。
 </p>
 </div>
-<p>Although this is an approximation, it’s a reasonably good one for our purposes. And it can be made more accurate by increasing the granularity of the buckets. So, for example, we can reduce the approximation error using 30-second buckets rather than 1-minute ones.</p>
-<p>We only have to store as many buckets as the sliding window can overlap with at any given time. For example, with a 1-minute window and a 1-minute bucket length, the sliding window can overlap with at most 2 buckets. Thus, there is no point in storing the third oldest bucket, the fourth oldest one, etc.</p>
-<p>To summarize, this approach requires two counters per API key, which is much more efficient in terms of memory than the naive implementation storing a list of requests per API key.</p>
+<p>尽管这是一种近似方法，但对于我们的目的来说，它是一个相当好的近似。并且可以通过增加桶的粒度来提高准确性。例如，我们可以使用30秒的桶而不是1分钟的桶来减少近似误差。</p>
+<p>我们只需要存储滑动窗口在任何给定时间可能重叠的桶的数量。例如，对于一个1分钟的窗口和1分钟的桶长度，滑动窗口最多可以与2个桶重叠。因此，存储第三个最旧的桶、第四个最旧的桶等，是没有意义的。</p>
+<p>总而言之，这种方法对于每个API密钥需要两个计数器，在内存效率上比为每个API密钥存储请求列表的简单实现要高得多。</p>
 </section>
-<section id="distributed-implementation" class="level3" data-number="28.3.2">
-<h3 data-number="28.3.2"><span class="header-section-number">28.3.2</span> Distributed implementation</h3>
-<p>When more than one process accepts requests, the local state is no longer good enough, as the quota needs to be enforced on the total number of requests per API key across all service instances. This requires a shared data store to keep track of the number of requests seen.</p>
-<p>As discussed earlier, we need to store two integers per API key, one for each bucket. When a new request comes in, the process receiving it could fetch the current bucket, update it and write it back to the data store. But that wouldn’t work because two processes could update the same bucket concurrently, which would result in a lost update. The fetch, update, and write operations need to be packaged into a single transaction to avoid any race conditions.</p>
-<p>Although this approach is functionally correct, it’s costly. There are two issues here: transactions are slow, and executing one per request would be very expensive as the data store would have to scale linearly with the number of requests. Also, because the data store is a hard dependency, the service will become unavailable if it can’t reach it.</p>
-<p>Let’s address these issues. Rather than using transactions, we can use a single atomic <em>get-and-increment</em> operation that most data stores provide. Alternatively, the same can be emulated with a <em>compare-and-swap</em>. These atomic operations have much better performance than transactions.</p>
-<p>Now, rather than updating the data store on each request, the process can batch bucket updates in memory for some time and flush them asynchronously to the data store at the end of it (see Figure <a href="#fig:bucketsasync">28.5</a>). This reduces the shared state’s accuracy, but it’s a good trade-off as it reduces the load on the data store and the number of requests sent to it.</p>
+<section class="level3" data-number="28.3.2" id="distributed-implementation">
+<h3 data-number="28.3.2"><span class="header-section-number">28.3.2</span> 分布式实现</h3>
+<p>当不止一个进程接受请求时，本地状态就不再足够好了，因为需要跨所有服务实例对每个API密钥的总请求数强制执行配额。这需要一个共享的数据存储来跟踪观察到的请求数量。</p>
+<p>如前所述，我们需要为每个API密钥存储两个整数，每个桶一个。当新请求到来时，接收它的进程可以获取当前桶，更新它并将其写回数据存储。但这行不通，因为两个进程可能同时更新同一个桶，从而导致更新丢失。获取、更新和写入操作需要打包成一个单一的事务，以避免任何竞态条件。</p>
+<p>尽管这种方法在功能上是正确的，但成本很高。这里有两个问题：事务执行很慢，并且每个请求执行一个事务将非常昂贵，因为数据存储必须随请求数量线性扩展。此外，由于数据存储是一个硬依赖项，如果无法访问它，服务将变得不可用。</p>
+<p>让我们来解决这些问题。我们可以不使用事务，而是使用大多数数据存储提供的单一原子<em>get-and-increment(获取并递增)</em>操作。或者，也可以用<em>compare-and-swap(比较并交换)</em>来模拟相同的效果。这些原子操作的性能比事务好得多。</p>
+<p>现在，进程不必在每个请求上都更新数据存储，而是可以将桶更新在内存中批量暂存一段时间，然后在该时间段结束时异步刷新到数据存储（参见图<a href="#fig:bucketsasync">28.5</a>）。这降低了共享状态的准确性，但这是一个很好的折衷权衡，因为它减少了数据存储的负载以及发送给它的请求数量。</p>
 <div class="figure" style="text-align: center">
-<img alt="Servers batch bucket updates in memory for some time, and flush them asynchronously to the data store at the end of it." width="100%" src="../media/file74.png" />
+<img alt="服务器将桶更新在内存中批量暂存一段时间，然后在该时间段结束时异步刷新到数据存储。" src="../media/file74.png" width="100%"/>
 <p class="caption">
-Figure 28.5: Servers batch bucket updates in memory for some time, and flush them asynchronously to the data store at the end of it.
+图 28.5: 服务器将桶更新在内存中批量暂存一段时间，然后在该时间段结束时异步刷新到数据存储。
 </p>
 </div>
-<p>What happens if the data store is down? Remember the CAP theorem’s essence: when there is a network fault, we can either sacrifice consistency and keep our system up or maintain consistency and stop serving requests. In our case, temporarily rejecting requests just because the data store used for rate-limiting is not reachable could damage the business. Instead, it’s safer to keep serving requests based on the last state read from the store.<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a></p>
+<p>如果数据存储宕机了怎么办？记住CAP定理的精髓：当出现网络故障时，我们要么牺牲一致性并保持系统运行，要么保持一致性并终止为请求服务。在我们的案例中，仅仅因为用于速率限制的数据存储无法访问就暂时拒绝请求，可能会损害业务。相反，基于从存储中读取的最后状态继续为请求服务更为安全。<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a></p>
 </section>
 </section>
-<section id="constantwork" class="level2" data-number="28.4">
-<h2 data-number="28.4"><span class="header-section-number">28.4</span> Constant work</h2>
-<p>When overload, configuration changes, or faults force an application to behave differently from usual, we say the application has a multi-modal behavior. Some of these <em>modes</em> might trigger rare bugs, conflict with mechanisms that assume the happy path, and more generally make life harder for operators, since their mental model of how the application behaves is no longer valid. Thus, as a general rule of thumb, we should strive to minimize the number of modes.</p>
-<p>For example, simple key-value stores are favored over relational databases in data planes because they tend to have predictable performance<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>. A relational database has many operational modes due to hidden optimizations, which can change how specific queries perform from one execution to another. Instead, dumb key-value stores behave predictably for a given query, which guarantees that there won’t be any surprises.</p>
-<p>A common reason for a system to change behavior is overload, which can cause the system to become slower and degrade at the worst possible time. Ideally, the worst- and average-case behavior shouldn’t differ. One way to achieve that is by exploiting the <em>constant work pattern</em>, which keeps the work per unit time constant.</p>
-<p>The idea is to have the system perform the same amount of work<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> under high load as under average load. And, if there is any variation under stress, it should be because the system is performing better, not worse. Such a system is also said to be <em>antifragile</em>. This is a different property from resiliency; a resilient system keeps operating under extreme load, while an antifragile one performs better.</p>
-<p>We have already seen one application of the constant work pattern when discussing the propagation of configuration changes from the control plane to the data plane in chapter <a href="#controlplane">22</a>. For example, suppose we have a configuration store (control plane) that stores a bag of settings for each user, like the quotas used by the API gateway (data plane) to rate-limit requests. When a setting changes for a specific user, the control plane needs to broadcast it to the data plane. However, as each change is a separate independent unit of work, the data plane needs to perform work proportional to the number of changes.</p>
-<p>If you don’t see how this could be a problem, imagine that a large number of settings are updated for the majority of users at the same time (e.g., quotas changed due to a business decision). This could cause an unexpectedly large number of individual update messages to be sent to every data plane instance, which could struggle to handle them.</p>
-<p>The workaround to this problem is simple but powerful. The control plane can periodically dump the settings of all users to a file in a scalable and highly available file store like Azure Storage or AWS S3. The dump includes the configuration settings of all users, even the ones for which there were no changes. Data plane instances can then periodically read the dump in bulk and refresh their local view of the system’s configuration. Thus, no matter how many settings change, the control plane periodically writes a file to the data store, and the data plane periodically reads it.</p>
-<p>We can take this pattern to the extreme and pre-allocate empty configuration slots for the maximum number of supported users. This guarantees that as the number of users grows, the work required to propagate changes remains stable. Additionally, doing so allows to stress-test the system and understand its behavior, knowing that it will behave the same under all circumstances. Although this limits the number of users, a limit exists regardless of whether the constant work pattern is used or not. This approach is typically used in cellular architectures (see <a href="#cellarch">26.2</a>), where a single cell has a well-defined maximum size and the system is scaled out by creating new cells.</p>
-<p>The beauty of using the constant work pattern is that the data plane periodically performs the same amount of work in bulk, no matter how many configuration settings have changed. This makes updating settings reliable and predictable. Also, periodically writing and reading a large file is much simpler to implement correctly than a complex mechanism that only sends what changed.</p>
-<p>Another advantage of this approach is that it’s robust against a whole variety of faults thanks to its self-healing properties. If the configuration dump gets corrupted for whatever reason, no harm is done since the next update will fix it. And if a faulty update was pushed to all users by mistake, reverting it is as simple as creating a new dump and waiting it out. In contrast, the solution that sends individual updates is much harder to implement correctly, as the data plane needs complex logic to handle and heal from corrupted updates.</p>
-<p>To sum up, performing constant work is more expensive than doing just the necessary work. Still, it’s often worth considering it, given the increase in reliability and reduction in complexity it enables.</p>
+<section class="level2" data-number="28.4" id="constantwork">
+<h2 data-number="28.4"><span class="header-section-number">28.4</span> 恒定工作量</h2>
+<p>当过载、配置变更或故障迫使应用程序表现出与通常不同的行为时，我们称该应用程序具有多模态行为。其中一些<em>模式</em>可能会触发罕见的bug，与设想“正常路径”运行的机制发生冲突，并且更普遍地是，给运维人员带来困难，因为他们关于应用程序行为的心智模型不再有效。因此，根据通用的经验法则，我们应该努力最小化模式的数量。</p>
+<p>例如，在数据面板中，简单的键值存储比关系数据库更受青睐，因为它们往往具有可预测的表现<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>。关系数据库由于隐藏的优化而具有许多操作模式，这可能导致特定查询的性能在一次执行与另一次执行之间发生变化。相反，简单的键值存储对于给定查询的行为是可预测的，这保证了不会出现任何意外情况。</p>
+<p>系统改变行为的一个常见原因是过载，这可能导致系统在最糟糕的时刻变慢并性能下降。理想情况下，最坏情况和平均情况下的行为不应有差异。实现这一点的一种方法是利用<em>恒定工作量模式</em>，该模式保持单位时间内的工作量恒定。</p>
+<p>其思想是让系统在高负载下执行与平均负载下相同的工作量<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>。并且，如果在压力下有任何变化，那应该是系统表现更好，而不是更差。这样的系统也被称为<em>反脆弱的</em>。这是与弹性不同的属性；弹性系统在极端负载下保持运行，而反脆弱的系统则表现更好。</p>
+<p>在<a href="#controlplane">第22章</a>讨论配置变更从控制面板传播到数据面板时，我们已经看到了恒定工作量模式的一个应用。例如，假设我们有一个配置存储（控制面板），它为每个用户存储一组设置，比如API网关（数据面板）用于限流请求的配额。当特定用户的设置发生变化时，控制面板需要将其广播到数据面板。然而，由于每个变更都是一个隔离的、独立的工作单元，数据面板需要执行与变更数量成正比的工作。</p>
+<p>如果你看不出这怎么会是个问题，想象一下，大多数用户的大量设置在同一时间被更新（例如，由于业务决策而更改配额）。这可能导致数量异常庞大的单个更新消息被发送到每个数据面板实例，而这些实例可能难以处理它们。</p>
+<p>这个问题的解决方案简单但强大。控制面板可以定期将所有用户的设置转储到一个文件中，并将其存储在像Azure Storage或AWS S3这样可扩展且高可用的文件存储中。转储包含所有用户的配置设置，即使是那些没有发生变更的用户。然后，数据面板实例可以定期批量读取转储，并刷新系统配置的本地视图。因此，无论有多少设置发生变更，控制面板都会定期向数据存储写入一个文件，而数据面板则定期读取它。</p>
+<p>我们可以将这种模式考虑到极致，为支持的最大用户数预分配空的配置槽。这保证了随着用户数量的增长，传播变更所需的工作量保持稳定。此外，这样做允许对系统进行压力测试并理解其行为，因为我们知道它在所有情况下的行为都是一样的。虽然这限制了用户数量，但无论是否使用恒定工作量模式，限制都是存在的。这种方法通常用于蜂窝架构（参见<a href="#cellarch">26.2</a>），其中单个蜂窝具有明确定义的最大尺寸，系统通过创建新的蜂窝来横向扩展。</p>
+<p>使用恒定工作量模式的美妙之处在于，无论有多少配置设置发生变更，数据面板都会定期批量执行相同的工作量。这使得更新设置变得可靠且可预测。此外，定期写入和读取一个大文件，比实现一个只发送变更内容的复杂机制要简单得多。</p>
+<p>这种方法的另一个优点是，由于其自愈特性，它对各种故障都具有鲁棒性。若配置转储因任何原因损坏，也不会造成任何损失，因为下一次更新会修复它。若错误的更新被意外推送给所有用户，回滚就像创建一个新的转储并等待它生效一样简单。相比之下，发送单个更新的解决方案要正确实现则困难得多，因为数据面板需要复杂的逻辑来处理已损坏的更新并从中恢复。</p>
+<p>总而言之，执行恒定工作量比只做必要的工作成本更高。尽管如此，考虑到它带来的可靠性提升和复杂性降低，通常值得考虑采用。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>We have already met a mechanism to protect against upstream pressure when we discussed health checks in the context of load balancers in chapter <a href="#load-balancing">18</a>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Using load shedding to avoid overload,” <a href="https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload" class="uri">https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“Autoscaling,” <a href="https://en.wikipedia.org/wiki/Autoscaling" class="uri">https://en.wikipedia.org/wiki/Autoscaling</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>This is another application of the concept of <em>static stability</em>, first introduced in chapter <a href="#controlplane">22</a>.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Some opinionated thoughts on SQL databases,” <a href="https://blog.nelhage.com/post/some-opinionated-sql-takes/" class="uri">https://blog.nelhage.com/post/some-opinionated-sql-takes/</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“Reliability, constant work, and a good cup of coffee,” <a href="https://aws.amazon.com/builders-library/reliability-and-constant-work/" class="uri">https://aws.amazon.com/builders-library/reliability-and-constant-work/</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p>我们已经在第<a href="#load-balancing">18</a>章讨论负载均衡器背景下的健康检查时，遇到了一种防止上游压力的机制。<a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>“使用负载丢弃来避免过载，” <a class="uri" href="https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload">https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>“自动扩缩容，” <a class="uri" href="https://en.wikipedia.org/wiki/Autoscaling">https://en.wikipedia.org/wiki/Autoscaling</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>这是<em>静态稳定性</em>概念的另一个应用，该概念首次在第<a href="#controlplane">22</a>章中引入。<a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p>“关于SQL数据库的一些主观看法，” <a class="uri" href="https://blog.nelhage.com/post/some-opinionated-sql-takes/">https://blog.nelhage.com/post/some-opinionated-sql-takes/</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p style="text-align:left;">“可靠性、持续工作与一杯好咖啡，” <a class="uri" href="https://aws.amazon.com/builders-library/reliability-and-constant-work/">https://aws.amazon.com/builders-library/reliability-and-constant-work/</a><a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

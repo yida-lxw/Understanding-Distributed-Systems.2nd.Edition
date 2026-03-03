@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch045.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch045.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="resiliency-outro" class="level1 unnumbered unlisted">
-<h1 class="unnumbered unlisted">Summary</h1>
-<p>As the number of components or operations in a system increases, so does the number of failures, and eventually, anything that can happen will happen. In my team, we humorously refer to this as “cruel math.”</p>
-<p>If you talk to an engineer responsible for a production system, you will quickly realize that they tend to be more worried about minimizing and tolerating failures than how to further scale out their systems. The reason for that is that once you have an architecture that scales to handle your current load, you will be mostly concerned with tolerating faults until you eventually reach the next scalability bottleneck.</p>
-<p>What you should take away from this part is that failures are inevitable since, no matter how hard you try, it’s just impossible to build an infallible system. When you can’t design away some failure modes (e.g., with constant work), the best you can do is to reduce their blast radius and stop the cracks from propagating from one component to the other.</p>
-<!--chapter:end:markdown/Resiliency.Rmd-->
+<section class="level1 unnumbered unlisted" id="resiliency-outro">
+<h1 class="unnumbered unlisted">本章总结</h1>
+<p>随着系统中组件或操作数量的增加，故障的数量也会随之上升，最终，任何可能发生的事情都会发生。在我的团队中，我们幽默地称此为“残酷的数学”。</p>
+<p>如果你与负责生产系统的工程师交谈，你会很快意识到，他们往往倾向于更关心如何最小化和容忍故障，而不是如何进一步扩展系统。原因在于，一旦你拥有了能够处理当前负载的可扩展架构，你最关心的将是容忍故障，直到最终遇到下一个可扩展性瓶颈。</p>
+<p>你应该从这部分学到的是，故障是不可避免的，因为无论你多么努力，构建一个万无一失的系统都是不可能的。当你无法通过设计消除某些故障模式（例如，通过恒定工作量）时，你能做的最好的事情就是减少它们的爆炸半径，并阻止裂缝从一个组件传播到另一个组件。</p>
 </section>
 </body>
 </html>

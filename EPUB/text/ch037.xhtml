@@ -1,30 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch037.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch037.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="scalability-outro" class="level1 unnumbered unlisted">
-<h1 class="unnumbered unlisted">Summary</h1>
-<p>Building scalable applications boils down to exploiting three orthogonal patterns:</p>
+<section class="level1 unnumbered unlisted" id="scalability-outro">
+<h1 class="unnumbered unlisted">总结</h1>
+<p>构建可扩展的应用程序归根结底在于运用三种正交模式：</p>
 <ul>
-<li>breaking the application into separate services, each with its own well-defined responsibility (<em>functional decomposition</em>);</li>
-<li>splitting data into partitions and distributing them across nodes (<em>partitioning</em>);</li>
-<li>replicating functionality or data across nodes (<em>replication</em>).</li>
+<li>将应用程序拆分为独立的服务，每个服务都有其明确定义的职责（<em>功能拆分</em>）；</li>
+<li>将数据分割成多个分区，并在节点间分布（<em>分区</em>）；</li>
+<li>在节点间复制功能或数据（<em>复制</em>）。</li>
 </ul>
-<p>We have seen plenty of applications of these patterns over the past few chapters. By now, you should have a feel for the pros and cons of each pattern.</p>
-<p>There is another message I subtly tried to convey: there is a small subset of managed services that you can use to build a surprisingly large number of applications. The main attraction of managed services is that someone else gets paged for them.<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a></p>
-<p>Depending on which cloud provider you are using, the name of the services and their APIs differ somewhat, but conceptually they serve the same use cases. You should be familiar with some way to run your application instances in the cloud (e.g., EC2) and load-balance traffic to them (e.g., ELB). And since you want your applications to be stateless, you also need to be familiar with a file store (e.g., S3), a key-value/document store (e.g., DynamoDB), and a messaging service (e.g., SQS, Kinesis). I would argue that these technologies are reasonable enough defaults for building a large number of scalable applications. Once you have a scalable core, you can add optimizations, such as caching in the form of managed Redis/Memcached or CDNs.</p>
+<p>在之前的几章中，我们已经看到了这些模式的许多应用。到现在为止，你应该对每种模式的优缺点有了感觉。</p>
+<p>我试图微妙传达的另一个信息是：有一小部分托管服务，可以用来构建数量惊人的应用程序。托管服务的主要吸引力在于，当它们出问题时，是别人收到告警通知。<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a></p>
+<p>根据您所使用的云服务提供商，服务的名称及其API会有所不同，但在概念上它们服务于相同的用例。您应该熟悉在云中运行应用程序实例（例如EC2）并将流量负载均衡到这些实例（例如ELB）的某种方式。由于您希望应用程序是无状态的，您还需要熟悉文件存储（例如S3）、键值/文档存储（例如DynamoDB）以及消息服务（例如SQS、Kinesis）。我认为这些技术作为构建大量可扩展应用程序的默认选择是相当合理的。一旦您拥有了可扩展的核心，就可以添加优化，例如以托管Redis/Memcached或CDN的形式进行缓存。</p>
 <!--chapter:end:markdown/Scalability.Rmd-->
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>As we will discuss in Part V, maintaining a service is no small feat.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p style="text-align:left;">正如我们将在第五部分讨论的那样，维护一项服务绝非易事。<a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

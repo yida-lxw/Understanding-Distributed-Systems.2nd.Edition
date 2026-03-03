@@ -1,120 +1,120 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch040.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch040.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="failure-causes" class="level1" data-number="24">
-<h1 data-number="24"><span class="header-section-number">24</span> Common failure causes</h1>
-<p>We say that a system has a <em>failure</em><a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> when it no longer provides a service to its users that meets its specification. A failure is caused by a <em>fault</em>: a failure of an internal component or an external dependency the system depends on. Some faults can be tolerated and have no user-visible impact at all, while others lead to failures.</p>
-<p>To build fault-tolerant applications, we first need to have an idea of what can go wrong. In the next few sections, we will explore some of the most common root causes of failures. By the end of it, you will likely wonder how to tolerate all these different types of faults. The answers will follow in the next few chapters.</p>
-<!-- TODO: make sure use of fault and failure is consistent across book -->
-<section id="hardware-faults" class="level2" data-number="24.1">
-<h2 data-number="24.1"><span class="header-section-number">24.1</span> Hardware faults</h2>
-<p>Any physical part of a machine can fail. HDDs, memory modules, power supplies, motherboards, SSDs, NICs, or CPUs, can all stop working for various reasons. In some cases, hardware faults can cause data corruption as well. If that wasn’t enough, entire data centers can go down because of power cuts or natural disasters.</p>
-<p>As we will discuss later, we can address many of these infrastructure faults with redundancy. You would think that these faults are the main cause for distributed applications failing, but in reality, they often fail for very mundane reasons.</p>
+<section class="level1" data-number="24" id="failure-causes">
+<h1 data-number="24"><span class="header-section-number">24</span> 常见故障原因</h1>
+<p>当一个系统不再向其用户提供符合其规范的服务时，我们就称该系统发生了<em>故障</em><a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>。故障是由<em>缺陷</em>引起的：即系统所依赖的内部组件或外部依赖项发生了问题。有些缺陷可以被容忍，对用户完全没有可见的影响，而另一些则会导致故障。</p>
+<p>要构建可容错应用，我们首先需要了解可能出错的情况。在接下来的几节中，我们将探讨一些最常见的故障根源。到最后，你可能会疑惑如何应对所有这些不同类型的故障。答案将在后续章节中揭晓。</p>
+<section class="level2" data-number="24.1" id="hardware-faults">
+<h2 data-number="24.1"><span class="header-section-number">24.1</span> 硬件故障</h2>
+<p>机器的任何物理组件都可能发生故障。硬盘驱动器、内存条、电源、主板、固态硬盘、网卡或CPU，都可能因各种原因停止工作。在某些情况下，硬件故障也可能导致数据损坏。如果这还不够糟糕，整个数据中心也可能因断电或自然灾害而宕机。</p>
+<p>正如我们稍后将讨论的，我们可以通过冗余机制来应对许多此类基础设施故障。你可能会认为这些故障是分布式应用程序失败的主要原因，但实际上，它们常常因为非常普通的原因而失败。</p>
 </section>
-<section id="incorrect-error-handling" class="level2" data-number="24.2">
-<h2 data-number="24.2"><span class="header-section-number">24.2</span> Incorrect error handling</h2>
-<p>A study from 2014<a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a> of user-reported failures from five popular distributed data stores found that the majority of catastrophic failures were the result of incorrect handling of non-fatal errors.</p>
-<p>In most cases, the bugs in the error handling could have been detected with simple tests. For example, some handlers completely ignored errors. Others caught an overly generic exception, like <em>Exception</em> in Java, and aborted the entire process for no good reason. And some other handlers were only partially implemented and even contained “FIXME” and “TODO” comments.</p>
-<p>In hindsight, this is perhaps not too surprising, given that error handling tends to be an afterthought.<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a> Later, in chapter <a href="#testing">29</a>, we will take a closer look at best practices for testing large distributed applications.</p>
+<section class="level2" data-number="24.2" id="incorrect-error-handling">
+<h2 data-number="24.2"><span class="header-section-number">24.2</span> 不正确的错误处理</h2>
+<p>2014年的一项研究<a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>对五个流行分布式数据存储中用户报告的故障进行了分析，发现大多数灾难性故障都是由对非致命性错误的处理不当导致的。</p>
+<p style="text-align:left;">在大多数情况下，错误处理中的这些缺陷本可以通过简单的测试发现。例如，有些处理程序完全忽略了错误。另一些则捕获了过于宽泛的异常，比如Java中的<em>Exception</em>，并在没有充分理由的情况下中止了整个进程。还有一些处理程序只实现了部分功能，甚至包含了“FIXME”和“TODO”这样的注释。</p>
+<p>事后看来，这或许并不太令人惊讶，因为错误处理往往是在事后才被考虑的。<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>稍后，在第<a href="#testing">29</a>章，我们将更深入地探讨测试大型分布式应用程序的最佳实践。</p>
 </section>
-<section id="configuration-changes" class="level2" data-number="24.3">
-<h2 data-number="24.3"><span class="header-section-number">24.3</span> Configuration changes</h2>
-<p>Configuration changes are one of the leading root causes for catastrophic failures<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>. It’s not just misconfigurations that cause problems, but also valid configuration changes to enable rarely-used features that no longer work as expected (or never did).</p>
-<p>What makes configuration changes particularly dangerous is that their effects can be delayed<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>. If an application reads a configuration value only when it’s actually needed, an invalid value might take effect only hours or days after it has changed and thus escape early detection.</p>
-<p>This is why configuration changes should be version-controlled, tested, and released just like code changes, and their validation should happen preventively when the change happens. In chapter <a href="#cd">30</a>, we will discuss safe release practices for code and configuration changes in the context of continuous deployments.</p>
+<section class="level2" data-number="24.3" id="configuration-changes">
+<h2 data-number="24.3"><span class="header-section-number">24.3</span> 配置变更</h2>
+<p>配置变更是导致灾难性故障的主要根源之一<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>。不仅仅是错误配置会引发问题，那些用于启用不常用功能的有效配置变更，也可能不再按预期工作（或者从未按预期工作过）。</p>
+<p>配置变更之所以特别危险，是因为其影响可能具有延迟性<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>。如果一个应用程序只在真正需要时才读取配置值，那么一个无效的值可能在其变更数小时甚至数天后才生效，从而逃避了早期检测。</p>
+<p>这就是为什么配置变更应该像代码变更一样，进行版本控制、测试和发布，并且其验证应在变更发生时主动进行。在<a href="#cd">第30章</a>中，我们将在持续部署的背景下，讨论代码和配置变更的安全发布实战。</p>
 </section>
-<section id="single-points-of-failure" class="level2" data-number="24.4">
-<h2 data-number="24.4"><span class="header-section-number">24.4</span> Single points of failure</h2>
-<p>A single point of failure (SPOF) is a component whose failure brings the entire system down with it. In practice, systems can have multiple SPOFs.</p>
-<p>Humans make for great SPOFs, and if you put them in a position where they can cause a catastrophic failure on their own, you can bet they eventually will. For example, human failures often happen when someone needs to manually execute a series of operational steps in a specific order without making any mistakes. On the other hand, computers are great at executing instructions, which is why automation should be leveraged whenever possible.</p>
-<p>Another common SPOF is DNS<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a>. If clients can’t resolve the domain name for an application, they won’t be able to connect to it. There are many reasons why that can happen, ranging from domain names expiring<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a> to entire root level domains going down<a href="#fn8" class="footnote-ref" id="fnref8" epub:type="noteref">8</a>.</p>
-<p>Similarly, the TLS certificate used by an application for its HTTP endpoints is also a SPOF<a href="#fn9" class="footnote-ref" id="fnref9" epub:type="noteref">9</a>. If the certificate expires, clients won’t be able to open a secure connection with the application.</p>
-<p>Ideally, SPOFs should be identified when the system is designed. The best way to detect them is to examine every system component and ask what would happen if it were to fail. Some SPOFs can be architected away, e.g., by introducing redundancy, while others can’t. In that case, the only option left is to reduce the SPOF’s blast radius, i.e., the damage the SPOF inflicts on the system when it fails. Many of the resiliency patterns we will discuss later reduce the blast radius of failures.</p>
+<section class="level2" data-number="24.4" id="single-points-of-failure">
+<h2 data-number="24.4"><span class="header-section-number">24.4</span> 单点故障</h2>
+<p>单点故障（SPOF）是指一个组件的故障会导致整个系统随之崩溃。在实战中，系统可能存在多个单点故障。</p>
+<p>人类是绝佳的单点故障来源，如果你将他们置于一个能够独自引发灾难性故障的位置，你可以打赌他们最终一定会这么做的。例如，当某人需要手动按特定顺序执行一系列操作步骤且不能犯任何错误时，人为故障就经常发生。另一方面，计算机非常擅长执行指令，这就是为什么应尽可能利用自动化。</p>
+<p>另一个常见的单点故障是DNS<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>。如果客户端无法解析应用程序的域名，它们将无法连接到该应用程序。发生这种情况的原因有很多，从域名过期<a class="footnote-ref" epub:type="noteref" href="#fn7" id="fnref7">7</a>到整个顶级域名宕机<a class="footnote-ref" epub:type="noteref" href="#fn8" id="fnref8">8</a>。</p>
+<p>类似地，应用程序为其HTTP端点使用的TLS证书也是一个单点故障<a class="footnote-ref" epub:type="noteref" href="#fn9" id="fnref9">9</a>。如果证书过期，客户端将无法与应用程序建立安全连接。</p>
+<p>理想情况下，应在系统设计时就识别出单点故障。检测它们的最佳方法是检查每个系统组件，并思考如果它发生故障会怎样。有些单点故障可以通过架构设计来消除，例如通过引入冗余，而有些则不能。在那种情况下，剩下的唯一选择就是减小单点故障的爆炸半径，即单点故障发生时对系统造成的损害范围。我们稍后将讨论的许多弹性模式都能减小故障的爆炸半径。</p>
 </section>
-<section id="network-faults" class="level2" data-number="24.5">
-<h2 data-number="24.5"><span class="header-section-number">24.5</span> Network faults</h2>
-<p>When a client sends a request to a server, it expects to receive a response from it a while later. In the best case, it receives the response shortly after sending the request. If that doesn’t happen, the client has two options: continue to wait or fail the request with a time-out exception or error.</p>
-<p>As discussed in chapter <a href="#failure">7</a>, when the concepts of failure detection and timeouts were introduced, there are many reasons for not getting a prompt response. For example, the server could be very slow or have crashed while processing the request; or maybe the network could be losing a small percentage of packets, causing lots of retransmissions and delays.</p>
-<p>Slow network calls are the silent killers<a href="#fn10" class="footnote-ref" id="fnref10" epub:type="noteref">10</a> of distributed systems. Because the client doesn’t know whether the response will eventually arrive, it can spend a long time waiting before giving up, if it gives up at all, causing performance degradations that are challenging to debug. This kind of fault is also referred to as a <em>gray failure</em><a href="#fn11" class="footnote-ref" id="fnref11" epub:type="noteref">11</a>: a failure that is so subtle that it can’t be detected quickly or accurately. Because of their nature, gray failures can easily bring an entire system down to its knees.</p>
-<p>In the next section, we will explore another common cause of gray failures.</p>
+<section class="level2" data-number="24.5" id="network-faults">
+<h2 data-number="24.5"><span class="header-section-number">24.5</span> 网络故障</h2>
+<p>当客户端向服务器发送请求时，它期望稍后能收到服务器的响应。在最佳情况下，它会在发送请求后不久就收到响应。如果这种情况没有发生，客户端有两个选择：继续等待，或者因超时异常或错误而使请求失败。</p>
+<p>正如在<a href="#failure">第7章</a>中讨论故障检测和超时概念时所介绍的那样，未能及时获得响应的原因有很多。例如，服务器可能非常缓慢，或者在处理请求时崩溃了；又或者网络可能丢失了少量数据包，导致大量数据包重传和响应延迟。</p>
+<p>缓慢的网络调用是分布式系统的无声杀手<a class="footnote-ref" epub:type="noteref" href="#fn10" id="fnref10">10</a>。由于客户端不知道响应最终是否会到达，它可能会花费很长时间等待，然后才放弃（如果它最终放弃的话），从而导致难以调试的性能下降。这种故障也被称为<em>灰度故障</em><a class="footnote-ref" epub:type="noteref" href="#fn11" id="fnref11">11</a>：一种非常微妙、无法快速或准确检测到的故障。由于其天然特性，灰度故障很容易导致整个系统瘫痪。</p>
+<p>在下一节中，我们将探讨导致灰度故障的另一个常见原因。</p>
 </section>
-<section id="resource-leaks" class="level2" data-number="24.6">
-<h2 data-number="24.6"><span class="header-section-number">24.6</span> Resource leaks</h2>
-<p>From an observer’s point of view, a very slow process is not very different from one that isn’t running at all — neither can perform useful work. Resource leaks are one of the most common causes of slow processes.</p>
-<p>Memory is arguably the most well-known resource affected by leaks. A memory leak causes a steady increase in memory consumption over time. Even languages with garbage collection are vulnerable to leaks: if a reference to an object that is no longer needed is kept somewhere, the garbage collector won’t be able to delete it. When a leak has consumed so much memory that there is very little left, the operating system will start to swap memory pages to disk aggressively. Also, the garbage collector will kick in more frequently, trying to release memory. All of this consumes CPU cycles and makes the process slower. Eventually, when there is no more physical memory left, and there is no more space in the swap file, the process won’t be able to allocate memory, and most operations will fail.</p>
-<p>Memory is just one of the many resources that can leak. Take thread pools, for example: if a thread acquired from a pool makes a synchronous blocking HTTP call without a timeout and the call never returns, the thread won’t be returned to the pool. And since the pool has a limited maximum size, it will eventually run out of threads if it keeps losing them.</p>
-<p>You might think that making <em>asynchronous</em> calls rather than synchronous ones would help in the previous case. However, modern HTTP clients use socket pools to avoid recreating TCP connections and paying a performance fee, as discussed in chapter <a href="#tcp">2</a>. If a request is made without a timeout, the connection is never returned to the pool. As the pool has a limited maximum size, eventually, there won’t be any connections left.</p>
-<p>On top of that, your code isn’t the only thing accessing memory, threads, and sockets. The libraries your application depends on use the same resources, and they can hit the same issues we just discussed.</p>
+<section class="level2" data-number="24.6" id="resource-leaks">
+<h2 data-number="24.6"><span class="header-section-number">24.6</span> 资源泄漏</h2>
+<p>从观察者的角度来看，一个运行极其缓慢的进程与一个完全不运行的进程没有太大区别——两者都无法执行有效工作。资源泄漏是导致进程缓慢的最常见原因之一。</p>
+<p>内存可以说是最广为人知的受泄漏影响的资源。内存泄漏会导致内存消耗随着时间的推移而稳步增加。即使是具有垃圾回收机制的编程语言，也容易受到泄漏的影响：如果某个不再需要的对象引用被保存在某处，垃圾回收器将无法删除它。当泄漏消耗了太多内存，导致可用内存所剩无几时，操作系统将开始频繁地将内存页交换到磁盘。同时，垃圾回收器也会更频繁地启动，试图释放内存。所有这些都会消耗CPU周期，使进程变慢。最终，当物理内存耗尽，交换文件也没有空间时，进程将无法分配内存，大多数操作都会失败。</p>
+<p>内存只是众多可能泄漏的资源之一。以线程池为例：如果从池中获取的线程在没有设置超时的情况下进行同步阻塞的HTTP调用，并且该调用永不返回，那么该线程将无法返回到池中。由于线程池的最大容量是有限的，如果持续丢失线程，最终线程池内的线程将会被耗尽。</p>
+<p>你可能会认为，在上述情况下，使用<em>异步</em>调用而非同步调用会有所帮助。然而，正如第<a href="#tcp">2</a>章所讨论的，现代HTTP客户端使用套接字池来避免重新创建TCP连接并付出性能代价。如果发出的请求没有设置超时，连接将永远不会返回到池中。由于连接池的最大容量是有限的，最终将没有任何连接可用。</p>
+<p>除此之外，访问内存、线程和套接字的不仅仅是你的代码。你的应用程序所依赖的库也使用相同的资源，它们也可能遇到我们刚刚讨论的相同问题。</p>
 </section>
-<section id="load-pressure" class="level2" data-number="24.7">
-<h2 data-number="24.7"><span class="header-section-number">24.7</span> Load pressure</h2>
-<p>Every system has a limit of how much load it can withstand, i.e., its capacity. So when the load directed to the system continues to increase, it’s bound to hit that limit sooner or later. But an organic increase in load, that gives the system the time to scale out accordingly and increase its capacity, is one thing, and a sudden and unexpected flood is another.</p>
-<p>For example, consider the number of requests received by an application in a period of time. The rate and the type of incoming requests can change over time, and sometimes suddenly, for a variety of reasons:</p>
+<section class="level2" data-number="24.7" id="load-pressure">
+<h2 data-number="24.7"><span class="header-section-number">24.7</span> 负载压力</h2>
+<p>每个系统都有其能承受的负载极限，即其容量。因此，当指向系统的负载持续增加时，迟早会触及这个极限。但是，有机增长的负载会给予系统相应的时间去扩容并增加其容量，这是一方面；而另一方面(即非有机增长)它会带来突发且意想不到的流量洪峰。</p>
+<p>例如，考虑一个应用程序在一段时间内接收到的请求数量。传入请求的速率和类型可能会随时间变化，有时会因各种原因突然改变：</p>
 <ul>
-<li>The requests might have a seasonality. So, for example, depending on the hour of the day, the application is hit by users in different countries.</li>
-<li>Some requests are much more expensive than others and abuse the system in unexpected ways, like scrapers slurping in data at super-human speed.</li>
-<li>Some requests are malicious, like those of DDoS attacks that try to saturate the application’s bandwidth to deny legitimate users access to it.</li>
+<li>请求可能具有季节性。例如，根据一天中的不同时段，应用程序会受到来自不同国家用户的访问冲击。</li>
+<li>某些请求比其他请求消耗更多的资源，并以意想不到的方式滥用系统，例如网络爬虫以超乎寻常的速度抓取数据。</li>
+<li>某些请求是恶意的，比如DDoS攻击，它会试图耗尽应用程序带宽以致系统拒绝合法用户的访问。</li>
 </ul>
-<p>While some load surges can be handled by automation that adds capacity (e.g., autoscaling), others require the system to reject requests to shield it from overloading, using the patterns we will discuss in chapter <a href="#upstream-resiliency">28</a>.</p>
+<p>虽然某些负载激增可以通过自动增加容量（例如，自动扩缩容）来处理，但其他情况则需要系统拒绝请求以防止系统过载，这需要使用我们将在<a href="#upstream-resiliency">第28章</a>讨论的模式。</p>
 </section>
-<section id="cascading-failures" class="level2" data-number="24.8">
-<h2 data-number="24.8"><span class="header-section-number">24.8</span> Cascading failures</h2>
-<p>You would think that if a system has hundreds of processes, it shouldn’t make much of a difference if a small percentage are slow or unreachable. The thing about faults is that they have the potential to spread virally and cascade from one process to the other until the whole system crumbles to its knees. This happens when system components depend on each other, and a failure in one increases the probability of failure in others.</p>
-<p>For example, suppose multiple clients are querying two database replicas, A and B, behind a load balancer. Each replica handles about 50 transactions per second (see Figure <a href="#fig:cascadingfailure1">24.1</a>).</p>
+<section class="level2" data-number="24.8" id="cascading-failures">
+<h2 data-number="24.8"><span class="header-section-number">24.8</span> 连锁故障</h2>
+<p>你可能会认为，如果一个系统有数百个进程，那么一小部分进程变慢或不可用应该影响不大。但故障的特性在于，它们有可能像病毒一样传播，从一个进程连锁反应到另一个进程，直到整个系统崩溃。当系统组件相互依赖时，这种情况就会发生，一个组件的故障会增加其他组件发生故障的概率。</p>
+<p>举个例子，假设多个客户端正在通过负载均衡器查询两个数据库副本A和B。每个副本每秒处理大约50个事务（参见图 <a href="#fig:cascadingfailure1">24.1</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="Two replicas behind a load balancer; each is handling half the load." width="65%" src="../media/file61.png" />
+<img alt="负载均衡器后的两个副本；每个处理一半的负载。" src="../media/file61.png" width="65%"/>
 <p class="caption">
-Figure 24.1: Two replicas behind a load balancer; each is handling half the load.
+图 24.1：负载均衡器后的两个副本；每个处理一半的负载。
 </p>
 </div>
-<p>Suddenly, replica B becomes unavailable because of a network fault. The load balancer detects that B is unavailable and removes it from the pool. Because of that, replica A has to pick up the slack for B and serve twice the requests per unit time it was serving before (see Figure <a href="#fig:cascadingfailure2">24.2</a>).</p>
+<p>突然，副本B由于网络故障变得不可用。负载均衡器检测到B不可用，并将其从池中移除。因此，副本A必须承担B的负载，单位时间内处理的请求量是之前的两倍（参见图 <a href="#fig:cascadingfailure2">24.2</a>）。</p>
 <div class="figure" style="text-align: center">
-<img alt="When replica B becomes unavailable, A will be hit with more load, which can strain it beyond its capacity." width="60%" src="../media/file62.png" />
+<img alt="当副本B变得不可用时，A将承受更多负载，这可能使其超出承载能力。" src="../media/file62.png" width="60%"/>
 <p class="caption">
-Figure 24.2: When replica B becomes unavailable, A will be hit with more load, which can strain it beyond its capacity.
+图 24.2：当副本B变得不可用时，A将承受更多负载，这可能使其超出承载能力。
 </p>
 </div>
-<p>If replica A struggles to keep up with the incoming requests, the clients will experience increasingly more timeouts and start to retry requests, adding more load to the system. Eventually, replica A will be under so much load that most requests will time out, forcing the load balancer to remove it from the pool. In other words, the original network fault that caused replica B to become unavailable cascaded into a fault at replica A.</p>
-<p>Suppose now that replica B becomes available again and the load balancer puts it back in the pool. Because it’s the only replica in the pool, it will be flooded with requests, causing it to overload and eventually be removed again.</p>
-<p>You can see how even after the network fault is gone, the application continues to struggle because of a feedback loop that causes the load to jump from one replica to another. Failures with this characteristic are also referred to as metastable<a href="#fn12" class="footnote-ref" id="fnref12" epub:type="noteref">12</a>.</p>
-<p>A big enough corrective action is usually needed to break the loop, like temporarily blocking traffic from getting to the replicas in the first place. Unfortunately, these failures are very hard to mitigate once they have started, and the best way to prevent them is to stop faults from spreading from one component to another in the first place.</p>
+<p>如果副本A难以应对涌入的请求，客户端将出现更多的超时，并开始重试请求，从而给系统增加更多负载。最终，副本A将承受巨大的负载，以至于大多数请求都会超时，迫使负载均衡器将其从池中移除。换句话说，最初导致副本B不可用的网络故障连锁引发了副本A的故障。</p>
+<p>现在假设副本B再次变得可用，负载均衡器将其放回池中。由于它是池中唯一的副本，它将面临请求洪流，导致过载并最终再次被移除。</p>
+<p>由此可见，若网络故障解除后，系统仍因反馈环导致负载在副本间持续跳跃，无法恢复稳定，此类故障称为亚稳态。<a class="footnote-ref" epub:type="noteref" href="#fn12" id="fnref12">12</a>。</p>
+<p>要打破这一反馈环，通常需要采取足够强力的纠正措施，例如临时阻断流量进入副本。遗憾的是，一旦此类故障发生，其缓解极为困难；最有效的应对策略是，从根本上阻止故障在各组件间扩散。</p>
 </section>
-<section id="managing-risk" class="level2" data-number="24.9">
-<h2 data-number="24.9"><span class="header-section-number">24.9</span> Managing risk</h2>
-<p>As it should be evident by now, a distributed application needs to accept that faults are inevitable and be prepared to detect, react to, and repair them as they occur.</p>
-<p>At this point, you might feel overwhelmed by the sheer amount of things that can go wrong. But just because a specific fault has a chance of happening, it doesn’t mean we have to do something about it. We first have to consider the probability it will manifest and the impact it will cause to the system’s users when it does. By multiplying the two factors together, we get a risk score<a href="#fn13" class="footnote-ref" id="fnref13" epub:type="noteref">13</a> that we can use to prioritize which faults to address (see Figure <a href="#fig:risk">24.3</a>) first. For example, a fault that is very likely to happen, and has a large impact, should be tackled head on; on the other hand, a fault with a low likelihood and low impact can wait.</p>
+<section class="level2" data-number="24.9" id="managing-risk">
+<h2 data-number="24.9"><span class="header-section-number">24.9</span> 风险管理</h2>
+<p>至此您应该已经很清楚，分布式应用必须接受故障不可避免这一现实，并具备在故障发生时即时检测、响应与修复的能力。</p>
+<p>此刻，你或许会因潜在故障的繁多而感到无所适从。但仅仅因为某个特定故障有可能发生，并不意味着我们必须为此采取行动。我们首先需要考虑其发生的概率，以及当它发生时对系统用户造成的影响。将这两个因素相乘，我们可以得到一个风险评分<a class="footnote-ref" epub:type="noteref" href="#fn13" id="fnref13">13</a>，用以优先处理哪些故障（参见图 <a href="#fig:risk">24.3</a>）。发生概率高且影响严重的故障应优先解决；而发生概率低、影响轻微的故障则可暂缓处理。</p>
 <div class="figure" style="text-align: center">
-<img alt="Risk matrix" width="100%" src="../media/file63.png" />
+<img alt="Risk matrix" src="../media/file63.png" width="100%"/>
 <p class="caption">
-Figure 24.3: Risk matrix
+图 24.3: 风险矩阵
 </p>
 </div>
-<p>Once we decide that we need to do something about a specific fault, we can try to reduce its probability and/or reduce its impact. This will be the main focus of the next chapters.</p>
+<p>一旦我们决定必须对某一特定故障采取行动，便可尝试降低其发生的概率，或降低其影响程度，亦或同时实施两者。这将是接下来几章的主要关注点。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“A Conceptual Framework for System Fault Tolerance,” <a href="https://resources.sei.cmu.edu/asset_files/TechnicalReport/1992_005_001_16112.pdf" class="uri">https://resources.sei.cmu.edu/asset_files/TechnicalReport/1992_005_001_16112.pdf</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Simple Testing Can Prevent Most Critical Failures: An Analysis of Production Failures in Distributed Data-Intensive Systems,” <a href="https://www.usenix.org/system/files/conference/osdi14/osdi14-paper-yuan.pdf" class="uri">https://www.usenix.org/system/files/conference/osdi14/osdi14-paper-yuan.pdf</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>This is the reason the Go language puts so much emphasis on error handling.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“A List of Post-mortems: Config Errors,” <a href="https://github.com/danluu/post-mortems#config-errors" class="uri">https://github.com/danluu/post-mortems#config-errors</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Early Detection of Configuration Errors to Reduce Failure Damage,” <a href="https://www.usenix.org/system/files/conference/osdi16/osdi16-xu.pdf" class="uri">https://www.usenix.org/system/files/conference/osdi16/osdi16-xu.pdf</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“It’s always DNS,” <a href="https://twitter.com/ahidalgosre/status/1315345619926609920?lang=en-GB" class="uri">https://twitter.com/ahidalgosre/status/1315345619926609920?lang=en-GB</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>“Foursquare Goes Dark Too. Unintentionally.,” <a href="https://techcrunch.com/2010/03/27/foursquare-offline" class="uri">https://techcrunch.com/2010/03/27/foursquare-offline</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8" epub:type="footnote"><p>“Stop using .IO Domain Names for Production Traffic,” <a href="https://hackernoon.com/stop-using-io-domain-names-for-production-traffic-b6aa17eeac20" class="uri">https://hackernoon.com/stop-using-io-domain-names-for-production-traffic-b6aa17eeac20</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9" epub:type="footnote"><p>“Microsoft Teams goes down after Microsoft forgot to renew a certificate,” <a href="https://www.theverge.com/2020/2/3/21120248/microsoft-teams-down-outage-certificate-issue-status" class="uri">https://www.theverge.com/2020/2/3/21120248/microsoft-teams-down-outage-certificate-issue-status</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn10" epub:type="footnote"><p>“Fallacies of distributed computing,” <a href="https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing" class="uri">https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn11" epub:type="footnote"><p>“Gray Failure: The Achilles’ Heel of Cloud-Scale Systems,” <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2017/06/paper-1.pdf" class="uri">https://www.microsoft.com/en-us/research/wp-content/uploads/2017/06/paper-1.pdf</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn12" epub:type="footnote"><p>“Metastable Failures in Distributed Systems,” <a href="https://sigops.org/s/conferences/hotos/2021/papers/hotos21-s11-bronson.pdf" class="uri">https://sigops.org/s/conferences/hotos/2021/papers/hotos21-s11-bronson.pdf</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn13" epub:type="footnote"><p>“Risk matrix,” <a href="https://en.wikipedia.org/wiki/Risk_matrix" class="uri">https://en.wikipedia.org/wiki/Risk_matrix</a><a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p style="text-align:left;">“系统容错的概念框架”，<a class="uri" href="https://resources.sei.cmu.edu/asset_files/TechnicalReport/1992_005_001_16112.pdf">https://resources.sei.cmu.edu/asset_files/TechnicalReport/1992_005_001_16112.pdf</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p>“简单测试可以预防大多数关键故障：分布式数据密集型系统中的生产故障分析”，<a class="uri" href="https://www.usenix.org/system/files/conference/osdi14/osdi14-paper-yuan.pdf">https://www.usenix.org/system/files/conference/osdi14/osdi14-paper-yuan.pdf</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p>这就是 Go 语言如此强调错误处理的原因。<a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p>“事后分析列表：配置错误”，<a class="uri" href="https://github.com/danluu/post-mortems#config-errors">https://github.com/danluu/post-mortems#config-errors</a><a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p style="text-align:left;">“通过早期检测配置错误以减少故障损害”，<a class="uri" href="https://www.usenix.org/system/files/conference/osdi16/osdi16-xu.pdf">https://www.usenix.org/system/files/conference/osdi16/osdi16-xu.pdf</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p>“总是 DNS 的问题”，<a class="uri" href="https://twitter.com/ahidalgosre/status/1315345619926609920?lang=en-GB">https://twitter.com/ahidalgosre/status/1315345619926609920?lang=en-GB</a><a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn7"><p>“Foursquare 也意外宕机了”，<a class="uri" href="https://techcrunch.com/2010/03/27/foursquare-offline">https://techcrunch.com/2010/03/27/foursquare-offline</a><a class="footnote-back" href="#fnref7" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn8"><p>“停止在生产流量中使用 .IO 域名”，<a class="uri" href="https://hackernoon.com/stop-using-io-domain-names-for-production-traffic-b6aa17eeac20">https://hackernoon.com/stop-using-io-domain-names-for-production-traffic-b6aa17eeac20</a><a class="footnote-back" href="#fnref8" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn9"><p style="text-align:left;">“微软忘记续订证书导致 Microsoft Teams 宕机”，<a class="uri" href="https://www.theverge.com/2020/2/3/21120248/microsoft-teams-down-outage-certificate-issue-status">https://www.theverge.com/2020/2/3/21120248/microsoft-teams-down-outage-certificate-issue-status</a><a class="footnote-back" href="#fnref9" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn10"><p style="text-align:left;">“分布式计算的谬误”，<a class="uri" href="https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing">https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing</a><a class="footnote-back" href="#fnref10" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn11"><p style="text-align:left;">“灰度故障：云规模系统的阿喀琉斯之踵”，<a class="uri" href="https://www.microsoft.com/en-us/research/wp-content/uploads/2017/06/paper-1.pdf">https://www.microsoft.com/en-us/research/wp-content/uploads/2017/06/paper-1.pdf</a><a class="footnote-back" href="#fnref11" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn12"><p style="text-align:left;">“分布式系统中的亚稳态故障”，<a class="uri" href="https://sigops.org/s/conferences/hotos/2021/papers/hotos21-s11-bronson.pdf">https://sigops.org/s/conferences/hotos/2021/papers/hotos21-s11-bronson.pdf</a><a class="footnote-back" href="#fnref12" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn13"><p>“风险矩阵”，<a class="uri" href="https://en.wikipedia.org/wiki/Risk_matrix">https://en.wikipedia.org/wiki/Risk_matrix</a><a class="footnote-back" href="#fnref13" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>
