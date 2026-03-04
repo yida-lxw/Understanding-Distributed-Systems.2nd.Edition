@@ -931,121 +931,121 @@
     </navPoint>
     <navPoint id="navPoint-153">
       <navLabel>
-        <text>30 Continuous delivery and deployment</text>
+        <text>30 持续交付与部署</text>
       </navLabel>
       <content src="text/ch049.xhtml#cd" />
       <navPoint id="navPoint-154">
         <navLabel>
-          <text>30.1 Review and build</text>
+          <text>30.1 评审与构建</text>
         </navLabel>
         <content src="text/ch049.xhtml#review-and-build" />
       </navPoint>
       <navPoint id="navPoint-155">
         <navLabel>
-          <text>30.2 Pre-production</text>
+          <text>30.2 预生产阶段</text>
         </navLabel>
         <content src="text/ch049.xhtml#pre-production" />
       </navPoint>
       <navPoint id="navPoint-156">
         <navLabel>
-          <text>30.3 Production</text>
+          <text>30.3 生产环境部署</text>
         </navLabel>
         <content src="text/ch049.xhtml#production" />
       </navPoint>
       <navPoint id="navPoint-157">
         <navLabel>
-          <text>30.4 Rollbacks</text>
+          <text>30.4 回滚</text>
         </navLabel>
         <content src="text/ch049.xhtml#rollbacks" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-158">
       <navLabel>
-        <text>31 Monitoring</text>
+        <text>31 监控</text>
       </navLabel>
       <content src="text/ch050.xhtml#monitoring" />
       <navPoint id="navPoint-159">
         <navLabel>
-          <text>31.1 Metrics</text>
+          <text>31.1 指标</text>
         </navLabel>
         <content src="text/ch050.xhtml#metrics" />
       </navPoint>
       <navPoint id="navPoint-160">
         <navLabel>
-          <text>31.2 Service-level indicators</text>
+          <text>31.2 服务级别指标</text>
         </navLabel>
         <content src="text/ch050.xhtml#service-level-indicators" />
       </navPoint>
       <navPoint id="navPoint-161">
         <navLabel>
-          <text>31.3 Service-level objectives</text>
+          <text>31.3 服务级别目标</text>
         </navLabel>
         <content src="text/ch050.xhtml#service-level-objectives" />
       </navPoint>
       <navPoint id="navPoint-162">
         <navLabel>
-          <text>31.4 Alerts</text>
+          <text>31.4 告警</text>
         </navLabel>
         <content src="text/ch050.xhtml#alerts" />
       </navPoint>
       <navPoint id="navPoint-163">
         <navLabel>
-          <text>31.5 Dashboards</text>
+          <text>31.5 仪表盘</text>
         </navLabel>
         <content src="text/ch050.xhtml#dashboards" />
         <navPoint id="navPoint-164">
           <navLabel>
-            <text>31.5.1 Best practices</text>
+            <text>31.5.1 最佳实践</text>
           </navLabel>
           <content src="text/ch050.xhtml#best-practices" />
         </navPoint>
       </navPoint>
       <navPoint id="navPoint-165">
         <navLabel>
-          <text>31.6 Being on call</text>
+          <text>31.6 值班待命</text>
         </navLabel>
         <content src="text/ch050.xhtml#being-on-call" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-166">
       <navLabel>
-        <text>32 Observability</text>
+        <text>32 可观测性</text>
       </navLabel>
       <content src="text/ch051.xhtml#observability" />
       <navPoint id="navPoint-167">
         <navLabel>
-          <text>32.1 Logs</text>
+          <text>32.1 日志</text>
         </navLabel>
         <content src="text/ch051.xhtml#logs" />
       </navPoint>
       <navPoint id="navPoint-168">
         <navLabel>
-          <text>32.2 Traces</text>
+          <text>32.2 日志追踪</text>
         </navLabel>
         <content src="text/ch051.xhtml#traces" />
       </navPoint>
       <navPoint id="navPoint-169">
         <navLabel>
-          <text>32.3 Putting it all together</text>
+          <text>32.3 综上所述</text>
         </navLabel>
         <content src="text/ch051.xhtml#putting-it-all-together" />
       </navPoint>
     </navPoint>
     <navPoint id="navPoint-170">
       <navLabel>
-        <text>33 Manageability</text>
+        <text>33 可管理性</text>
       </navLabel>
       <content src="text/ch052.xhtml#manageability" />
     </navPoint>
     <navPoint id="navPoint-171">
       <navLabel>
-        <text>Summary</text>
+        <text>本章总结</text>
       </navLabel>
       <content src="text/ch053.xhtml#maintainability-outro" />
     </navPoint>
     <navPoint id="navPoint-172">
       <navLabel>
-        <text>34 Final words</text>
+        <text>34 最后的话</text>
       </navLabel>
       <content src="text/ch054.xhtml#final-words" />
     </navPoint>

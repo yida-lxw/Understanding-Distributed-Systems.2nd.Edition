@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch050.xhtml</title>
-  <style>
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch050.xhtml</title>
+<style>
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
@@ -70,176 +71,176 @@ code span.va { color: #19177c; } /* Variable */
 code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="monitoring" class="level1" data-number="31">
-<h1 data-number="31"><span class="header-section-number">31</span> Monitoring</h1>
-<p>Monitoring is primarily used to detect failures that impact users in production and to trigger notifications (or alerts) to the human operators responsible for the system. Another important use case for monitoring is to provide a high-level overview of the system’s health via dashboards.</p>
-<p>In the early days, monitoring was used mostly to report whether a service was up, without much visibility of what was going on inside (black-box monitoring). In time, developers also started to instrument their applications to report whether specific features worked as expected (white-box monitoring). This was popularized with the introduction of statsd<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a> by Etsy, which normalized collecting application-level measurements. While black-box monitoring is useful for detecting the symptoms of a failure, white-box monitoring can help identify the root cause.</p>
-<p>The main use case for black-box monitoring is to monitor external dependencies, such as third-party APIs, and validate how users perceive the performance and health of a service from the outside. A common black-box approach is to periodically run scripts (<em>synthetics</em><a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>) that send test requests to external API endpoints and monitor how long they took and whether they were successful. Synthetics are deployed in the same regions the application’s users are and hit the same endpoints they do. Because they exercise the system’s public surface from the outside, they can catch issues that aren’t visible from within the application, like connectivity problems. Synthetics are also useful for detecting issues with APIs that aren’t exercised often by users.</p>
-<p>For example, if the DNS server of a service were down, the issue would be visible to synthetics, since they wouldn’t be able to resolve its IP address. However, the service itself would think everything was fine, and it was just getting fewer requests than usual.</p>
-<section id="metrics" class="level2" data-number="31.1">
-<h2 data-number="31.1"><span class="header-section-number">31.1</span> Metrics</h2>
-<p>A <em>metric</em> is a time series of raw measurements (samples) of resource usage (e.g., CPU utilization) or behavior (e.g., number of requests that failed), where each sample is represented by a floating-point number and a timestamp.</p>
-<p>Commonly, a metric can also be tagged with a set of key-value pairs (<em>labels</em>). For example, the label could represent the region, data center, cluster, or node where the service is running. Labels make it easy to slice and dice the data and eliminate the instrumentation cost of manually creating a metric for each label combination. However, because every distinct combination of labels is a different metric, tagging generates a large number of metrics, making them challenging to store and process.</p>
-<p>At the very least, a service should emit metrics about its load (e.g., request throughput), its internal state (e.g., in-memory cache size), and its dependencies’ availability and performance (e.g., data store response time). Combined with the metrics emitted by downstream services, this allows operators to identify problems quickly. But this requires explicit code changes and a deliberate effort by developers to instrument their code.</p>
-<p>For example, take a fictitious HTTP handler that returns a resource. There is a whole range of questions we will want to be able to answer once it’s running in production<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_resource(<span class="bu">id</span>):</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  resource <span class="op">=</span> <span class="va">self</span>._cache.get(<span class="bu">id</span>)  <span class="co"># in-process cache</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Is the id valid?</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Was there a cache hit?</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># How long has the resource been in the cache?</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> resource <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> resource</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  resource <span class="op">=</span> <span class="va">self</span>._repository.get(<span class="bu">id</span>)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Did the remote call fail, and if so, why?</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Did the remote call time out?</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># How long did the call take?</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="va">self</span>._cache[<span class="bu">id</span>] <span class="op">=</span> resource</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># What&#39;s the size of the cache?</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> resource</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># How long did it take for the handler to run?</span></span></code></pre></div>
-<p>Now, suppose we want to record the number of requests the handler failed to serve. One way to do that is with an event-based approach — whenever the handler fails to handle a request, it reports a failure count of 1 in an <em>event</em><a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a> to a local telemetry agent, e.g.:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;failureCount&quot;</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;serviceRegion&quot;</span><span class="fu">:</span> <span class="st">&quot;EastUs2&quot;</span><span class="fu">,</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="dv">1614438079</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
-<p>The agent batches these events and emits them periodically to a remote telemetry service, which persists them in a dedicated data store for event logs. For example, this is the approach taken by Azure Monitor’s log-based metrics<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>.</p>
-<p>As you can imagine, this is quite expensive, since the load on the telemetry service increases with the number of events ingested. Events are also costly to aggregate at query time — suppose we want to retrieve the number of failures in North Europe over the past month; we would have to issue a query that requires fetching, filtering, and aggregating potentially trillions of events within that time period.</p>
-<p>So is there a way to reduce costs at query time? Because metrics are time series, they can be modeled and manipulated with mathematical tools. For example, time-series samples can be pre-aggregated over fixed time periods (e.g., 1 minute, 5 minutes, 1 hour, etc.) and represented with summary statistics such as the sum, average, or percentiles.</p>
-<p>Going back to our example, the telemetry service could pre-aggregate the failure count events at ingestion time. If the aggregation (i.e., the sum in our example) were to happen with a period of one hour, we would have one <em>failureCount</em> metric per <em>serviceRegion</em>, each containing one sample per hour, e.g.:</p>
-<pre class="csv"><code>&quot;00:00&quot;, 561,
-&quot;01:00&quot;, 42,
-&quot;02:00&quot;, 61,
+<section class="level1" data-number="31" id="monitoring">
+<h1 data-number="31"><span class="header-section-number">31</span> 监控</h1>
+<p>监控主要用于检测影响生产环境中用户的故障，并向负责系统的人工操作员触发通知（或告警）。监控的另一个重要用例是通过仪表盘提供系统健康状况的高级概览。</p>
+<p>在早期，监控主要用于报告服务是否正常运行，而对其内部运行状况缺乏足够的可见性（黑盒监控）。随着时间的推移，开发人员也开始在他们的应用程序中植入代码，以报告特定功能是否按预期工作（白盒监控）。随着Etsy引入statsd<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>，这种做法得以普及，它规范了应用层指标的收集。虽然黑盒监控有助于检测故障的表象，而白盒监控则能帮助定位根本原因。</p>
+<p>黑盒监控的主要应用场景是监控外部依赖项，例如第三方API，并从用户视角验证服务的性能与健康状况。一种常见的黑盒方法是定期运行测试脚本（<em>合成监控</em><a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>），这些脚本向外部API端点发送测试请求，并监控其耗时与是否成功。合成监控部署在与应用程序用户相同的地理区域，并访问用户所使用的相同接口端点。因为它从外部检测系统对外暴露的接口，因此能够发现内部监控无法察觉的问题，例如网络连接故障。此外，合成监控对于检测那些用户极少访问的 API 所存在的问题也十分有效。</p>
+<p>例如，如果某个服务的DNS服务器宕机，合成监控会立即发现问题，因为它们无法解析该服务的IP地址。然而，服务自身会认为一切正常，只是感觉接收到的请求量比平时少。</p>
+<section class="level2" data-number="31.1" id="metrics">
+<h2 data-number="31.1"><span class="header-section-number">31.1</span> 指标</h2>
+<p><em>指标</em>指的是资源使用情况（例如，CPU利用率）或行为（例如，失败的请求数量）的原始测量值（样本）的时间序列，其中每个样本由一个浮点数和一个时间戳表示。</p>
+<p>通常，一个指标还可以用一组键值对（<em>标签</em>）进行标记。例如，标签可以表示服务运行所在的区域、数据中心、集群或节点。标签使得对数据进行切片和切块变得容易，并消除了为每个标签组合手动创建指标所需的埋点成本。然而，由于每个不同的标签组合都是一个不同的指标，标记会生成大量指标，使得存储和处理它们变得更具有挑战性。</p>
+<p>至少，服务应该发出关于其负载（例如，请求吞吐量）、其内部状态（例如，内存缓存大小）及其依赖项的可用性和性能（例如，数据存储响应时间）的指标。结合下游服务发出的指标，这使运维人员能够快速识别问题。但这需要显式的代码更改和开发人员主动投入精力对其代码进行埋点。</p>
+<p>例如，以一个返回资源的虚构HTTP处理器为例。一旦它在生产环境中运行，我们将希望能够回答一系列问题<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a aria-hidden="true" href="#cb1-1" tabindex="-1"></a><span class="kw">def</span> get_resource(<span class="bu">id</span>):</span>
+<span id="cb1-2"><a aria-hidden="true" href="#cb1-2" tabindex="-1"></a>  resource <span class="op">=</span> <span class="va">self</span>._cache.get(<span class="bu">id</span>)  <span class="co"># 进程内缓存</span></span>
+<span id="cb1-3"><a aria-hidden="true" href="#cb1-3" tabindex="-1"></a>  <span class="co"># id参数是否合法?</span></span>
+<span id="cb1-4"><a aria-hidden="true" href="#cb1-4" tabindex="-1"></a>  <span class="co"># 这里缓存是否命中?</span></span>
+<span id="cb1-5"><a aria-hidden="true" href="#cb1-5" tabindex="-1"></a>  <span class="co"># 该资源在缓存中存放了多长时间？?</span></span>
+<span id="cb1-6"><a aria-hidden="true" href="#cb1-6" tabindex="-1"></a></span>
+<span id="cb1-7"><a aria-hidden="true" href="#cb1-7" tabindex="-1"></a>  <span class="cf">if</span> resource <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb1-8"><a aria-hidden="true" href="#cb1-8" tabindex="-1"></a>    <span class="cf">return</span> resource</span>
+<span id="cb1-9"><a aria-hidden="true" href="#cb1-9" tabindex="-1"></a></span>
+<span id="cb1-10"><a aria-hidden="true" href="#cb1-10" tabindex="-1"></a>  resource <span class="op">=</span> <span class="va">self</span>._repository.get(<span class="bu">id</span>)</span>
+<span id="cb1-11"><a aria-hidden="true" href="#cb1-11" tabindex="-1"></a>  <span class="co"># 远程调用是否失败？如果是，为什么呢?</span></span>
+<span id="cb1-12"><a aria-hidden="true" href="#cb1-12" tabindex="-1"></a>  <span class="co"># 远程调用是否超时?</span></span>
+<span id="cb1-13"><a aria-hidden="true" href="#cb1-13" tabindex="-1"></a>  <span class="co"># 远程调用需要耗时多久?</span></span>
+<span id="cb1-14"><a aria-hidden="true" href="#cb1-14" tabindex="-1"></a></span>
+<span id="cb1-15"><a aria-hidden="true" href="#cb1-15" tabindex="-1"></a>  <span class="va">self</span>._cache[<span class="bu">id</span>] <span class="op">=</span> resource</span>
+<span id="cb1-16"><a aria-hidden="true" href="#cb1-16" tabindex="-1"></a>  <span class="co"># 这个缓存的大小是多少?</span></span>
+<span id="cb1-17"><a aria-hidden="true" href="#cb1-17" tabindex="-1"></a></span>
+<span id="cb1-18"><a aria-hidden="true" href="#cb1-18" tabindex="-1"></a>  <span class="cf">return</span> resource</span>
+<span id="cb1-19"><a aria-hidden="true" href="#cb1-19" tabindex="-1"></a>  <span class="co"># 这个handler运行需要耗时多久?</span></span></code></pre></div>
+<p>现在，假设我们想要记录处理器未能处理的请求数量。一种方法是采用基于事件的方法——每当处理器未能处理请求时，它就在一个<em>事件</em><a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>中向本地遥测代理报告失败计数为1，例如：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a aria-hidden="true" href="#cb2-1" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb2-2"><a aria-hidden="true" href="#cb2-2" tabindex="-1"></a>  <span class="dt">"failureCount"</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb2-3"><a aria-hidden="true" href="#cb2-3" tabindex="-1"></a>  <span class="dt">"serviceRegion"</span><span class="fu">:</span> <span class="st">"EastUs2"</span><span class="fu">,</span></span>
+<span id="cb2-4"><a aria-hidden="true" href="#cb2-4" tabindex="-1"></a>  <span class="dt">"timestamp"</span><span class="fu">:</span> <span class="dv">1614438079</span></span>
+<span id="cb2-5"><a aria-hidden="true" href="#cb2-5" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>代理将这些事件批量处理，并定期将它们发送到远程遥测服务，该服务将它们持久化在专门用于事件日志的数据存储中。例如，这正是Azure Monitor基于日志的指标<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>所采用的方法。</p>
+<p>可以想象，这成本相当高，因为遥测服务的负载随着摄取的事件数量增加而增加。在查询时聚合事件的成本也很高——假设我们想要检索过去一个月北欧的故障数量；我们将不得不发起一个查询，需要在该时间段内获取、过滤和聚合可能数万亿的事件。</p>
+<p>那么，有没有办法降低查询时的成本呢？因为指标是一种时间序列，所以可以用数学工具对它们进行建模和处理。例如，时间序列样本可以在固定的时间段（例如，1分钟、5分钟、1小时等）内进行预聚合，并用汇总统计信息（如总和、平均值或百分位数）表示。</p>
+<p>回到我们的例子，遥测服务可以在摄取时预聚合故障计数事件。如果聚合（即我们例子中的总和）以一小时为周期进行，那么每个<em>serviceRegion</em>将有一个<em>failureCount</em>指标，每个指标每小时包含一个样本，例如：</p>
+<pre class="csv"><code>"00:00", 561,
+"01:00", 42,
+"02:00", 61,
 ...</code></pre>
-<p>The ingestion service could also create multiple pre-aggregates with different periods. This way, the pre-aggregated metric with the best period that satisfies the query can be chosen at query time. For example, CloudWatch<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a> (the telemetry service used by AWS) pre-aggregates data as it’s ingested.</p>
-<p>We can take this idea one step further and also reduce ingestion costs by having the local telemetry agents pre-aggregate metrics client-side. By combining client- and server-side pre-aggregation, we can drastically reduce the bandwidth, compute, and storage requirements for metrics. However, this comes at a cost: we lose the ability to re-aggregate metrics after ingestion because we no longer have access to the original events that generated them. For example, if a metric is pre-aggregated over a period of 1 hour, it can’t later be re-aggregated over a period of 5 minutes without the original events.</p>
-<p>Because metrics are mainly used for alerting and visualization purposes, they are usually persisted in a pre-aggregated form in a data store specialized for efficient time series storage<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a>.</p>
+<p>摄取服务还可以创建具有不同周期的多个预聚合。这样，在查询时可以选择满足查询且具有最佳周期的预聚合指标。例如，CloudWatch<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>（AWS使用的遥测服务）在数据被摄取时对其进行预聚合。</p>
+<p>我们可以更进一步，通过让本地遥测代理在客户端预聚合指标来降低摄取成本。通过结合客户端和服务器端的预聚合，我们可以大幅减少指标的带宽、计算和存储需求。然而，这需要付出代价的：我们失去了在摄取后重新聚合指标的能力，因为我们不再能够访问生成它们的原始事件。例如，如果一个指标在1小时的周期内进行了预聚合，那么在没有原始事件的情况下，以后就无法在5分钟的周期内重新聚合。</p>
+<p>由于指标主要用于告警和可视化目的，它们通常以预聚合的形式持久化在专门用于高效时间序列存储的数据存储中<a class="footnote-ref" epub:type="noteref" href="#fn7" id="fnref7">7</a>。</p>
 </section>
-<section id="service-level-indicators" class="level2" data-number="31.2">
-<h2 data-number="31.2"><span class="header-section-number">31.2</span> Service-level indicators</h2>
-<p>As noted before, one of the main use cases for metrics is alerting. But that doesn’t mean we should create alerts for every possible metric — for example, it’s useless to be alerted in the middle of the night because a service had a big spike in memory consumption a few minutes earlier.</p>
-<p>In this section, we will discuss one specific metric category that lends itself well to alerting: <em>service-level indicators</em> (SLIs). An SLI is a metric that measures one aspect of the <em>level of service</em> provided by a service to its users, like the response time, error rate, or throughput. SLIs are typically aggregated over a rolling time window and represented with a summary statistic, like an average or percentile.</p>
-<p>SLIs are best defined as a ratio of two metrics: the number of “good events” over the total number of events. That makes the ratio easy to interpret: 0 means the service is completely broken and 1 that whatever is being measured is working as expected (see Figure <a href="#fig:sli">31.1</a>). As we will see later in the chapter, ratios also simplify the configuration of alerts. Some commonly used SLIs for services are:</p>
+<section class="level2" data-number="31.2" id="service-level-indicators">
+<h2 data-number="31.2"><span class="header-section-number">31.2</span> 服务级别指标</h2>
+<p>如前所述，指标的主要用途之一是告警。但这并不意味着我们应该为每一个可能的指标都创建告警——例如，在半夜由于某个服务几分钟前内存使用量出现巨大峰值而被告警吵醒，这是毫无意义的。</p>
+<p>在本节中，我们将讨论一个特别适合用于告警的特定指标类别：<em>服务级别指标</em>。SLI 是一种度量指标，用于衡量服务向其用户提供的<em>服务水平</em>的某个方面，例如响应时间、错误率或吞吐量。SLI 通常在一个滚动时间窗口内聚合，并用一个汇总统计量（如平均值或百分位数）来表示。</p>
+<p>SLI 最好定义为两个指标的比率："良好事件"的数量除以事件总数。这使得该比率易于解释：0 表示服务完全故障，1 表示被测量的内容按预期正常工作（参见图 <a href="#fig:sli">31.1</a>）。正如我们将在本章后面看到的那样，比率也简化了告警的配置。服务中一些常用的 SLI 包括：</p>
 <ul>
-<li><em>Response time</em> — The fraction of requests that are completed faster than a given threshold.</li>
-<li><em>Availability</em> — The proportion of time the service was usable, defined as the number of successful requests over the total number of requests.</li>
+<li><em>响应时间</em> —— 在给定阈值内完成的请求所占的比例。</li>
+<li><em>可用性</em> —— 服务可用的时间比例，定义为成功请求数除以总请求数。</li>
 </ul>
 <div class="figure" style="text-align: center">
-<img alt="An SLI defined as the ratio of good events over the total number of events" width="100%" src="../media/file79.png" />
+<img alt="SLI 定义为良好事件数量与事件总数的比率" src="../media/file79.png" width="100%"/>
 <p class="caption">
-Figure 31.1: An SLI defined as the ratio of good events over the total number of events
+图 31.1：SLI 定义为良好事件数量与事件总数的比率
 </p>
 </div>
-<p>Once we have decided what to measure, we need to decide where to measure it. Take the response time, for example. Should we measure the response time as seen by the service, load balancer, or clients? Ideally, we should select the metric that best represents the users’ experience. If that’s too costly to collect, we should pick the next best candidate. In the previous example, the client metric is the most meaningful of the lot since it accounts for delays and hiccups through the entire request path.</p>
-<p>Now, how should we measure the response time? Measurements can be affected by many factors, such as network delays, page faults, or heavy context switching. Since every request does not take the same amount of time, response times are best represented with a distribution, which usually is right-skewed and long-tailed<a href="#fn8" class="footnote-ref" id="fnref8" epub:type="noteref">8</a>.</p>
-<p>A distribution can be summarized with a statistic. Take the average, for example. While it has its uses, it doesn’t tell us much about the proportion of requests experiencing a specific response time, and all it takes to skew the average is one large outlier. For example, suppose we collected 100 response times, of which 99 are 1 second, and one is 10 minutes. In this case, the average is nearly 7 seconds. So even though 99% of the requests experience a response time of 1 second, the average is 7 times higher than that.</p>
-<p>A better way to represent the distribution of response times is with percentiles. A percentile is the value below which a percentage of the response times fall. For example, if the 99th percentile is 1 second, then 99% of requests have a response time below or equal to 1 second. The upper percentiles of a response time distribution, like the 99th and 99.9th percentiles, are also called <em>long-tail latencies</em>. Even though only a small fraction of requests experience these extreme latencies, it can impact the most important users for the business. They are the ones that make the highest number of requests and thus have a higher chance of experiencing tail latencies. There are studies<a href="#fn9" class="footnote-ref" id="fnref9" epub:type="noteref">9</a> that show that high latencies negatively affect revenues: a mere 100-millisecond delay in load time can hurt conversion rates by 7 percent.</p>
-<p>Also, long-tail latencies can dramatically impact a service. For example, suppose a service on average uses about 2K threads to serve 10K requests per second. By Little’s Law<a href="#fn10" class="footnote-ref" id="fnref10" epub:type="noteref">10</a>, the average response time of a thread is 200 ms. Now, if suddenly 1% of requests start taking 20 seconds to complete (e.g., because of a congested switch and relaxed timeouts), 2K additional threads are needed to deal just with the slow requests. So the number of threads used by the service has to double to sustain the load!</p>
-<p>Measuring long-tail latencies and keeping them in check doesn’t just make our users happy but also drastically improves the resiliency of our systems while reducing their operational costs. Intuitively, by reducing the long-tail latency (worst-case scenario), we also happen to improve the average-case scenario.</p>
+<p>一旦我们决定了要测量什么，就需要决定在哪里测量。以响应时间为例。我们应该从服务、负载均衡器还是客户端的角度来测量响应时间？理想情况下，我们应该选择最能代表用户体验的指标。如果收集成本太高，我们应该选择次优的方案。在前面的例子中，客户端指标是其中最有意义的，因为它考虑了整个请求路径中的延迟和突发问题。</p>
+<p>那么，我们应该如何测量响应时间呢？测量可能受到许多因素的影响，例如网络延迟、页面错误或大量的上下文切换。由于每个请求花费的时间并不相同，响应时间最好用分布(特指数学中的概率分布或统计分布)来表示，这种分布通常呈现右偏且长尾<a class="footnote-ref" epub:type="noteref" href="#fn8" id="fnref8">8</a>的特征。</p>
+<p>分布可以用一个统计量来概括。以平均值为例。虽然它有其用途，但它并不能告诉我们有多少比例的请求经历了特定的响应时间，而且只需要一个大的异常值就会扭曲平均值。例如，假设我们收集了 100 个响应时间，其中 99 个是 1 秒，1 个是 10 分钟。在这种情况下，平均值接近 7 秒。因此，尽管 99% 的请求响应时间为 1 秒，平均值却是它的 7 倍。</p>
+<p>表示响应时间分布的更好方法是使用百分位数。百分位数是指低于该值的响应时间所占的百分比。例如，如果第 99 百分位数是 1 秒，那么 99% 的请求的响应时间小于或等于 1 秒。响应时间分布的高百分位数，如第 99 和第 99.9 百分位数，也被称为<em>长尾延迟</em>。尽管只有一小部分请求会经历这些极端延迟，但它可能会影响业务中最重要的用户。他们是发出最多请求的用户，因此更有可能遇到尾部延迟。有研究<a class="footnote-ref" epub:type="noteref" href="#fn9" id="fnref9">9</a>表明，高延迟会对收入产生负面影响：仅仅 100 毫秒的加载时间延迟就可能导致转化率下降 7%。</p>
+<p>此外，长尾延迟会对服务产生巨大影响。例如，假设一个服务平均使用约 2K 个线程来每秒处理 10K 个请求。根据利特尔法则<a class="footnote-ref" epub:type="noteref" href="#fn10" id="fnref10">10</a>，线程的平均响应时间为 200 毫秒。现在，如果突然有 1% 的请求开始需要 20 秒才能完成（例如，由于交换机拥塞和超时设置宽松），那么仅处理这些慢请求就需要额外 2K 个线程。因此，服务使用的线程数必须翻倍才能维持负载！</p>
+<p>测量并控制长尾延迟不仅能让我们的用户满意，还能极大地提高我们系统的弹性，同时降低其运营成本。直观地说，通过减少长尾延迟（最坏情况），我们同时也改善了平均情况。</p>
 </section>
-<section id="service-level-objectives" class="level2" data-number="31.3">
-<h2 data-number="31.3"><span class="header-section-number">31.3</span> Service-level objectives</h2>
-<p>A <em>service-level objective</em> (SLO) defines a range of acceptable values for an SLI within which the service is considered to be in a healthy state (see Figure <a href="#fig:slo">31.2</a>). An SLO sets the expectation to the service’s users of how it should behave when it’s functioning correctly. Service owners can also use SLOs to define a service-level agreement (SLA) with their users — a contractual agreement that dictates what happens when an SLO isn’t met, generally resulting in financial consequences.</p>
-<p>For example, an SLO could define that 99% of API calls to endpoint X should complete below 200 ms, as measured over a rolling window of 1 week. Another way to look at it is that it’s acceptable for up to 1% of requests within a rolling week to have a latency higher than 200 ms. That 1% is also called the <em>error budget</em>, which represents the number of failures that can be tolerated.</p>
+<section class="level2" data-number="31.3" id="service-level-objectives">
+<h2 data-number="31.3"><span class="header-section-number">31.3</span> 服务级别目标</h2>
+<p><em>服务级别目标</em>（SLO）定义了服务级别指标（SLI）的可接受值范围，在此范围内服务被视为处于健康状态（参见图 <a href="#fig:slo">31.2</a>）。SLO向服务的用户设定了服务在正常运行时应如何表现的期望。服务所有者还可以使用SLO与用户定义服务级别协议（SLA）——这是一份合同协议，规定了当SLO未达到时会发生什么，通常会涉及经济责任。</p>
+<p>例如，一个SLO可以定义为：在为期一周的滚动窗口期内，对端点X的API调用应有99%在200毫秒内完成。另一种理解方式是：在滚动的一周内，最多有1%的请求延迟高于200毫秒是可以接受的。这1%也被称为<em>错误预算</em>，它代表了可以容忍的故障数量。</p>
 <div class="figure" style="text-align: center">
-<img alt="An SLO defines the range of acceptable values for an SLI." width="100%" src="../media/file80.png" />
+<img alt="SLO定义了SLI的可接受值范围。" src="../media/file80.png" width="100%"/>
 <p class="caption">
-Figure 31.2: An SLO defines the range of acceptable values for an SLI.
+图 31.2: SLO定义了SLI的可接受值范围。
 </p>
 </div>
-<p>SLOs are helpful for alerting purposes and also help the team prioritize repair tasks. For example, the team could agree that when an error budget is exhausted, repair items will take precedence over new features until the SLO is repaired. Furthermore, an incident’s importance can be measured by how much of the error budget has been burned. For example, an incident that burned 20% of the error budget is more important than one that burned only 1%.</p>
-<p>Smaller time windows force the team to act quicker and prioritize bug fixes and repair items, while longer windows are better suited to make long-term decisions about which projects to invest in. Consequently, it makes sense to have multiple SLOs with different window sizes.</p>
-<p>How strict should SLOs be? Choosing the right target range is harder than it looks. If it’s too lenient, we won’t detect user-facing issues; if it’s too strict, engineering time will be wasted with micro-optimizations that yield diminishing returns. Even if we could guarantee 100% reliability for our systems (which is impossible), we can’t make guarantees for anything that our users depend on to access our service and which is outside our control, like their last-mile connection. Thus, 100% reliability doesn’t translate into a 100% reliable experience for users.</p>
-<p>When setting the target range for SLOs, it’s reasonable to start with comfortable ranges and tighten them as we build confidence. We shouldn’t just pick targets our service meets today that might become unattainable in a year after load increases. Instead, we should work backward from what users care about. In general, anything above 3 nines of availability is very costly to achieve and provides diminishing returns.</p>
-<p>Also, we should strive to keep things simple and have as few SLOs as possible that provide a good enough indication of the desired service level and review them periodically. For example, suppose we discover that a specific user-facing issue generated many support tickets, but none of our SLOs showed any degradation. In that case, the SLOs might be too relaxed or simply not capture a specific use case.</p>
-<p>SLOs need to be agreed on with multiple stakeholders. If the error budget is being burned too rapidly or has been exhausted, repair items have to take priority over features. Engineers need to agree that the targets are achievable without excessive toil. Product managers also have to agree that the targets guarantee a good user experience. As Google’s SRE book mentions<a href="#fn11" class="footnote-ref" id="fnref11" epub:type="noteref">11</a>: “if you can’t ever win a conversation about priorities by quoting a particular SLO, it’s probably not worth having that SLO.”</p>
-<p>It’s worth mentioning that users can become over-reliant on the actual behavior of our service rather than its documented SLA. To prevent that, we can periodically inject controlled failures<a href="#fn12" class="footnote-ref" id="fnref12" epub:type="noteref">12</a> in production — also known as chaos testing. These controlled failures ensure the dependencies can cope with the targeted service level and are not making unrealistic assumptions. As an added benefit, they also help validate that resiliency mechanisms work as expected.</p>
+<p>SLO既能有效支持告警，又能帮助团队优先处理修复任务。例如，团队可以约定，当错误预算耗尽时，修复事项将优先于新功能，直到SLO得到修复。此外，一个事件的重要性可以通过其消耗了多少错误预算来衡量。例如，一个消耗了20%错误预算的事件比只消耗了1%的事件更重要。</p>
+<p>较短的时间窗口迫使团队更快地采取行动，并优先处理bug修复和修复事项，而较长的窗口则更适合就投资哪些项目做出长期决策。因此，拥有多个具有不同窗口大小的SLO是有意义的。</p>
+<p>SLO应该设定得多严格？选择合适的目标范围，其难度远超表面所见。如果太宽松，我们将无法检测到面向用户的问题；如果太严格，工程时间将浪费在收益递减的微观优化上。即使我们能够保证系统100%的可靠性（这是不可能的），我们也无法对用户访问服务所依赖的、且超出我们控制范围的环节做出保证，例如用户的“最后一公里”网络连接。因此，100%的可靠性并不能转化为用户100%可靠的体验。</p>
+<p>在为SLO设定目标范围时，合理的做法是从宽松的范围开始，随着我们建立信心再逐步收紧。我们不应该仅仅选择当前服务能够达到的目标，这些目标可能在负载增加一年后变得无法实现。相反，我们应该从用户关心的角度出发进行逆向推导。一般来说，实现超过三个9的可用性成本非常高，并且收益递减。</p>
+<p>此外，我们应力求保持简洁，仅保留足够反映预期服务水准的最少数量的服务级别目标（SLO），并定期对其进行审查。例如，若发现某个面向用户的问题引发了大量支持工单，但所有现有SLO均未显示任何性能劣化，则说明这些SLO可能设定得过于宽松，或未能覆盖特定的使用场景。</p>
+<p>SLO需要与多个利益相关者达成一致。如果错误预算消耗过快或已经耗尽，修复事项必须优先于功能开发。工程师需要同意这些目标是可以实现的，而无需付出过度的辛劳。产品经理也必须同意这些目标能保证良好的用户体验。正如谷歌的SRE书中所提到的<a class="footnote-ref" epub:type="noteref" href="#fn11" id="fnref11">11</a>：“如果你永远无法通过引用某个特定的SLO来赢得关于优先级的讨论，那么这个SLO可能就不值得拥有。”</p>
+<p>值得一提的是，用户可能会过度依赖我们服务的实际行为，而不是其文档化的SLA。为了防止这种情况，我们可以在生产环境中定期注入受控故障<a class="footnote-ref" epub:type="noteref" href="#fn12" id="fnref12">12</a>——这也被称为混沌测试。这些受控故障确保系统依赖具备应对目标服务级别的能力，并且不做不切实际的假设。此外，它们还能验证弹性机制是否按预期工作。</p>
 </section>
-<section id="alerts" class="level2" data-number="31.4">
-<h2 data-number="31.4"><span class="header-section-number">31.4</span> Alerts</h2>
-<p>Alerting is the part of a monitoring system that triggers an action when a specific condition happens, like a metric crossing a threshold. Depending on the severity and the type of the alert, the action can range from running some automation, like restarting a service instance, to ringing the phone of a human operator who is on call. In the rest of this section, we will mostly focus on the latter case.</p>
-<p>For an alert to be useful, it has to be actionable. The operator shouldn’t spend time exploring dashboards to assess the alert’s impact and urgency. For example, an alert signaling a spike in CPU usage is not useful as it’s not clear whether it has any impact on the system without further investigation. On the other hand, an SLO is a good candidate for an alert because it quantifies the impact on the users. The SLO’s error budget can be monitored to trigger an alert whenever a large fraction of it has been consumed.</p>
-<p>Before discussing how to define an alert, it’s important to understand that there is a trade-off between its precision and recall. Formally, <em>precision</em> is the fraction of significant events (i.e., actual issues) over the total number of alerts, while <em>recall</em> is the ratio of significant events that triggered an alert. Alerts with low precision are noisy and often not actionable, while alerts with low recall don’t always trigger during an outage. Although it would be nice to have 100% precision and recall, improving one typically lowers the other, and so a compromise needs to be made.</p>
-<p>Suppose we have an availability SLO of 99% over 30 days, and we would like to configure an alert for it. A naive way would be to trigger an alert whenever the availability goes below 99% within a relatively short time window, like an hour. But how much of the error budget has actually been burned by the time the alert triggers? Because the time window of the alert is one hour, and the SLO error budget is defined over 30 days, the percentage of error budget that has been spent when the alert triggers is <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mtext mathvariant="normal">1 hour</mtext><mtext mathvariant="normal">30 days</mtext></mfrac><mo>=</mo><mn>0.14</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">\frac{\text{1 hour}}{\text{30 days}} = 0.14\%</annotation></semantics></math>. A system is never 100% healthy, since there is always something failing at any given time. So being notified that 0.14% of the SLO’s error budget has been burned is not useful. In this case, we have a high recall but a low precision.</p>
-<p>We can improve the alert’s precision by increasing the amount of time the condition needs to be true. The problem is that now the alert will take longer to trigger, even during an actual outage. The alternative is to alert based on how fast the error budget is burning, also known as the <em>burn rate</em>, which lowers the detection time. The burn rate is defined as the percentage of the error budget consumed over the percentage of the SLO time window that has elapsed — it’s the rate of exhaustion of the error budget. So using our previous example, a burn rate of 1 means the error budget will be exhausted precisely in 30 days; if the rate is 2, then it will be 15 days; if the rate is 3, it will be 10 days, and so on.</p>
-<p>To improve recall, we can have multiple alerts with different thresholds. For example, a burn rate below 2 could be classified as a low-severity alert to be investigated during working hours, while a burn rate over 10 could trigger an automated call to an engineer. The SRE workbook has some great examples<a href="#fn13" class="footnote-ref" id="fnref13" epub:type="noteref">13</a> of how to configure alerts based on burn rates.</p>
-<p>While the majority of alerts should be based on SLOs, some should trigger for known failure modes that we haven’t had the time to design or debug away. For example, suppose we know a service suffers from a memory leak that has led to an incident in the past, but we haven’t yet managed to track down the root cause. In this case, as a temporary mitigation, we could define an alert that triggers an automated restart when a service instance is running out of memory.</p>
+<section class="level2" data-number="31.4" id="alerts">
+<h2 data-number="31.4"><span class="header-section-number">31.4</span> 告警</h2>
+<p>告警是监控系统的一部分，当特定条件发生时（例如某个指标超过阈值），它会触发一个动作。根据告警的严重程度和类型，动作的范围可以从运行一些自动化操作（例如重启服务实例），到呼叫值班运维人员的电话。在本节的其余部分，我们将主要关注后一种情况。</p>
+<p>为使告警真正有效，它必须是可操作的。运维人员不应花费时间探索仪表盘来评估告警的影响和紧急程度。例如，一个指示CPU使用率激增的告警是无用的，因为如果不进行进一步调查，就不清楚它是否对系统有任何影响。另一方面，SLO是告警的一个良好候选，因为它量化了对用户的影响。可以监控SLO的错误预算，每当其大部分被消耗时触发告警。</p>
+<p>在讨论如何定义告警之前，重要的是要理解其精确率和召回率之间存在权衡取舍关系。严格上来说，<em>精确率</em>是重要事件（即实际问题）占告警总数的比例，而<em>召回率</em>是触发告警的重要事件的比率。精确率低的告警嘈杂且通常不可操作，而召回率低的告警在故障期间并不总是触发。虽然拥有100%的精确率和召回率会很好，但提高其中一个通常会降低另一个，因此需要做出妥协。</p>
+<p>假设我们有一个30天内可用性为99%的SLO，并希望为其配置告警。一种简单的方法是，只要可用性在相对较短的时间窗口（例如一小时）内低于99%，就触发告警。但是，当告警触发时，实际上已经消耗了多少错误预算？因为告警的时间窗口是一小时，而SLO错误预算是在30天内定义的，所以告警触发时已花费的错误预算百分比为 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mtext mathvariant="normal">1小时</mtext><mtext mathvariant="normal">30天</mtext></mfrac><mo>=</mo><mn>0.14</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">\frac{\text{1小时}}{\text{30天}} = 0.14\%</annotation></semantics></math>。系统永远不会100%健康，因为在任何给定时间总会有一些故障。因此，被告知SLO错误预算的0.14%已被消耗是无用的。在这种情况下，我们拥有高召回率但低精确率。</p>
+<p>我们可以通过增加条件需要成立的时间量来提高告警的精确率。问题是，现在告警需要更长的时间才能触发，即使在实际故障期间也是如此。另一种方法是基于错误预算消耗的速度（也称为<em>燃烧率</em>）进行告警，这降低了检测时间。燃烧率定义为已消耗的错误预算百分比与已过去的SLO时间窗口百分比之比值——它是错误预算的消耗速率。因此，使用我们之前的例子，燃烧率为1意味着错误预算将在30天内耗尽；如果速率为2，则将是15天；如果速率为3，则将是10天，依此类推。</p>
+<p>为了提高召回率，我们可以设置具有不同阈值的多个告警。例如，燃烧率低于2可以被归类为低严重性告警，在工作时间内进行调查，而燃烧率超过10则可以触发对工程师的自动呼叫。SRE工作手册中有一些很好的例子<a class="footnote-ref" epub:type="noteref" href="#fn13" id="fnref13">13</a>，说明了如何基于燃烧率配置告警。</p>
+<p>尽管大多数告警应该基于SLO触发，但有些告警应该基于我们尚未有时间设计或通过调试消除掉的已知故障模式来触发。例如，假设我们已知某个服务存在内存泄漏，过去曾导致过事故，但我们尚未设法追踪到根本原因。在这种情况下，作为一种临时缓解措施，我们可以定义一个告警，当服务实例内存不足时触发自动重启。</p>
 </section>
-<section id="dashboards" class="level2" data-number="31.5">
-<h2 data-number="31.5"><span class="header-section-number">31.5</span> Dashboards</h2>
-<p>After alerting, the other main use case for metrics is to power real-time dashboards that display the overall health of a system. Unfortunately, dashboards can easily become a dumping ground for charts that end up being forgotten, have questionable usefulness, or are just plain confusing. Good dashboards don’t happen by coincidence. In this section, we will discuss some of the best practices for creating useful dashboards.</p>
-<p>When creating a dashboard, the first decision we have to make is to decide who the audience is<a href="#fn14" class="footnote-ref" id="fnref14" epub:type="noteref">14</a> and what they are looking for. Then, given the audience, we can work backward to decide which charts, and therefore metrics, to include.</p>
-<p>The categories of dashboards presented here (see Figure <a href="#fig:dashboard">31.3</a>) are by no means standard but should give you an idea of how to organize dashboards.</p>
+<section class="level2" data-number="31.5" id="dashboards">
+<h2 data-number="31.5"><span class="header-section-number">31.5</span> 仪表盘</h2>
+<p>除了告警之外，指标的另一个主要用途是增强实时仪表盘的表现力，以直观呈现系统的整体健康状况。遗憾的是，仪表盘很容易变成图表的垃圾场，这些图表最终会被遗忘、用处存疑，或者干脆令人困惑。好的仪表盘并非偶然产生。在本节中，我们将讨论创建有用仪表盘的一些最佳实践。</p>
+<p>创建仪表盘时，我们首先要做的决定是确定受众是谁<a class="footnote-ref" epub:type="noteref" href="#fn14" id="fnref14">14</a>以及他们需要什么。然后，根据受众，我们可以逆向决定包含哪些图表，进而决定包含哪些指标。</p>
+<p>这里介绍的仪表盘类别（参见<a href="#fig:dashboard">图 31.3</a>）绝非标准，但应该能让您了解如何组织仪表盘。</p>
 <div class="figure" style="text-align: center">
-<img alt="Dashboards should be tailored to their audience." width="100%" src="../media/file81.png" />
+<img alt="仪表盘应根据其受众进行定制。" src="../media/file81.png" width="100%"/>
 <p class="caption">
-Figure 31.3: Dashboards should be tailored to their audience.
+图 31.3: 仪表盘应根据其受众进行定制。
 </p>
 </div>
-<p><strong>SLO dashboard</strong></p>
-<p>The SLO summary dashboard is designed to be used by various stakeholders from across the organization to gain visibility into the system’s health as represented by its SLOs. During an incident, this dashboard quantifies the impact the incident is having on the users.</p>
-<p><strong>Public API dashboard</strong></p>
-<p>This dashboard displays metrics about the system’s public API endpoints, which helps operators identify problematic paths during an incident. For each endpoint, the dashboard exposes several metrics related to request messages, request handling, and response messages, like:</p>
+<p><strong>SLO 仪表盘</strong></p>
+<p>SLO 摘要仪表盘旨在供组织内各利益相关方使用，以通过 SLO 了解系统健康状况。在事件期间，此仪表盘可量化事件对用户造成的影响。</p>
+<p><strong>公共 API 仪表盘</strong></p>
+<p>此仪表盘显示有关系统公共 API 端点的指标，有助于运维人员在事件期间识别有问题的路径。对于每个端点，仪表盘会暴露与请求消息、请求处理和响应消息相关的若干指标，例如：</p>
 <ul>
-<li>Number of requests received or messages pulled from a messaging broker, request size statistics, authentication issues, etc.</li>
-<li>Request handling duration, availability and response time of external dependencies, etc.</li>
-<li>Counts per response type, size of responses, etc.</li>
+<li>接收到的请求数或从消息代理拉取的消息数、请求大小统计信息、身份验证问题等。</li>
+<li>请求处理时长、外部依赖项的可用性和响应时间等。</li>
+<li>每种响应类型的计数、响应大小等。</li>
 </ul>
-<p><strong>Service dashboard</strong></p>
-<p>A service dashboard displays service-specific implementation details, which require an in-depth understanding of its inner workings. Unlike the previous dashboards, this one is primarily used by the team that owns the service. Beyond service-specific metrics, a service dashboard should also contain metrics of upstream dependencies like load balancers and messaging queues and downstream dependencies like data stores.</p>
-<p>This dashboard offers a first entry point into what’s going on within the service when debugging. As we will later learn when discussing observability, this high-level view is just the starting point. The operator typically drills down into the metrics by segmenting them further and eventually reaches for raw logs and traces to get more detail.</p>
-<section id="best-practices" class="level3" data-number="31.5.1">
-<h3 data-number="31.5.1"><span class="header-section-number">31.5.1</span> Best practices</h3>
-<p>As new metrics are added and old ones removed, charts and dashboards need to be modified and kept in sync across multiple environments (e.g., pre-production and production). The most effective way to achieve that is by defining dashboards and charts with a domain-specific language and version-controlling them just like code. This allows dashboards to be updated from the same pull request that contains related code changes without manually updating dashboards, which is error-prone.</p>
-<p>As dashboards render top to bottom, the most important charts should always be located at the very top. Also, charts should be rendered with a default timezone, like UTC, to ease the communication between people located in different parts of the world when looking at the same data.</p>
-<p>All charts in the same dashboard should use the same time resolution (e.g., 1 minute, 5 minutes, 1 hour, etc.) and range (24 hours, 7 days, etc.). This makes it easy to visually correlate anomalies across charts in the same dashboard. We can pick the default time range and resolution based on the dashboard’s most common use case. For example, a 1-hour range with a 1-minute resolution is best for monitoring an ongoing incident, while a 1-year range with a 1-day resolution is best for capacity planning.</p>
-<p>We should keep the number of data points and metrics on the same chart to a minimum. Rendering too many points doesn’t just make charts slow to download/render but also makes it hard to interpret them and spot anomalies.</p>
-<p>A chart should contain only metrics with similar ranges (min and max values); otherwise, the metric with the largest range can completely hide the others with smaller ranges. For that reason, it makes sense to split related statistics for the same metric into multiple charts. For example, the 10th percentile, average and 90th percentile of a metric can be displayed in one chart, and the 0.1th percentile, 99.9th percentile, minimum and maximum in another.</p>
-<p>A chart should also contain useful annotations, like:</p>
+<p><strong>服务仪表盘</strong></p>
+<p>服务仪表盘显示特定于服务的实现细节，这需要深入了解其内部工作原理。与之前的仪表盘不同，此仪表盘主要由拥有该服务的团队使用。除了特定于服务的指标外，服务仪表盘还应包含上游依赖项（如负载均衡器和消息队列）以及下游依赖项（如数据存储）的指标。</p>
+<p>在调试时，此仪表盘提供了了解服务内部情况的第一入口。正如我们稍后在讨论可观测性时将了解到的，这种宏观视图只是起点。运维人员通常会通过进一步细分指标来深入探究，并最终查看原始日志和跟踪以获取更多详细信息。</p>
+<section class="level3" data-number="31.5.1" id="best-practices">
+<h3 data-number="31.5.1"><span class="header-section-number">31.5.1</span> 最佳实践</h3>
+<p>随着新指标的添加和旧指标的移除，图表和仪表盘需要修改并在多个环境（例如预生产环境和生产环境）中保持同步。实现这一目标的最有效方法是使用领域特定语言定义仪表盘和图表，并像代码一样对其进行版本控制。这使得仪表盘可以通过包含相关代码更改的同一个拉取请求进行更新，而无需手动更新仪表盘，后者容易出错。</p>
+<p>由于仪表盘自上向下渲染，最重要的图表应始终位于最顶部。此外，图表应使用默认时区（如 UTC）渲染，以便位于世界不同地区的人员在查看相同数据时便于沟通。</p>
+<p>同一仪表盘中的所有图表应使用相同的时间分辨率（例如 1分钟、5分钟、1小时等）和范围（24小时、7天等）。这使得在同一仪表盘中直观地关联图表间的异常变得容易。我们可以根据仪表盘最常见的用例选择默认时间范围和分辨率。例如，1小时范围和1分钟分辨率最适合监控正在发生的事件，而1年范围和1天分辨率最适合容量规划。</p>
+<p>我们应将同一图表上的数据点和指标数量保持在最低限度。渲染过多数据点不仅会使图表下载/渲染速度变慢，还会使图表难以解读以及难以发现异常情况。。</p>
+<p>一个图表应仅包含具有相似范围（最小值和最大值）的指标；否则，范围最大的指标可能会完全掩盖范围较小的其他指标。因此，将同一指标的相关统计数据拆分为多个图表是有意义的。例如，一个指标的第10百分位数、平均值和第90百分位数可以显示在一个图表中，而第0.1百分位数、第99.9 百分位数、最小值和最大值则显示在另一个图表中。</p>
+<p>图表还应包含有用的注释，例如：</p>
 <ul>
-<li>a description of the chart with links to runbooks, related dashboards, and escalation contacts;</li>
-<li>a horizontal line for each configured alert threshold, if any;</li>
-<li>a vertical line for each relevant deployment.</li>
+<li>图表描述，并附有运行手册、相关仪表盘和升级联系人的链接；</li>
+<li>每个已配置告警阈值（如果有）的水平线；</li>
+<li>每个相关部署的垂直线。</li>
 </ul>
-<p>Metrics that are only emitted when an error condition occurs can be hard to interpret as charts will show wide gaps between the data points, leaving the operator wondering whether the service stopped emitting that metric due to a bug. To avoid this, it’s best practice to emit a metric using a value of zero in the absence of an error and a value of 1 in the presence of it.</p>
+<p>仅在错误条件发生时发出的指标可能难以解读，因为图表会在数据点之间显示较大的间隙，让运维人员怀疑服务是否因错误而停止发出该指标。为避免这种情况，最佳实践是在没有错误时使用零值发出指标，在存在错误时使用值 1 发出指标。</p>
 </section>
 </section>
-<section id="being-on-call" class="level2" data-number="31.6">
-<h2 data-number="31.6"><span class="header-section-number">31.6</span> Being on call</h2>
-<p>A healthy on-call rotation is only possible when services are built from the ground up with reliability and operability in mind. By making the developers responsible for operating what they build, they are incentivized to reduce the operational toll to a minimum. They are also in the best position to be on call since they are intimately familiar with the system’s architecture, brick walls, and trade-offs.</p>
-<p>Being on call can be very stressful. Even when there are no call-outs, just the thought of not having the usual freedom outside of regular working hours can cause a great deal of anxiety. This is why being on call should be compensated, and there shouldn’t be any expectations for the on-call engineer to make any progress on feature work. Since they will be interrupted by alerts, they should make the most of it and be given free rein to improve the on-call experience by, e.g., revising dashboards or improving resiliency mechanisms.</p>
-<p>Achieving a healthy on-call rotation is only possible when alerts are actionable. When an alert triggers, to the very least, it should link to relevant dashboards and a run-book that lists the actions the engineer should take<a href="#fn15" class="footnote-ref" id="fnref15" epub:type="noteref">15</a>. Unless the alert was a false positive, all actions taken by the operator should be communicated into a shared channel like a global chat accessible by other teams. This allows other engineers to chime in, track the incident’s progress, and more easily hand over an ongoing incident to someone else.</p>
-<p>The first step to address an alert is to mitigate it, not fix the underlying root cause that created it. A new artifact has been rolled out that degrades the service? Roll it back. The service can’t cope with the load even though it hasn’t increased? Scale it out.</p>
-<p>Once the incident has been mitigated, the next step is to understand the root cause and come up with ways to prevent it from happening again. The greater the impact was, as measured by the SLOs, the more time we should spend on this. Incidents that burned a significant fraction of an SLO’s error budget require a formal <em>postmortem</em>. The goal of the postmortem is to understand the incident’s root cause and come up with a set of repair items that will prevent it from happening again. Ideally, there should also be an agreement in the team that if an SLO’s error budget is burned or the number of alerts spirals out of control, the whole team stops working on new features to focus exclusively on reliability until a healthy on-call rotation has been restored.</p>
-<p>The SRE books<a href="#fn16" class="footnote-ref" id="fnref16" epub:type="noteref">16</a> provide a wealth of information and best practices regarding setting up a healthy on-call rotation.</p>
+<section class="level2" data-number="31.6" id="being-on-call">
+<h2 data-number="31.6"><span class="header-section-number">31.6</span> 值班待命</h2>
+<p>只有从一开始就将可靠性和可操作性纳入考量来构建服务，才有可能建立健康的待命轮值制度。让开发者对他们构建的系统负责运维，会激励他们将运维负担降至最低。同时，他们也是最适合值班待命的人选，因为他们对系统的架构、瓶颈和权衡取舍了如指掌。</p>
+<p>值班待命可能带来巨大压力。即使没有呼叫，仅仅是想到在常规工作时间之外失去通常的自由，也可能引发强烈的焦虑感。因此，值班工作应当获得相应补偿，并且不应期望值班工程师在功能开发方面取得任何进展。既然他们会被告警打断，就应该充分利用这段时间，并给予他们充分的自由来改善值班体验，例如，修订仪表盘或改进弹性机制。</p>
+<p>只有当告警具有可操作性时，才能实现健康的待命轮值。告警触发时，至少应链接到相关的仪表盘和一份操作手册，其中列出工程师应采取的行动<a class="footnote-ref" epub:type="noteref" href="#fn15" id="fnref15">15</a>。除非告警是误报，否则运维人员采取的所有行动都应通报到一个共享渠道，例如其他团队也能访问的全局聊天室。这允许其他工程师参与进来，跟踪事件进展，并更容易地将进行中的事件移交给他人。</p>
+<p>处理告警的第一步是缓解它，而不是修复引发告警的根本原因。新部署的构件导致服务性能下降？回滚它。服务无法应对负载，即使负载并未增加？横向扩展它。</p>
+<p>一旦事件得到缓解，下一步就是理解根本原因，并找出防止其再次发生的方法。根据服务级别目标（SLO）衡量的影响越大，我们在这方面投入的时间就应该越多。消耗了SLO错误预算显著比例的事件，需要进行正式的<em>事后复盘</em>。事后复盘的目标是理解事件的根源，并制定一系列修复项以防止其再次发生。理想情况下，团队内部还应达成共识：如果某个SLO的错误预算耗尽或告警数量失控，整个团队应停止开发新功能，专注于可靠性工作，直到恢复健康的待命轮值状态。</p>
+<p>SRE相关书籍<a class="footnote-ref" epub:type="noteref" href="#fn16" id="fnref16">16</a>提供了关于建立健康待命轮值制度的丰富信息和最佳实践。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>“Measure Anything, Measure Everything,” <a href="https://codeascraft.com/2011/02/15/measure-anything-measure-everything/" class="uri">https://codeascraft.com/2011/02/15/measure-anything-measure-everything/</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“Using synthetic monitoring,” <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Synthetics_Canaries.html" class="uri">https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Synthetics_Canaries.html</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>I have omitted error handling for simplicity.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>We will talk more about event logs in section <a href="#logs">32.1</a>; for now, assume an event is just a dictionary.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>“Log-based metrics in Application Insights,” <a href="https://docs.microsoft.com/en-us/azure/azure-monitor/app/pre-aggregated-metrics-log-metrics#log-based-metrics" class="uri">https://docs.microsoft.com/en-us/azure/azure-monitor/app/pre-aggregated-metrics-log-metrics#log-based-metrics</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>“Amazon CloudWatch concepts,” <a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html" class="uri">https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>like, e.g., Druid; see “A Real-time Analytical Data Store,” <a href="http://static.druid.io/docs/druid.pdf" class="uri">http://static.druid.io/docs/druid.pdf</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn8" epub:type="footnote"><p>“latency: a primer,” <a href="https://igor.io/latency/" class="uri">https://igor.io/latency/</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn9" epub:type="footnote"><p>“Akamai Online Retail Performance Report: Milliseconds Are Critical,” <a href="https://www.akamai.com/newsroom/press-release/akamai-releases-spring-2017-state-of-online-retail-performance-report" class="uri">https://www.akamai.com/newsroom/press-release/akamai-releases-spring-2017-state-of-online-retail-performance-report</a><a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn10" epub:type="footnote"><p>Little’s law says the average number of items in a system equals the average rate at which new items arrive multiplied by the average time an item spends in the system; see “Back of the envelope estimation hacks,” <a href="https://robertovitillo.com/back-of-the-envelope-estimation-hacks/" class="uri">https://robertovitillo.com/back-of-the-envelope-estimation-hacks/</a><a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn11" epub:type="footnote"><p>“Service Level Objectives,” <a href="https://sre.google/sre-book/service-level-objectives/" class="uri">https://sre.google/sre-book/service-level-objectives/</a><a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn12" epub:type="footnote"><p>“Chaos engineering,” <a href="https://en.wikipedia.org/wiki/Chaos_engineering" class="uri">https://en.wikipedia.org/wiki/Chaos_engineering</a><a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn13" epub:type="footnote"><p>“Alerting on SLOs,” <a href="https://sre.google/workbook/alerting-on-slos/" class="uri">https://sre.google/workbook/alerting-on-slos/</a><a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn14" epub:type="footnote"><p>“Building dashboards for operational visibility,” <a href="https://aws.amazon.com/builders-library/building-dashboards-for-operational-visibility" class="uri">https://aws.amazon.com/builders-library/building-dashboards-for-operational-visibility</a><a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn15" epub:type="footnote"><p>Ideally, we should automate what we can to minimize manual actions that operators need to perform. As it turns out, machines are good at following instructions.<a href="#fnref15" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn16" epub:type="footnote"><p>“SRE Books,” <a href="https://sre.google/books/" class="uri">https://sre.google/books/</a><a href="#fnref16" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p style="text-align:left;">《测量一切，测量万物》，<a class="uri" href="https://codeascraft.com/2011/02/15/measure-anything-measure-everything/">https://codeascraft.com/2011/02/15/measure-anything-measure-everything/</a><a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p style="text-align:left;">《使用综合监控》，<a class="uri" href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Synthetics_Canaries.html">https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Synthetics_Canaries.html</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p style="text-align:left;">为简洁起见，我省略了错误处理。<a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p style="text-align:left;">我们将在<a href="#logs">32.1节</a>详细讨论事件日志；目前，假设一个事件只是一个字典。<a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p style="text-align:left;">《Application Insights中的基于日志的指标》，<a class="uri" href="https://docs.microsoft.com/en-us/azure/azure-monitor/app/pre-aggregated-metrics-log-metrics#log-based-metrics">https://docs.microsoft.com/en-us/azure/azure-monitor/app/pre-aggregated-metrics-log-metrics#log-based-metrics</a><a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p style="text-align:left;">《Amazon CloudWatch概念》，<a class="uri" href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html">https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html</a><a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn7"><p style="text-align:left;">例如，像Druid这样的系统；参见《实时分析数据存储》，<a class="uri" href="http://static.druid.io/docs/druid.pdf">http://static.druid.io/docs/druid.pdf</a><a class="footnote-back" href="#fnref7" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn8"><p style="text-align:left;">《延迟入门》，<a class="uri" href="https://igor.io/latency/">https://igor.io/latency/</a><a class="footnote-back" href="#fnref8" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn9"><p style="text-align:left;">《Akamai在线零售性能报告：毫秒至关重要》，<a class="uri" href="https://www.akamai.com/newsroom/press-release/akamai-releases-spring-2017-state-of-online-retail-performance-report">https://www.akamai.com/newsroom/press-release/akamai-releases-spring-2017-state-of-online-retail-performance-report</a><a class="footnote-back" href="#fnref9" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn10"><p style="text-align:left;">利特尔法则指出，系统中项目的平均数量等于新项目到达的平均速率乘以项目在系统中停留的平均时间；参见《快速估算技巧》，<a class="uri" href="https://robertovitillo.com/back-of-the-envelope-estimation-hacks/">https://robertovitillo.com/back-of-the-envelope-estimation-hacks/</a><a class="footnote-back" href="#fnref10" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn11"><p style="text-align:left;">《服务水平目标》，<a class="uri" href="https://sre.google/sre-book/service-level-objectives/">https://sre.google/sre-book/service-level-objectives/</a><a class="footnote-back" href="#fnref11" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn12"><p style="text-align:left;">《混沌工程》，<a class="uri" href="https://en.wikipedia.org/wiki/Chaos_engineering">https://en.wikipedia.org/wiki/Chaos_engineering</a><a class="footnote-back" href="#fnref12" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn13"><p style="text-align:left;">《基于SLO的告警》，<a class="uri" href="https://sre.google/workbook/alerting-on-slos/">https://sre.google/workbook/alerting-on-slos/</a><a class="footnote-back" href="#fnref13" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn14"><p style="text-align:left;">《构建用于运营可见性的仪表盘》，<a class="uri" href="https://aws.amazon.com/builders-library/building-dashboards-for-operational-visibility">https://aws.amazon.com/builders-library/building-dashboards-for-operational-visibility</a><a class="footnote-back" href="#fnref14" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn15"><p style="text-align:left;">理想情况下，我们应该尽可能实现自动化，以尽量减少运维人员需要执行的手动操作。事实证明，机器擅长遵循指令。<a class="footnote-back" href="#fnref15" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn16"><p style="text-align:left;">《SRE书籍》，<a class="uri" href="https://sre.google/books/">https://sre.google/books/</a><a class="footnote-back" href="#fnref16" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

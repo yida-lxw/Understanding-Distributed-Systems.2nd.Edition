@@ -1,78 +1,79 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en-GB">
+
+<html xml:lang="en-GB" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <title>ch049.xhtml</title>
-  <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
+<meta charset="utf-8"/>
+<meta content="pandoc" name="generator"/>
+<title>ch049.xhtml</title>
+<link href="../styles/stylesheet1.css" rel="stylesheet" type="text/css"/>
 </head>
 <body epub:type="bodymatter">
-<section id="cd" class="level1" data-number="30">
-<h1 data-number="30"><span class="header-section-number">30</span> Continuous delivery and deployment</h1>
-<p>Once a change and its newly introduced tests have been merged to a repository, it needs to be released to production. When releasing a change requires a manual process, it won’t happen frequently. This means that several changes, possibly over days or even weeks, end up being batched and released together, increasing the likelihood of the release failing. And when a release fails, it’s harder to pinpoint the breaking change<a href="#fn1" class="footnote-ref" id="fnref1" epub:type="noteref">1</a>, slowing down the team. Also, the developer who initiated the release needs to keep an eye on it by monitoring dashboards and alerts to ensure that it’s working as expected or roll it back.</p>
-<p>Manual deployments are a terrible use of engineering time. The problem gets further exacerbated when there are many services. Eventually, the only way to release changes safely and efficiently is to automate the entire process. Once a change has been merged to a repository, it should automatically be rolled out to production safely. The developer is then free to context-switch to their next task rather than shepherding the deployment. The whole release process, including rollbacks, can be automated with a continuous delivery and deployment (CD) pipeline.</p>
-<p>Because releasing changes is one of the main sources of failures, CD requires a significant amount of investment in terms of safeguards, monitoring, and automation. If a regression is detected, the artifact being released — i.e., the deployable component that includes the change — is either rolled back to the previous version or forward to the next one, assuming it contains a hotfix.</p>
-<p>There is a balance between the safety of a rollout and the time it takes to release a change to production. A good CD pipeline should strive to make a good trade-off between the two. In this chapter, we will explore how.</p>
-<section id="review-and-build" class="level2" data-number="30.1">
-<h2 data-number="30.1"><span class="header-section-number">30.1</span> Review and build</h2>
-<p>At a high level, a code change needs to go through a pipeline of four stages to be released to production: review, build, pre-production rollout, and production rollout.</p>
+<section class="level1" data-number="30" id="cd">
+<h1 data-number="30"><span class="header-section-number">30</span> 持续交付与部署</h1>
+<p>一旦某个变更及其新引入的测试被合并到代码库中，就需要将其发布到生产环境。如果发布变更需要手动操作，那么发布就不会频繁进行。这意味着多个变更（可能跨越数天甚至数周）最终会被批量打包并一起发布，从而增加了发布失败的可能性。而当发布失败时，就更难精确定位导致问题的变更<a class="footnote-ref" epub:type="noteref" href="#fn1" id="fnref1">1</a>，这会拖慢团队进度。此外，发起发布的开发者需要通过监控仪表板和告警信息来密切关注发布过程，以确保其按预期工作，或在必要时进行回滚。</p>
+<p>手动部署是对工程时间的极大浪费。当存在多个服务时，这个问题会进一步加剧。最终，安全高效地发布变更的唯一方法是将整个过程自动化。一旦变更被合并到代码仓库，它就应该自动、安全地部署到生产环境。这样，开发者就可以自由地切换上下文去处理下一个任务，而无需监管部署过程。整个发布流程，包括回滚，都可以通过持续交付和部署（CD）流水线实现自动化。</p>
+<p>由于发布变更往往是故障的主要来源之一，持续部署需要在保障措施、监控和自动化方面投入大量资源。一旦检测到回归问题，正在发布的制品——即包含变更的可部署组件——要么回滚到先前版本，要么推进到下一个版本（假设该版本包含热修复）。</p>
+<p>在发布的安全性与将变更推送到生产环境所需的时间之间存在着一种平衡。一个优秀的持续交付流水线应当努力在这两者之间做出良好的权衡。在本章中，我们将探讨如何做到这一点。</p>
+<section class="level2" data-number="30.1" id="review-and-build">
+<h2 data-number="30.1"><span class="header-section-number">30.1</span> 评审与构建</h2>
+<p>从宏观角度来看，一个代码变更需要经过四个阶段的流水线才能发布到生产环境：评审、构建、预生产部署和生产部署。</p>
 <div class="figure" style="text-align: center">
-<img alt="Continuous delivery and deployment pipeline stages" width="30%" src="../media/file78.png" />
+<img alt="持续交付与部署流水线阶段" src="../media/file78.png" width="30%"/>
 <p class="caption">
-Figure 30.1: Continuous delivery and deployment pipeline stages
+图 30.1: 持续交付与部署流水线阶段
 </p>
 </div>
-<p>It all starts with a pull request (PR) submitted for review by a developer to a repository. When the PR is submitted for review, it needs to be compiled, statically analyzed, and validated with a battery of tests, all of which shouldn’t take longer than a few minutes. To increase the tests’ speed and minimize intermittent failures, the tests that run at this stage should be small enough to run on a single process or node, while larger tests run later in the pipeline.</p>
-<p>The PR needs to be reviewed and approved by a team member before it can be merged into the repository. The reviewer has to validate whether the change is correct and safe to be released to production automatically by the CD pipeline. A checklist can help the reviewer not to forget anything important, e.g.:</p>
+<p>这一切始于开发者向代码仓库提交一个待评审的拉取请求（PR）。当PR提交评审时，它需要被编译、进行静态分析，并通过一系列测试进行验证，所有这些步骤不应超过几分钟。为了提高测试速度并最小化间歇性故障，在此阶段运行的测试应该足够小，以便在单个进程或节点上运行，而更大型的测试则在流水线的后续阶段运行。</p>
+<p>PR需要由团队成员评审并批准后，才能合并到代码仓库中。评审者必须验证该变更是否正确且安全，以及是否能够通过CD流水线自动发布到生产环境。一份检查清单有助于评审者不遗漏任何重要事项，例如：</p>
 <ul>
-<li>Does the change include unit, integration, and end-to-end tests as needed?</li>
-<li>Does the change include metrics, logs, and traces?</li>
-<li>Can this change break production by introducing a backward-incompatible change or hitting some service limit?</li>
-<li>Can the change be rolled back safely, if needed?</li>
+<li>该变更是否根据需要包含了单元测试、集成测试和端到端测试？</li>
+<li>该变更是否包含了指标、日志和追踪信息？</li>
+<li>此变更是否会因引入向后不兼容的更改或触及某些服务限制而导致生产环境故障？</li>
+<li>如果需要，该变更能否安全地回滚？</li>
 </ul>
-<p>Code changes shouldn’t be the only ones going through this review process. For example, static assets, end-to-end tests, and configuration files should all be version-controlled in a repository (not necessarily the same one) and be treated just like code. The same service can then have multiple CD pipelines, one for each repository, potentially running in parallel.</p>
-<p>I can’t stress enough the importance of reviewing and releasing configuration changes with a CD pipeline. As discussed in chapter <a href="#failure-causes">24</a>, one of the most common causes of production failures are configuration changes applied globally without any prior review or testing.</p>
-<p>Also, applications running in the cloud should declare their infrastructure dependencies, like virtual machines, data stores, and load balancers, with code (aka <em>Infrastructure as Code (IaC)</em><a href="#fn2" class="footnote-ref" id="fnref2" epub:type="noteref">2</a>) using tools like Terraform<a href="#fn3" class="footnote-ref" id="fnref3" epub:type="noteref">3</a>. This allows the provisioning of infrastructure to be automated and infrastructure changes to be treated just like any other software change.</p>
-<p>Once a change has been merged into its repository’s main branch, the CD pipeline moves to the build stage, in which the repository’s content is built and packaged into a deployable release artifact.</p>
+<p>不应只有代码变更需要经过此评审流程。例如，静态资源、端到端测试和配置文件都应该在代码仓库（不一定是同一个）中进行版本控制，并像代码一样被对待。这样，同一个服务可以拥有多个CD流水线，每个仓库对应一个，并且可能并行运行。</p>
+<p>我必须强调，通过CD流水线评审和发布配置变更的重要性。正如<a href="#failure-causes">第24章</a>所讨论的，导致生产环境故障最常见的原因之一就是未经任何事先评审或测试就全局应用的配置变更。</p>
+<p>此外，在云服务器中运行的应用程序应使用代码（即<em>基础设施即代码（IaC）</em><a class="footnote-ref" epub:type="noteref" href="#fn2" id="fnref2">2</a>）来声明其基础设施依赖，例如虚拟机、数据存储和负载均衡器，可借助 Terraform<a class="footnote-ref" epub:type="noteref" href="#fn3" id="fnref3">3</a>等工具来实现。这使得基础设施的供应能够自动化，并且基础设施变更可以像任何其他软件变更一样被对待。</p>
+<p>一旦变更被合并到其仓库的主分支，CD流水线就进入构建阶段，在此阶段，仓库的内容被构建并打包成一个可部署的发布制品。</p>
 </section>
-<section id="pre-production" class="level2" data-number="30.2">
-<h2 data-number="30.2"><span class="header-section-number">30.2</span> Pre-production</h2>
-<p>During this stage, the artifact is deployed and released to a synthetic pre-production environment. Although this environment lacks the realism of production, it’s useful to verify that no hard failures are triggered (e.g., a null pointer exception at startup due to a missing configuration setting) and that end-to-end tests succeed. Because releasing a new version to pre-production requires significantly less time than releasing it to production, bugs can be detected earlier.</p>
-<p>There can be multiple pre-production environments, starting with one created from scratch for each artifact and used to run simple smoke tests, to a persistent one similar to production that receives a small fraction of mirrored requests from it. AWS, for example, is known for using multiple pre-production environments<a href="#fn4" class="footnote-ref" id="fnref4" epub:type="noteref">4</a>.</p>
-<p>Ideally, the CD pipeline should assess the artifact’s health in pre-production using the same health signals used in production. Metrics, alerts, and tests used in pre-production should be equivalent to those used in production, to avoid the former becoming a second-class citizen with sub-par health coverage.</p>
+<section class="level2" data-number="30.2" id="pre-production">
+<h2 data-number="30.2"><span class="header-section-number">30.2</span> 预生产阶段</h2>
+<p>在此阶段，制品被部署并发布到一个模拟的预生产环境中。尽管此环境缺乏生产环境的真实性，但它有助于验证不会触发严重的故障（例如，由于缺少配置设置而在启动时出现空指针异常），并确保端到端测试能够成功。由于将新版本发布到预生产环境所需的时间远少于发布到生产环境，因此可以更早地发现bug。</p>
+<p>可能存在多个预生产环境，从为每个制品从头创建并用于运行简单冒烟测试的环境，到类似于生产环境且其接收其一小部分镜像请求的持久化环境。例如，AWS就以使用多个预生产环境而闻名<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a>。</p>
+<p>理想情况下，持续交付流水线应使用与生产环境中相同的健康度信号来评估制品在预生产环境中的健康状况。预生产环境中使用的指标、告警和测试应与生产环境中使用的保持一致，以避免前者沦为健康度覆盖不足的二等公民。</p>
 </section>
-<section id="production" class="level2" data-number="30.3">
-<h2 data-number="30.3"><span class="header-section-number">30.3</span> Production</h2>
-<p>Once an artifact has been rolled out to pre-production successfully, the CD pipeline can proceed to the final stage and release the artifact to production. It should start by releasing it to a small number of production instances at first<a href="#fn5" class="footnote-ref" id="fnref5" epub:type="noteref">5</a>. The goal is to surface problems that haven’t been detected so far as quickly as possible before they have the chance to cause widespread damage in production.</p>
-<p>If that goes well and all the health checks pass, the artifact is incrementally released to the rest of the fleet. While the rollout is in progress, a fraction of the fleet can’t serve any traffic due to the ongoing deployment, and so the remaining instances need to pick up the slack. For this to not cause any performance degradation, there needs to be enough capacity left to sustain the incremental release.</p>
-<p>If the service is available in multiple regions, the CD pipeline should first start with a low-traffic region to reduce the impact of a faulty release. Then, releasing the remaining regions should be divided into sequential stages to minimize risks further. Naturally, the more stages there are, the longer the CD pipeline takes to release the artifact to production. One way to mitigate this problem is by increasing the release speed once the early stages complete successfully and enough confidence has been built up. For example, the first stage could release the artifact to a single region, the second to a larger region, and the third to N regions simultaneously.</p>
+<section class="level2" data-number="30.3" id="production">
+<h2 data-number="30.3"><span class="header-section-number">30.3</span> 生产环境部署</h2>
+<p>一旦制品成功发布到预生产环境，持续交付流水线就可以进入最终阶段，将制品发布到生产环境。它应该首先将制品发布到一小部分生产环境实例上<a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>。这样做的目标是，在问题有机会在生产环境中造成大范围损害之前，尽快暴露那些迄今为止尚未被检测到的问题。</p>
+<p>如果一切顺利且所有健康检查都通过了，那么该制品将逐步发布给其余的服务器集群。在发布过程中，由于正在进行部署，一部分集群将无法处理任何流量，因此剩余的实例需要承担这部分负载。为了避免造成任何性能下降，需要有足够的剩余容量来支撑这种渐进式发布。</p>
+<p>如果该服务在多个区域可用，持续交付流水线应首先从一个低流量区域开始，以降低发布故障带来的影响。然后，发布剩余区域应划分为连续的阶段，以进一步降低风险。当然，阶段越多，持续交付流水线将制品发布到生产环境所需的时间就越长。缓解此问题的一种方法是，在早期阶段成功完成并建立起足够的信心后，提高发布速度。例如，第一阶段可以将制品发布到单个区域，第二阶段发布到更大的区域，第三阶段同时发布到 N 个区域。</p>
 </section>
-<section id="rollbacks" class="level2" data-number="30.4">
-<h2 data-number="30.4"><span class="header-section-number">30.4</span> Rollbacks</h2>
-<p>After each step, the CD pipeline needs to assess whether the artifact deployed is healthy and, if not, stop the release and roll it back. A variety of health signals can be used to make that decision, such as the result of end-to-end tests, health metrics like latencies and errors and alerts.</p>
-<p>Monitoring just the health signals of the service being rolled out is not enough. The CD pipeline should also monitor the health of upstream and downstream services to detect any indirect impact of the rollout. The pipeline should allow enough time to pass between one step and the next (bake time) to ensure that it was successful, as some issues only appear after some time has passed. For example, a performance degradation could be visible only at peak time. To speed up the release, the bake time can be reduced after each step succeeds and confidence is built up. The CD pipeline could also gate the bake time on the number of requests seen for specific API endpoints to guarantee that the API surface has been properly exercised.</p>
-<p>When a health signal reports a degradation, the CD pipeline stops. At that point, it can either roll back the artifact automatically or trigger an alert to engage the engineer on call, who needs to decide whether a rollback is warranted or not<a href="#fn6" class="footnote-ref" id="fnref6" epub:type="noteref">6</a>. Based on the engineer’s input, the CD pipeline retries the stage that failed (e.g., perhaps because something else was going into production at the time) or rolls back the release entirely.</p>
-<p>The operator can also stop the pipeline and wait for a new artifact with a hotfix to be rolled forward. This might be necessary if the release can’t be rolled back because of a backward-incompatible change. Since rolling forward is much riskier than rolling back, any change introduced should always be backward compatible as a rule of thumb. One of the most common causes for backward incompatibility is changing the serialization format used for persistence or IPC purposes.</p>
-<p>To safely introduce a backward-incompatible change, it needs to be broken down into multiple backward-compatible changes<a href="#fn7" class="footnote-ref" id="fnref7" epub:type="noteref">7</a>. For example, suppose the messaging schema between a producer and a consumer service needs to change in a backward-incompatible way. In this case, the change is broken down into three smaller changes that can individually be rolled back safely:</p>
+<section class="level2" data-number="30.4" id="rollbacks">
+<h2 data-number="30.4"><span class="header-section-number">30.4</span> 回滚</h2>
+<p>在每个步骤之后，持续交付流水线需要评估已部署的制品是否健康，如果不健康，则停止发布并将其回滚。可以使用多种健康信号来做出这个决定，例如端到端测试的结果、延迟和错误等健康指标以及告警。</p>
+<p>仅仅监控正在发布的服务的健康信号是不够的。持续交付流水线还应监控上游和下游服务的健康状况，以检测发布可能产生的任何间接影响。流水线应在一个步骤和下一个步骤之间留出足够的时间（烘焙时间，即构建可部署镜像时间），以确保发布成功，因为有些问题只有在经过一段时间后才会出现。例如，性能下降可能只在高峰时段才显现。为了加快发布速度，可以在每个步骤成功且建立信心后减少烘焙时间。持续交付流水线还可以根据特定API端点接收到的请求数量来控制烘焙时间，以确保API层面得到了充分的测试。</p>
+<p>当健康信号报告性能下降时，持续交付流水线会停止工作。此时，它可以自动回滚制品，或者触发告警通知值班工程师，由工程师决定是否需要回滚<a class="footnote-ref" epub:type="noteref" href="#fn6" id="fnref6">6</a>。根据工程师的输入，持续交付流水线会重试失败的阶段（例如，可能是因为当时有其他东西正在上线），或者完全回滚发布。</p>
+<p>运维人员也可以停止流水线，等待带有热修复的新制品向前滚动发布。如果由于向后不兼容的变更导致无法回滚发布，这可能就是必要的。由于向前滚动比回滚风险大得多，因此根据通用经验法则可知，引入的任何变更都应始终保持向后兼容。导致向后不兼容的最常见原因之一是更改用于持久化或进程间通信的序列化格式。</p>
+<p>为了安全地引入一个向后不兼容的变更，需要将其拆分为多个向后兼容的小变更<a class="footnote-ref" epub:type="noteref" href="#fn7" id="fnref7">7</a>。例如，假设生产者和消费者服务之间的消息传递模式需要以向后不兼容的方式进行更改。在这种情况下，该变更被拆分为三个较小的变更，每个变更都可以安全地单独回滚：</p>
 <ul>
-<li>In the <em>prepare change</em>, the consumer is modified to support both the new and old messaging format.</li>
-<li>In the <em>activate change</em>, the producer is modified to write the messages in the new format.</li>
-<li>Finally, in the <em>cleanup change</em>, the consumer stops supporting the old messaging format altogether. This change is only released once there is enough confidence that the activated change won’t need to be rolled back.</li>
+<li>在<em>准备变更</em>中，修改消费者以同时支持新旧消息格式。</li>
+<li>在<em>激活变更</em>中，修改生产者以新格式写入消息。</li>
+<li>最后，在<em>清理变更</em>中，消费者完全停止支持旧的消息格式。只有在有足够信心认为激活的变更不需要回滚时，才会发布此变更。</li>
 </ul>
-<p>An automated upgrade-downgrade test part of the CD pipeline in pre-production can be used to validate whether a change is actually safe to roll back.</p>
+<p>持续交付流水线在预生产环境中的自动化升级-降级测试部分，可用于验证变更是否实际上可以安全回滚。</p>
 </section>
 </section>
 <section class="footnotes" epub:type="footnotes">
-<hr />
+<hr/>
 <ol>
-<li id="fn1" epub:type="footnote"><p>There could be multiple breaking changes, actually.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" epub:type="footnote"><p>“What is Infrastructure as Code?,” <a href="https://docs.microsoft.com/en-us/devops/deliver/what-is-infrastructure-as-code" class="uri">https://docs.microsoft.com/en-us/devops/deliver/what-is-infrastructure-as-code</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" epub:type="footnote"><p>“Terraform: an open-source infrastructure as code software tool,” <a href="https://www.terraform.io/" class="uri">https://www.terraform.io/</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" epub:type="footnote"><p>“Automating safe, hands-off deployments,” <a href="https://aws.amazon.com/builders-library/automating-safe-hands-off-deployments/" class="uri">https://aws.amazon.com/builders-library/automating-safe-hands-off-deployments/</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" epub:type="footnote"><p>This is also referred to as canary testing.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" epub:type="footnote"><p>CD pipelines can be configured to run only during business hours to minimize the disruption to on-call engineers.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" epub:type="footnote"><p>“Ensuring rollback safety during deployments,” <a href="https://aws.amazon.com/builders-library/ensuring-rollback-safety-during-deployments/" class="uri">https://aws.amazon.com/builders-library/ensuring-rollback-safety-during-deployments/</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn1"><p style="text-align:left;">实际上，可能存在多个破坏性变更。<a class="footnote-back" href="#fnref1" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn2"><p style="text-align:left;">“什么是基础设施即代码？”， <a class="uri" href="https://docs.microsoft.com/en-us/devops/deliver/what-is-infrastructure-as-code">https://docs.microsoft.com/en-us/devops/deliver/what-is-infrastructure-as-code</a><a class="footnote-back" href="#fnref2" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn3"><p style="text-align:left;">“Terraform：一种开源的基础设施即代码软件工具”， <a class="uri" href="https://www.terraform.io/">https://www.terraform.io/</a><a class="footnote-back" href="#fnref3" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn4"><p style="text-align:left;">“实现安全、无需人工干预的自动化部署”， <a class="uri" href="https://aws.amazon.com/builders-library/automating-safe-hands-off-deployments/">https://aws.amazon.com/builders-library/automating-safe-hands-off-deployments/</a><a class="footnote-back" href="#fnref4" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn5"><p style="text-align:left;">这也被称为金丝雀测试。<a class="footnote-back" href="#fnref5" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn6"><p style="text-align:left;">可以配置持续交付流水线仅在办公时间运行，以尽量减少对值班工程师的干扰。<a class="footnote-back" href="#fnref6" role="doc-backlink">↩︎</a></p></li>
+<li epub:type="footnote" id="fn7"><p style="text-align:left;">“确保部署期间的版本回滚安全性”， <a class="uri" href="https://aws.amazon.com/builders-library/ensuring-rollback-safety-during-deployments/">https://aws.amazon.com/builders-library/ensuring-rollback-safety-during-deployments/</a><a class="footnote-back" href="#fnref7" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 </body>

@@ -18,7 +18,7 @@
 <p>例如，考虑实现一个容错的键值存储系统的问题。在这种情况下，每个状态机代表一个存储节点，它接受<em>put(k, v)</em>和<em>get(k)</em>操作。实际状态由一个字典表示。当执行<em>put</em>操作时，键值对会被添加到字典中。当执行<em>get</em>操作时，会返回所请求键对应的值。你可以看到，如果每个节点都执行相同的<em>put</em>操作序列，所有节点最终将拥有相同的状态。</p>
 <p>在下一节中，我们将更深入地探讨Raft的复制协议。这部分内容阅读起来颇具挑战性，需要你停下来思考，但我可以向你保证，付出的努力是值得的，特别是如果你之前从未接触过复制协议的话。</p>
 <section class="level2" data-number="10.1" id="stm">
-<h2 data-number="10.1"><span class="header-section-number">10.1</span> 状态机复制</h2>
+<h2 id="stm" data-number="10.1"><span class="header-section-number">10.1</span> 状态机复制</h2>
 <p>当系统启动时，会使用第 <a href="#leader">9</a> 章讨论的 Raft 领导者选举算法选举出一个领导者，该算法不需要任何外部依赖。领导者是唯一可以更改复制状态的进程。它通过将改变状态的操作序列存储到本地的<em>日志</em>中来实现这一点，并将该日志复制给跟随者。复制日志使得状态能够在各个进程之间保持同步。</p>
 <p>如图 <a href="#fig:raft-log">10.1</a> 所示，日志是一个有序的条目列表，每个条目包含：</p>
 <ul>
@@ -43,7 +43,7 @@
 <p>当<em>追加条目</em>请求被拒绝时，领导者会重试该请求，这次包含最后两个日志条目——这就是为什么我们将该请求称为<em>追加条目</em>而不是<em>追加单个条目</em>。如果失败，领导者会重试发送最后三个日志条目，依此类推。<a class="footnote-ref" epub:type="noteref" href="#fn4" id="fnref4">4</a> 目标是让领导者找到两个日志一致的最新日志条目，删除跟随者日志中该点之后的任何条目，并将领导者在该点之后的所有条目追加到跟随者的日志中。</p>
 </section>
 <section class="level2" data-number="10.2" id="consensus">
-<h2 data-number="10.2"><span class="header-section-number">10.2</span> 共识</h2>
+<h2 id="consensus" data-number="10.2"><span class="header-section-number">10.2</span> 共识</h2>
 <p>通过解决状态机复制问题，我们实际上找到了<em>共识</em><a class="footnote-ref" epub:type="noteref" href="#fn5" id="fnref5">5</a>问题的解决方案——这是分布式系统研究中一个基础性问题，即一组进程必须就某个值达成一致，使得：</p>
 <ul>
 <li>每个无故障进程最终都同意某个值；</li>
@@ -56,7 +56,7 @@
 <p>例如，共识最常见的用途之一是用于协调目的，比如选举领导者。正如<a href="#lease">9.2</a>节所讨论的，领导者选举可以通过获取租约来实现。租约确保在任何时候最多只有一个进程可以成为领导者，并且如果该进程死亡，另一个进程可以取代它。然而，这种机制要求租约管理器或协调服务具备容错能力。Etcd<a class="footnote-ref" epub:type="noteref" href="#fn9" id="fnref9">9</a>和ZooKeeper<a class="footnote-ref" epub:type="noteref" href="#fn10" id="fnref10">10</a>是两个广泛使用的协调服务，它们通过共识来复制其状态以实现容错。协调服务通过其API暴露一个分层的键值存储，并允许客户端监视键的变更。因此，例如，获取租约可以通过让客户端尝试创建一个具有特定TTL的键来实现。如果该键已经存在，则操作失败，从而保证只有一个客户端可以获得租约。</p>
 </section>
 <section class="level2" data-number="10.3" id="consistency-models">
-<h2 data-number="10.3"><span class="header-section-number">10.3</span> 一致性模型</h2>
+<h2 id="consistency-models" data-number="10.3"><span class="header-section-number">10.3</span> 一致性模型</h2>
 <p>我们讨论了状态机复制，目标是实现一个能够承受故障并横向扩展以服务更多请求的数据存储。既然我们原则上知道了如何构建一个复制的数据存储，现在让我们更仔细地看看当客户端向其发送请求时会发生什么。在理想情况下，请求会瞬时执行，如图 <a href="#fig:ideal">10.2</a> 所示。</p>
 <div class="figure" style="text-align: center">
 <img alt="一个瞬时执行的写请求" src="../media/file15.png" width="100%"/>
@@ -75,7 +75,7 @@
 <p>在 <a href="#stm">10.1</a> 节中，我们了解了 Raft 如何将领导者的状态复制到其追随者。由于只有领导者可以更改状态，任何修改状态的操作都必须经过领导者。但是读取操作呢？它们不一定非要经过领导者，因为它们不影响系统的状态。读取可以由领导者、追随者或领导者和追随者的组合来服务。如果所有读取都必须经过领导者，读取吞吐量将限制在单个进程的水平。但是，如果任何追随者都可以服务读取，那么两个客户端或观察者可能会对系统状态有不同的视图，因为追随者可能落后于领导者。</p>
 <p>直观地说，观察者对系统状态的一致性程度与系统的性能和可用性之间存在权衡。为了理解这种关系，我们需要精确定义我们所说的一致性是什么意思。我们将借助<em>一致性模型</em><a class="footnote-ref" epub:type="noteref" href="#fn11" id="fnref11">11</a>来做到这一点，它们形式化地定义了观察者可能拥有的系统状态视图。</p>
 <section class="level3" data-number="10.3.1" id="linearizability">
-<h3 data-number="10.3.1"><span class="header-section-number">10.3.1</span> 强一致性</h3>
+<h3 id="linearizability" data-number="10.3.1"><span class="header-section-number">10.3.1</span> 强一致性</h3>
 <p>如果客户端只向领导者发送写和读请求，那么每个请求看起来都在一个非常特定的时间点原子性地发生，就好像数据只有一个副本一样。无论有多少副本或者它们落后多远，只要客户端总是直接查询领导者，从他们的角度来看，数据就只有一个副本。</p>
 <p>因为请求不是瞬时服务的，并且只有一个进程可以服务它，所以请求在其调用时间和完成时间之间的某个时刻执行。当它完成时，其副作用对所有观察者都是可见的，如图 <a href="#fig:linearizability">10.4</a> 所示。</p>
 <div class="figure" style="text-align: center">
@@ -88,7 +88,7 @@
 <p>不幸的是，领导者不能直接从其本地状态服务读取，因为当它从客户端收到请求时，它可能不再是领导者了；所以，如果它要服务该请求，系统将不是强一致的。假定的领导者首先需要联系大多数副本以确认它是否仍然是领导者。只有这样，它才被允许执行请求并将响应发送回客户端。否则，它将转换到追随者状态并使请求失败。这个确认步骤大大增加了服务读取所需的时间。</p>
 </section>
 <section class="level3" data-number="10.3.2" id="sequential-consistency">
-<h3 data-number="10.3.2"><span class="header-section-number">10.3.2</span> 顺序一致性</h3>
+<h3 id="sequential-consistency" data-number="10.3.2"><span class="header-section-number">10.3.2</span> 顺序一致性</h3>
 <p>到目前为止，我们讨论了通过领导者序列化所有读取。但这样做会创建一个单一的瓶颈点，限制了系统的吞吐量。除此之外，领导者需要联系大多数追随者来处理读取，这增加了处理请求所需的时间。为了提高读取性能，我们也可以允许追随者处理请求。</p>
 <p>即使追随者可能落后于领导者，它总是会以与领导者相同的顺序接收新的更新。例如，假设一个客户端只查询追随者 1，另一个只查询追随者 2。在这种情况下，两个客户端将看到状态在不同时间演进，因为追随者并非完美同步（见图 <a href="#fig:sequential">10.5</a>）。</p>
 <div class="figure" style="text-align: center">
@@ -101,12 +101,12 @@
 <p>通过队列同步的生产者/消费者系统就是这种模型的一个例子；生产者将项目写入队列，消费者从中读取。生产者和消费者以相同的顺序看到项目，但消费者落后于生产者。</p>
 </section>
 <section class="level3" data-number="10.3.3" id="eventual-consistency">
-<h3 data-number="10.3.3"><span class="header-section-number">10.3.3</span> 最终一致性</h3>
+<h3 id="eventual-consistency" data-number="10.3.3"><span class="header-section-number">10.3.3</span> 最终一致性</h3>
 <p>尽管我们设法提高了读取吞吐量，但我们不得不将客户端固定到追随者——如果一个追随者变得不可用，客户端就会失去对存储的访问。我们可以通过允许客户端查询任何追随者来提高可用性。但这在一致性方面付出了高昂的代价。例如，假设有两个追随者 1 和 2，其中追随者 2 落后于追随者 1。如果一个客户端先查询追随者 1，然后查询追随者 2，它将看到一个更早的状态，这可能会非常令人困惑。客户端唯一的保证是，如果对系统的写入停止，最终所有追随者都将收敛到最终状态。这种一致性模型称为<em>最终一致性</em>。</p>
 <p>在最终一致性的数据存储之上构建应用程序是具有挑战性的，因为其行为与我们编写单线程应用程序时所习惯的不同。因此，可能会出现难以调试和重现的微妙错误。然而，为最终一致性辩护的是，并非所有应用程序都需要线性一致性。例如，如果我们想跟踪访问网站的用户数量，最终一致性的存储是完全没问题的，因为读取返回一个稍微过时的数字并不重要。</p>
 </section>
 <section class="level3" data-number="10.3.4" id="the-cap-theorem">
-<h3 data-number="10.3.4"><span class="header-section-number">10.3.4</span> CAP 定理</h3>
+<h3 id="the-cap-theorem" data-number="10.3.4"><span class="header-section-number">10.3.4</span> CAP 定理</h3>
 <p>当发生网络分区时，系统的各个部分会彼此断开连接。例如，一些客户端可能无法再到达领导者。当这种情况发生时，系统有两种选择；它可以：</p>
 <ul>
 <li>通过允许客户端查询可达的追随者来保持可用性，牺牲强一致性；</li>
@@ -120,7 +120,7 @@
 </section>
 </section>
 <section class="level2" data-number="10.4" id="chain-replication">
-<h2 data-number="10.4"><span class="header-section-number">10.4</span> 链式复制</h2>
+<h2 id="chain-replication" data-number="10.4"><span class="header-section-number">10.4</span> 链式复制</h2>
 <p>链式复制<a class="footnote-ref" epub:type="noteref" href="#fn21" id="fnref21">21</a>是一种广泛使用的复制协议，它采用的拓扑结构与基于领导者的复制协议（如Raft）截然不同。在链式复制中，进程被排列成一条链。最左边的进程被称为链的<em>头节点</em>，而最右边的进程则是链的<em>尾节点</em>。</p>
 <p>客户端将写请求专门发送给头节点，头节点更新其本地状态，然后将更新转发给链中的下一个进程。类似地，该进程更新其状态，并将更改转发给其后继者，直到最终到达尾节点。</p>
 <p>当尾节点收到更新时，它会在本地应用该更新，并向其前驱节点发送确认，以表明更改已提交。确认信息流回头节点，然后头节点可以回复客户端写操作成功<a class="footnote-ref" epub:type="noteref" href="#fn22" id="fnref22">22</a>。</p>
