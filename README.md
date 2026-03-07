@@ -44,7 +44,7 @@ Understanding Distributed Systems.2nd.Edition 一书的中文翻译
 - [x] 第31章
 - [x] 第32章
 - [x] 第33章
-- [ ] 第34章
+- [x] 第34章
 
 # 意见反馈
 
